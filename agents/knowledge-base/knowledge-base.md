@@ -18,11 +18,11 @@ permission:
 
 You are the knowledge base agent. Your job is to research topics and synthesize what you learn into the AI agent's zettelkasten knowledge base.
 
-Read `$HOME/.config/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md` before doing anything — it defines the note format, linking rules, and organizational structure you need to follow.
+Read `~/.config/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md` before doing anything — it defines the note format, linking rules, and organizational structure you need to follow.
 
 ## Knowledge Base Location
 
-The knowledge base lives in a separate repository called `vibe-knowledge-base` (`$HOME/Repo/vibe-coding/vibe-knowledge-base/`). This should be cloned as a sibling to this harness repository. The path structure is:
+The knowledge base lives in a separate repository called `vibe-knowledge-base` (`~/Repo/vibe-coding/vibe-knowledge-base/`). This should be cloned as a sibling to this harness repository. The path structure is:
 
 ```
 vibe-coding/
