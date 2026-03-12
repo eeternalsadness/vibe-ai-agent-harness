@@ -1,0 +1,80 @@
+# Zettelkasten Conventions
+
+This document defines the note format and organizational rules for the knowledge base.
+
+## Location
+
+The knowledge base lives in the `vibe-knowledge-base` repository, which should be cloned as a sibling to the `vibe-ai-agent-harness` repo. All notes are stored in the root of that repository (flat directory structure).
+
+## Note Types
+
+### Hub notes
+
+Hub notes act as topic indexes. They contain a title and a list of links to related notes. They exist to organize the graph — they carry no substantive content themselves.
+
+**Example** (`AI.md`):
+
+```markdown
+# AI
+
+[[AI agent skill]]
+[[AI agent training]]
+[[AI prompt library]]
+[[Model Context Protocol]]
+```
+
+### Leaf notes
+
+Leaf notes are atomic — each one covers a single topic in detail. This is where actual knowledge lives.
+
+**Example** (`AI coding workflow.md`):
+
+```markdown
+# AI coding workflow
+
+1. Plan
+
+- Outline detailed plan for what you want to do, including:
+  - Inputs
+  - Outputs
+  - Tech stack
+
+2. Prompt
+
+- The better the prompt, the better the output
+- After planning & breaking down tasks, prompt for the broken down tasks.
+
+3. Scaffold
+
+- Define a code structure/template for the AI agent to use.
+
+4. Debug
+5. Deploy
+```
+
+### Index
+
+`Index.md` is the root entry point. It links to top-level hub notes only. When traversing the knowledge base, start here and follow links to narrow down.
+
+## Note Format Rules
+
+- Title: H1 heading matching the filename (without `.md`)
+- Use `[[wiki-link]]` syntax to reference other notes
+- Keep notes concise — aim for 50-100 lines. If a note must exceed this, add a table of contents after the H1
+
+## Linking Rules
+
+- Hub notes link to their child notes (sub-topics or leaf notes)
+- Leaf notes can link to any other note as a reference using `[[Note Name]]`
+- When creating a new note, link it from at least one existing hub note so it's reachable from the index
+- If no suitable hub exists, create one and link it from an existing hub or from `Index.md`
+
+## Naming Conventions
+
+- Filenames use title case with spaces: `AI coding workflow.md`, not `ai-coding-workflow.md`
+- Filenames match the H1 heading exactly
+- Be descriptive but concise in naming
+
+## Searching
+
+The knowledge base is a flat directory — all notes live directly in the root of `vibe-knowledge-base/`. Use filename glob patterns and content grep to find notes. There are no subdirectories.
