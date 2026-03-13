@@ -77,6 +77,7 @@ If a note exceeds 100 lines, you MUST add a table of contents with these rules:
 # Note Title
 
 ## Contents
+
 - Section 1
 - Section 2
 - Section 3
@@ -86,6 +87,7 @@ If a note exceeds 100 lines, you MUST add a table of contents with these rules:
 Introductory paragraph explaining the note's purpose or scope goes here.
 
 ## Section 1
+
 ...
 ```
 
