@@ -4,15 +4,27 @@
 
 You have access to short-term working memory at `~/Repo/vibe-coding/vibe-context/memory/Memory.md`. This file contains concise bullet points about recent work, decisions, and context. **Read this file at the start of each session** to understand current state.
 
-**When to update memory:**
+**When to update memory (do this proactively):**
 
-- Important context changes or decisions
-- New project focus or direction
-- Key discoveries or learnings
+- After completing significant features or implementations
+- After making important architectural or design decisions
+- When project focus or direction changes
+- After key discoveries or learnings
+- At the end of multi-step workflows that establish new context
+
+**Examples of significant work that should trigger memory updates:**
+
+- Implementing new agents, skills, or subsystems
+- Creating new file structures or organizational patterns
+- Making design decisions (e.g., choosing vendor-agnostic approaches)
+- Completing features that change how the system works
+- Discovering important patterns or best practices
 
 **How to update:**
 
 Invoke the memory subagent: `@memory add [concise description]` or `@memory update [existing item with new info]`
+
+**Important:** Update memory proactively as you complete work, not just when asked. If you've done substantial work (implementing features, making decisions, establishing patterns), update memory before concluding.
 
 ## Knowledge Base
 
