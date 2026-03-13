@@ -60,7 +60,34 @@ Leaf notes are atomic — each one covers a single topic in detail. This is wher
 
 - Title: H1 heading matching the filename (without `.md`)
 - Use `[[wiki-link]]` syntax to reference other notes
-- Keep notes concise — aim for 50-100 lines. If a note must exceed this, add a table of contents after the H1
+- Keep notes concise — aim for 50-100 lines
+
+### Table of Contents (for notes exceeding 100 lines)
+
+If a note exceeds 100 lines, you MUST add a table of contents with these rules:
+
+1. **Placement:** The TOC must come immediately after the H1 heading
+2. **Format:** Use `## Contents` as the section heading, then a bulleted list of all main H2 section names
+3. **Introductory content:** If the note has an introductory paragraph, it must go in its own `## Overview` section AFTER the TOC
+4. **Content:** List only main H2 sections in the TOC, not subsections
+
+**Structure example:**
+
+```markdown
+# Note Title
+
+## Contents
+- Section 1
+- Section 2
+- Section 3
+
+## Overview
+
+Introductory paragraph explaining the note's purpose or scope goes here.
+
+## Section 1
+...
+```
 
 ## Linking Rules
 
