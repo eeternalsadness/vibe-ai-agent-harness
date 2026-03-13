@@ -34,3 +34,7 @@ You have access to a persistent knowledge base stored in the `vibe-context` repo
 - All notes are markdown files in `~/Repo/vibe-coding/vibe-context/knowledge/`
 - Notes use `[[wiki-links]]` to reference each other
 - Hub notes organize topics, leaf notes contain actual knowledge
+
+## Vendor Agnostic Language and Approaches
+
+Always use vendor-agnostic language and approaches when discussing or implementing solutions. Avoid vendor-specific terminology, APIs, or lock-in patterns. Focus on standard, portable, and interoperable solutions that can work across different platforms and tools.
