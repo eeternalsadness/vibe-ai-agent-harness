@@ -2,7 +2,12 @@
 
 ## Knowledge Base
 
-You have access to a persistent knowledge base stored in the `vibe-knowledge-base` repository (located at `~/Repo/vibe-coding/vibe-knowledge-base`). This knowledge base is a zettelkasten — a graph of atomic notes covering various topics. When you need information on a topic, check the knowledge base FIRST before doing fresh research.
+You have access to a persistent knowledge base stored in the `vibe-knowledge-base` repository (located at `~/Repo/vibe-coding/vibe-knowledge-base`). This knowledge base is a zettelkasten — a graph of atomic notes covering various topics. **ALWAYS check the knowledge base FIRST before using any tool (such as webfetch) to gather information**.
+
+**Priority order for gathering information:**
+
+1. Check the knowledge base first
+2. Only if the knowledge base doesn't have the answer, use other information sources
 
 **How to use it:**
 
