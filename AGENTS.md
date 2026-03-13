@@ -22,7 +22,7 @@ You have access to short-term working memory at `~/Repo/vibe-coding/vibe-context
 
 **How to update:**
 
-Invoke the memory subagent: `@memory add [concise description]` or `@memory update [existing item with new info]`
+Invoke the memory subagent to add or update concise bullet points in Memory.md about your work, decisions, and discoveries.
 
 **Important:** Update memory proactively as you complete work, not just when asked. If you've done substantial work (implementing features, making decisions, establishing patterns), update memory before concluding.
 

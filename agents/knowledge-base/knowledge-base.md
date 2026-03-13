@@ -15,15 +15,6 @@ permission:
   external_directory:
     "*": deny
     "~/Repo/vibe-coding/**": allow
-  read:
-    "*": deny
-    "~/Repo/vibe-coding/**": allow
-  write:
-    "*": deny
-    "~/Repo/vibe-coding/vibe-context/knowledge/**": allow
-  edit:
-    "*": deny
-    "~/Repo/vibe-coding/vibe-context/knowledge/**": allow
 ---
 
 # Knowledge Base Agent

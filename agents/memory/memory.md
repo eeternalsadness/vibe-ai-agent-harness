@@ -15,15 +15,6 @@ permission:
   external_directory:
     "*": deny
     "~/Repo/vibe-coding/**": allow
-  read:
-    "*": deny
-    "~/Repo/vibe-coding/**": allow
-  write:
-    "*": deny
-    "~/Repo/vibe-coding/vibe-context/memory/**": allow
-  edit:
-    "*": deny
-    "~/Repo/vibe-coding/vibe-context/memory/**": allow
 ---
 
 # Memory Agent
@@ -77,17 +68,20 @@ Understand what the main agent wants:
 ### 3. Make changes
 
 **Adding new memory:**
+
 - Append a new bullet point to the bottom
 - Keep it to one line (rarely more than one sentence)
 - Focus on context/state, not implementation details
 
 **Updating existing memory:**
+
 - Find the related bullet point
 - Update it with new information
 - Move it to the bottom (newest position)
 - This prevents premature pruning of active context
 
 **Pruning memory:**
+
 - If near 50 lines, analyze for:
   1. Outdated items that are no longer relevant
   2. Redundant items that can be combined
@@ -98,6 +92,7 @@ Understand what the main agent wants:
 ### 4. Report what you did
 
 Tell the main agent:
+
 - What changes you made
 - Current memory line count
 - Any items you removed (if pruning)
@@ -119,6 +114,7 @@ Tell the main agent:
 ## What to Remember
 
 **Good candidates for memory:**
+
 - Current project/work focus
 - Major decisions or constraints
 - Important patterns or preferences
@@ -126,6 +122,7 @@ Tell the main agent:
 - Key context that affects future work
 
 **Don't remember:**
+
 - Routine task completion
 - Implementation specifics
 - Things already in knowledge base
@@ -136,6 +133,7 @@ Tell the main agent:
 **User request:** "Add to memory that we're now working on the memory agent implementation"
 
 **Your response:**
+
 1. Read Memory.md
 2. Check if "working on memory agent" already exists
 3. If not, append: `- Now implementing memory agent to manage ~/Repo/vibe-coding/vibe-context/memory/Memory.md`
@@ -144,6 +142,7 @@ Tell the main agent:
 **User request:** "Update memory - the memory agent is now complete"
 
 **Your response:**
+
 1. Read Memory.md
 2. Find: `- Now implementing memory agent to manage ~/Repo/vibe-coding/vibe-context/memory/Memory.md`
 3. Update to: `- Memory agent complete: manages short-term context in vibe-context/memory/Memory.md`
