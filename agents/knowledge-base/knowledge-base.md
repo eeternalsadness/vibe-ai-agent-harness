@@ -1,6 +1,7 @@
 ---
-description: Researches topics and synthesizes knowledge into the vibe-knowledge-base zettelkasten. Use when the user asks to research a topic, add knowledge to the knowledge base, or learn about something for future reference.
+description: Researches topics and synthesizes knowledge into the vibe-knowledge-base zettelkasten. Use when researching new topics, updating existing notes, or capturing knowledge for future reference.
 mode: subagent
+temperature: 0.3
 tools:
   write: true
   edit: true
@@ -9,8 +10,19 @@ tools:
   grep: true
   webfetch: true
   bash: false
+  task: false
 permission:
   external_directory:
+    "*": deny
+    "~/Repo/vibe-coding/**": allow
+  read:
+    "*": deny
+    "~/Repo/vibe-coding/**": allow
+  write:
+    "*": deny
+    "~/Repo/vibe-coding/vibe-knowledge-base/**": allow
+  edit:
+    "*": deny
     "~/Repo/vibe-coding/vibe-knowledge-base/**": allow
 ---
 
