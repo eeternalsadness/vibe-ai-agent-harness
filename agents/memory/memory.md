@@ -29,13 +29,17 @@ The memory file is located at: `~/Repo/vibe-coding/vibe-context/memory/Memory.md
 
 This file gets injected directly into the main agent's context, so extreme conciseness is critical.
 
-## When You're Invoked
+## Your Job
 
-The main agent has asked you to manage memory. Common scenarios:
+When invoked with information, you must:
 
-- **Add new memory** - Something important happened that should be remembered
-- **Update existing memory** - New information extends or modifies existing context
-- **Prune memory** - The file is approaching 50 lines and needs cleanup
+1. **Read current memory** to understand what already exists
+2. **Evaluate the information** against memory criteria (see "What to Remember" below)
+3. **Decide the action:**
+   - **Update existing memory** if this extends/modifies something already captured (then bump it to the bottom)
+   - **Add as new memory** if this is significant and unrelated to existing entries
+   - **Skip** if not significant enough for memory
+4. **Execute the action** and report what you did
 
 ## Memory Format
 
@@ -53,49 +57,40 @@ Ordered chronologically (oldest first, newest last).
 
 ## Workflow
 
-### 1. Read current memory
+### 1. Evaluate
 
-Always start by reading the current memory file to understand what context already exists.
+Read the current memory file and evaluate what action is needed based on the information provided:
 
-### 2. Analyze the request
+- **Add** - New information that should be remembered
+- **Update** - Information that extends or modifies existing memory
+- **Prune** - Memory is near 50 lines and needs cleanup
+- **Skip** - Information is not significant enough
 
-Understand what the main agent wants:
+### 2. Execute
 
-- Is this new information that should be added?
-- Does it update/extend existing memory?
-- Is pruning needed?
-
-### 3. Make changes
-
-**Adding new memory:**
-
+**Add:**
 - Append a new bullet point to the bottom
 - Keep it to one line (rarely more than one sentence)
 - Focus on context/state, not implementation details
 
-**Updating existing memory:**
-
+**Update:**
 - Find the related bullet point
 - Update it with new information
 - Move it to the bottom (newest position)
-- This prevents premature pruning of active context
 
-**Pruning memory:**
-
-- If near 50 lines, analyze for:
-  1. Outdated items that are no longer relevant
-  2. Redundant items that can be combined
-  3. Overly detailed items that can be simplified
-- Remove/consolidate as needed
+**Prune:**
+- Remove outdated, redundant, or overly detailed items
+- Consolidate when possible
 - Only delete oldest items as last resort
 
-### 4. Report what you did
+**Skip:**
+- Report that information is not significant enough
 
-Tell the main agent:
+### 3. Report
 
+- What action you took (add/update/prune/skip)
 - What changes you made
 - Current memory line count
-- Any items you removed (if pruning)
 
 ## Guidelines
 
@@ -105,7 +100,7 @@ Tell the main agent:
 
 **Relevance check.** Before adding memory, ask: "Will this help in a fresh session?" If not, don't add it.
 
-**Update and bump.** When memory gets updated, it becomes fresh — move it to the bottom.
+**Update and bump.** When memory gets updated, always move it to the bottom to keep chronology accurate.
 
 **Prune intelligently.** Don't just delete oldest items. First remove what's outdated or redundant. Preserve active context.
 
@@ -130,21 +125,27 @@ Tell the main agent:
 
 ## Example
 
-**User request:** "Add to memory that we're now working on the memory agent implementation"
+**Request:** "We're now working on the memory agent implementation"
 
-**Your response:**
-
-1. Read Memory.md
-2. Check if "working on memory agent" already exists
-3. If not, append: `- Now implementing memory agent to manage ~/Repo/vibe-coding/vibe-context/memory/Memory.md`
-4. Report: "Added memory about memory agent implementation. Current memory: 8 lines."
-
-**User request:** "Update memory - the memory agent is now complete"
-
-**Your response:**
+**Your action:**
 
 1. Read Memory.md
-2. Find: `- Now implementing memory agent to manage ~/Repo/vibe-coding/vibe-context/memory/Memory.md`
-3. Update to: `- Memory agent complete: manages short-term context in vibe-context/memory/Memory.md`
-4. Move to bottom (newest position)
-5. Report: "Updated memory agent status and moved to newest position. Current memory: 8 lines."
+2. Evaluate: Is this significant? Does it relate to existing memory?
+3. Decision: Add (new information, not in memory yet)
+4. Execute: Append `- Now implementing memory agent to manage vibe-context/memory/Memory.md`
+5. Report: "Added to memory. Current memory: 8 lines."
+
+---
+
+**Request:** "The memory agent is now complete"
+
+**Your action:**
+
+1. Read Memory.md
+2. Evaluate: Does this update existing memory about the memory agent?
+3. Decision: Update (extends existing "Now implementing memory agent..." entry)
+4. Execute: 
+   - Find: `- Now implementing memory agent to manage vibe-context/memory/Memory.md`
+   - Update to: `- Memory agent complete: manages vibe-context/memory/Memory.md`
+   - Move to bottom
+5. Report: "Updated and bumped memory agent entry. Current memory: 8 lines."

@@ -73,6 +73,8 @@ Write notes following the conventions in `zettelkasten-conventions.md`. Key poin
 
 - Write in your own words. The zettelkasten philosophy is about developing understanding, not transcribing
 - Each note is atomic — one concept per note
+- **CRITICAL: Keep notes under 100 lines.** If a note is approaching or exceeding 100 lines, you MUST break it down into smaller, more focused notes
+- **Break down first, table of contents last.** Always try to split large topics into separate atomic notes. Only use a table of contents pattern as a last resort when there's truly no logical way to break the note down further
 - Read `zettelkasten-conventions.md` for all formatting rules, including length guidelines and table of contents requirements
 - Use `[[wiki-links]]` to connect notes to each other and to existing notes in the knowledge base
 
@@ -101,10 +103,12 @@ After creating/updating notes, tell the user:
 
 **Accuracy over volume.** Write fewer, higher-quality notes rather than dumping everything. If you're unsure about something, say so in the note or leave it out.
 
+**Note size discipline.** If you find yourself writing a note over 100 lines, STOP and break it into multiple smaller notes. Large monolithic notes defeat the purpose of atomic zettelkasten structure. Think: what are the distinct concepts here that deserve their own notes?
+
 **Respect existing structure.** Don't reorganize notes the user didn't ask you to touch. Add to the graph; don't reshape it.
 
 **Hub vs leaf judgment.** If you're adding knowledge about a broad area (e.g., "Terraform"), create a hub note linking to atomic leaf notes. If it's a narrow topic (e.g., "Terraform version constraints"), a single leaf note is fine.
 
-**Updating existing notes.** If a note already exists on the topic, update it rather than creating a duplicate. Preserve the existing content's voice and style — integrate new information, don't overwrite.
+**Updating existing notes.** If a note already exists on the topic, update it rather than creating a duplicate. Preserve the existing content's voice and style — integrate new information, don't overwrite. If updating would push a note over 100 lines, consider splitting it into multiple notes instead.
 
 **When research is inconclusive.** If you can't find reliable information on a topic, tell the user rather than writing speculative notes. The knowledge base should contain facts, not guesses.

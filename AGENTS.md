@@ -22,9 +22,27 @@ You have access to short-term working memory at `~/Repo/vibe-coding/vibe-context
 
 **How to update:**
 
-Invoke the memory subagent to add or update concise bullet points in Memory.md about your work, decisions, and discoveries.
+Invoke the memory subagent with a brief description of what you did. The memory agent will evaluate whether to add, update, or skip.
+
+**Memory update checkpoint:**
+
+After completing any substantial work, always invoke the memory subagent with a summary of what you accomplished. Examples:
+
+- "Implemented granular file-level permissions for subagents"
+- "Research complete: selected Qwen 2.5 14B for knowledge synthesis"
+- "Created new agent workflow with proactive memory updates"
+
+The memory agent will decide whether to add new memory, update existing memory, or skip.
 
 **Important:** Update memory proactively as you complete work, not just when asked. If you've done substantial work (implementing features, making decisions, establishing patterns), update memory before concluding.
+
+**CRITICAL CHECKPOINT - Before replying to the user after completing work:**
+
+1. Ask yourself: "Did I just complete substantial work that changes the system, adds features, or establishes patterns?"
+2. If YES → Invoke the memory subagent IMMEDIATELY before responding to the user
+3. If NO → Proceed with your response
+
+**Common mistake:** Forgetting to trigger memory after editing configuration files, updating agent instructions, or documenting new patterns. These are ALL substantial work that requires memory updates.
 
 ## Knowledge Base
 
