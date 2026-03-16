@@ -27,24 +27,43 @@ That's it. Just a flat list of bullet points, chronologically ordered (oldest fi
 Each bullet point should be:
 
 1. **One line** - Rarely more than one sentence
-2. **Context, not details** - What the agent needs to know, not how it was done
-3. **Actionable or informative** - Either states current work or provides needed context
+2. **150 characters max** - If longer, split into multiple focused bullets
+3. **Context, not details** - What the agent needs to know, not how it was done
+4. **Actionable or informative** - Either states current work or provides needed context
+
+When a memory item exceeds 150 characters, break it down into multiple atomic items. Each should capture one distinct fact or piece of context.
 
 **Good memory items:**
 
 ```markdown
-- Working on AI agent harness project with stateless agents
-- Restructured vibe-context repo: knowledge/ and memory/ subdirectories  
-- Knowledge base agent complete, now implementing memory agent
-- Using [[AI Subagent Best Practices]] as design guide
-- Memory limit: ~50 lines, prune oldest when exceeded
+- Working on authentication system using [[OAuth2 Patterns]]
+- Implemented token refresh flow, now adding rate limiting
+- API gateway redesign complete: migrated from monolith to microservices
+- Using event-driven architecture with message queue pattern
 ```
 
-**Bad memory items (too detailed):**
+**Bad memory items (too long, should be split):**
 
 ```markdown
-- Changed line 47 in auth.js from `if (user.token == null)` to `if (!user.token)`
-- Updated test file with 3 new test cases for null, undefined, empty string
+- Researched OAuth2 flows and created 5 implementation guides covering authorization code flow, client credentials, refresh tokens, PKCE extension, and security best practices with token storage recommendations
+```
+
+Should be split into:
+```markdown
+- Researched OAuth2 and created [[OAuth2 Implementation Guide]] in knowledge base
+- Now implementing OAuth2 authorization code flow with PKCE in auth service
+```
+
+**Bad memory items (too detailed, belongs in knowledge base):**
+
+```markdown
+- OAuth2 uses authorization code flow: client redirects to auth server, user authenticates, server returns code, client exchanges code for token
+- Token refresh requires storing refresh token in httpOnly cookie and access token in memory with 15min expiry
+```
+
+Should be:
+```markdown
+- Implementing OAuth2 flow using [[OAuth2 Patterns]] guide
 ```
 
 **Bad memory items (too vague):**
@@ -119,13 +138,12 @@ Use `[[wiki-links]]` sparingly to reference knowledge base notes when helpful:
 ```markdown
 # Memory
 
-- Building AI agent harness: stateless agents, knowledge-driven, small model compatible
-- Repo structure: vibe-ai-agent-harness/ (configs), vibe-context/ (knowledge + memory)
-- Knowledge base agent complete: manages ~/Repo/vibe-coding/vibe-context/knowledge/
-- Knowledge uses zettelkasten format: [[wiki-links]], 50-100 line limit per note
-- Now implementing memory agent to manage this file
-- Memory injected into context, must stay under 50 lines
-- Memory agent analyzes and prunes when near limit
+- Building API gateway: event-driven microservices architecture
+- Repo structure: backend/ (services), docs/ (API specs), infra/ (IaC configs)
+- Authentication service complete using [[OAuth2 Patterns]]
+- Rate limiting implemented: token bucket algorithm, Redis-backed
+- Now working on payment service integration with Stripe
+- Payment flows documented in [[Payment Processing Patterns]]
 ```
 
-This entire memory file is ~10 lines and provides all essential context for a new session.
+This entire memory file is ~10 lines and provides essential context. Details live in knowledge base notes that are linked when relevant.
