@@ -42,7 +42,7 @@ Flat list. Chronological (oldest first, newest last).
 - Implementing OAuth2 authorization code flow with PKCE
 ```
 
-**Bad (too detailed, use KB):**
+**Bad (too detailed, use knowledge base):**
 ```markdown
 - OAuth2: client redirects to auth server, user authenticates, returns code, exchanges for token
 ```
