@@ -113,13 +113,13 @@ If Memory.md doesn't exist (first run, new machine, accidental deletion), plugin
 
 Agent reads memory, skips if redundant. No separate dedup layer (exact match too simple, semantic similarity too complex).
 
-### 8. Context Injection Before First Message
+### 8. Context Injection via System Prompt
 
-Plugin injects Memory.md via `session.created` hook with `noReply: true`.
+Plugin injects Memory.md via `experimental.chat.system.transform` hook into system prompt.
 
-**Rationale:** Available before first message, no tool latency, works without agent invocation.
+**Rationale:** Invisible to user (no TUI message), only injected for primary agent (not subagents), available before first message.
 
-**Implementation:** Track sessions in Set to prevent duplicate injection. AGENTS.md updated to remove "read memory first" instruction (now auto-loaded).
+**Implementation:** Check for `agent` property in hook input to filter out subagents. Cache memory content for 5 seconds to reduce file reads.
 
 ### 9. Automatic Memory Updates via `session.idle`
 
@@ -142,7 +142,7 @@ vibe-context/memory/
 
 ## Workflow
 
-1. **Session Start:** Plugin injects Memory.md content via `session.created` hook (before first user message)
+1. **System Prompt Injection:** Plugin injects Memory.md content via `experimental.chat.system.transform` hook (only for primary agent, not subagents)
 2. **During Session:** Primary agent invokes memory subagent when appropriate
 3. **Memory Evaluation:** Agent outputs memory items or skips
 4. **Plugin Processing:**
@@ -153,9 +153,10 @@ vibe-context/memory/
     - Truncate file if at 50 items (FIFO)
     - Append item
     - Release lock
+    - Invalidate memory cache to ensure fresh content on next injection
 
 ## Future Considerations
 
 - Memory search/retrieval tools
 - Priority/bumping for critical items (currently all age out equally via FIFO)
-- Mid-session memory refresh via `experimental.chat.system.transform` (fires per-LLM-call, reads fresh memory; blocked on hook graduating from experimental/undocumented to stable)
+- **Hook stability:** `experimental.chat.system.transform` may change in future OpenCode versions; if removed, need alternative injection approach (risk: low, fallback: graceful degradation)
