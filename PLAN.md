@@ -37,8 +37,24 @@ Agent evaluates significance and formats items. No file writes.
 
 **Rationale:** File operations don't need LLM intelligence. Simpler, faster.
 
+**Output format:** Agent outputs markdown bullets or `SKIP`, nothing else.
+
+```
+- item one
+- item two
+```
+
+Or if not significant:
+
+```
+SKIP
+```
+
+**Parsing:** Plugin extracts lines matching `^- `, ignores everything else. Agent instructed to output only bullets or SKIP; plugin parses defensively as fallback.
+
 **Implementation:**
 - Agent reads Memory.md, outputs memory items or skips
+- Agent has no write/edit permissions (plugin handles all file I/O)
 - Plugin parses output, handles all file writes
 - Primary agent gets injected snapshot at session start (may be stale mid-session)
 - Memory subagent always reads fresh file content (source of truth)
@@ -78,30 +94,40 @@ async function invokeMemoryAgent(summary: string): Promise<string> {
 
 ### 4. 150 Character Hard Limit
 
-Enforce 150 char limit per item with validation loop and atomic commit.
-
-**Rationale:** Only agent can semantically shorten items (programmatic truncation breaks meaning).
+Each memory item must contain **one piece of information** (one task, decision, or fact). This enforces conciseness naturally -- atomic items stay short. The 150 char limit is a safety net.
 
 **Implementation:**
-- Plugin validates each item individually
-- If any item over limit: re-prompt agent listing ALL violations (e.g., "Item 1 was 187 chars (37 over limit)"), agent can shorten OR split (max 2 retries)
-- If still fails: commit nothing, report ALL violations to user
+- Plugin validates each item after agent returns
+- If any item over limit: re-prompt agent once listing all violations (e.g., "Item 1 was 187 chars (37 over limit)"), agent can shorten or split
+- If still over limit after 1 retry: commit nothing, report violations to user (user handles manually)
 
 ### 5. File Locking
 
 Promise-based mutex (`withLock()`) prevents concurrent write races. Uses Map to track active locks.
 
-### 6. Deduplication via Significance Evaluation
+### 6. File Initialization
+
+If Memory.md doesn't exist (first run, new machine, accidental deletion), plugin creates it with `# Memory` header before any read/write operations.
+
+### 7. Deduplication via Significance Evaluation
 
 Agent reads memory, skips if redundant. No separate dedup layer (exact match too simple, semantic similarity too complex).
 
-### 7. Context Injection Before First Message
+### 8. Context Injection Before First Message
 
 Plugin injects Memory.md via `session.created` hook with `noReply: true`.
 
 **Rationale:** Available before first message, no tool latency, works without agent invocation.
 
 **Implementation:** Track sessions in Set to prevent duplicate injection. AGENTS.md updated to remove "read memory first" instruction (now auto-loaded).
+
+### 9. Automatic Memory Updates via `session.idle`
+
+Plugin listens for `session.idle` events and automatically invokes the memory subagent after every assistant response to evaluate if anything is worth adding.
+
+**Rationale:** Removes reliance on primary agent remembering to invoke memory subagent. Ensures memory is always up to date.
+
+**Implementation:** On `session.idle`, plugin invokes memory subagent with summary of recent conversation. Agent evaluates and outputs items or SKIP.
 
 ## File Structure
 
@@ -121,15 +147,15 @@ vibe-context/memory/
 3. **Memory Evaluation:** Agent outputs memory items or skips
 4. **Plugin Processing:**
     - Plugin acquires file lock
-    - Plugin validates 150 char limit
-    - If over limit, re-prompt agent to shorten (max 2 retries)
+    - Plugin validates 150 char limit (each item = one piece of information)
+    - If over limit, re-prompt agent once to shorten/split
+    - If still over limit: commit nothing, report to user
     - Truncate file if at 50 items (FIFO)
     - Append item
     - Release lock
 
 ## Future Considerations
 
-- `session.idle` hook for automatic memory updates (see [[OpenCode Plugin Session Lifecycle Hooks]])
 - Memory search/retrieval tools
 - Priority/bumping for critical items (currently all age out equally via FIFO)
-- Mid-session memory refresh (currently injected once at session start; acceptable tradeoff for MVP)
+- Mid-session memory refresh via `experimental.chat.system.transform` (fires per-LLM-call, reads fresh memory; blocked on hook graduating from experimental/undocumented to stable)
