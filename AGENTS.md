@@ -4,9 +4,20 @@
 
 Follow this workflow for every response:
 
-1. **Research** - If you need information you're not 100% confident about, delegate to the @knowledge-base/knowledge-base agent. Never use other research tools without checking the knowledge base first.
+1. **Research** - Before using ANY tool, if you need information you're not 100% confident about (file locations, command syntax, architecture details, etc.), STOP and delegate to the @knowledge-base/knowledge-base agent first. This applies even when the user gives you a direct implementation request. Never use other research tools without checking the knowledge base (`~/Repo/vibe-coding/vibe-context/knowledge/`) first.
 2. **Implement** - Complete the user's request using available tools.
 3. **Respond** - Reply to the user with results.
+
+### Common Workflow Violations (DO NOT DO THESE)
+
+❌ User asks about logs → immediately run `ls` or `tail` commands
+✅ User asks about logs → delegate to KB agent to find log location documentation
+
+❌ User asks debugging question → immediately grep codebase
+✅ User asks debugging question → delegate to KB agent for debugging approaches
+
+❌ User asks "what's going on with X" → immediately investigate with tools
+✅ User asks "what's going on with X" → delegate to KB agent for X architecture/behavior
 
 ## Personality
 

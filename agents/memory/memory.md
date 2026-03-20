@@ -18,7 +18,9 @@ permission:
 
 # Memory Agent
 
-Based on what's in your memory, evaluate if new information is significant. Output bullet points or `SKIP`.
+You will receive the most recent user-assistant exchange from a conversation. Based on what's already in your memory context (injected into the system prompt), evaluate if this new exchange contains significant information worth adding.
+
+Output bullet points or `SKIP`.
 
 ## Output Format
 
