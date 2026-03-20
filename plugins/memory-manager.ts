@@ -15,7 +15,7 @@ import { homedir } from "node:os"
  * 
  * Subagent Invocation Strategy:
  * - Creates NEW independent session for memory agent (not subtask in parent session)
- * - This provides clean context isolation - agent doesn't inherit parent AGENTS.md
+ * - Tracks subagent session IDs to prevent hook recursion (oh-my-openagent pattern)
  * - Tools are explicitly disabled via tools config
  * - Session is aborted after getting result to clean up resources
  * - Follows oh-my-openagent background-agent pattern
@@ -28,13 +28,16 @@ const MAX_RETRIES = 1
 
 // Model fallback chain for memory agent invocation (small models only)
 const FALLBACK_MODELS = [
-  { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
+  { providerID: "github-copilot", modelID: "gpt-5-mini" },
   { providerID: "ollama", modelID: "qwen2.5:7b" },
   { providerID: "ollama", modelID: "llama3.2:3b" },
 ]
 
 // File locking using promise-based mutex
 const locks = new Map<string, Promise<void>>()
+
+// Track memory agent session IDs to prevent hook recursion (oh-my-openagent pattern)
+const memoryAgentSessions = new Set<string>()
 
 /**
  * Acquires a lock on a file path and executes callback
@@ -158,15 +161,22 @@ async function invokeMemoryAgent(
   client: PluginInput["client"],
   parentSessionId: string,
   summary: string,
-  retryPrompt?: string
+  retryPrompt?: string,
+  log?: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
 ): Promise<string> {
   let lastError: Error | null = null
 
   for (const model of FALLBACK_MODELS) {
     let sessionId: string | null = null
-    
+
     try {
       const prompt = retryPrompt || summary
+
+      await log?.("info", "Attempting memory agent with model", {
+        providerID: model.providerID,
+        modelID: model.modelID,
+        promptLength: prompt.length
+      })
 
       // Get parent session's directory (optional, for context)
       const parentSession = await client.session.get({
@@ -187,6 +197,15 @@ async function invokeMemoryAgent(
       }
 
       sessionId = createResult.data.id
+
+      // CRITICAL: Mark this session as a memory agent session to prevent hook recursion
+      memoryAgentSessions.add(sessionId)
+
+      await log?.("info", "Memory agent session created and tracked", {
+        parentSessionId,
+        sessionId,
+        directory
+      })
 
       // Step 2: Prompt the new session with the memory agent
       const response = await client.session.prompt({
@@ -215,26 +234,57 @@ async function invokeMemoryAgent(
       const textPart = response.data?.message?.parts?.find((p: any) => p.type === "text")
       const result = textPart?.text || ""
 
+      await log?.("info", "Memory agent response received", {
+        sessionId,
+        resultLength: result.length,
+        resultPreview: result.slice(0, 100)
+      })
+
       // Step 3: Clean up - abort the session after getting result
       await client.session.abort({
         path: { id: sessionId }
       }).catch((error) => {
-        console.error("Failed to abort memory agent session:", error)
+        log?.("warn", "Failed to abort memory agent session", {
+          sessionId,
+          error: (error as Error).message
+        })
+      })
+
+      // Remove from tracking after cleanup
+      memoryAgentSessions.delete(sessionId)
+
+      await log?.("info", "Memory agent invocation successful", {
+        sessionId,
+        providerID: model.providerID,
+        modelID: model.modelID
       })
 
       return result
     } catch (error) {
       lastError = error as Error
-      
+
+      await log?.("warn", "Memory agent model attempt failed", {
+        providerID: model.providerID,
+        modelID: model.modelID,
+        error: lastError.message,
+        sessionId
+      })
+
       // CRITICAL: Clean up session if it was created but failed
       if (sessionId) {
         await client.session.abort({
           path: { id: sessionId }
         }).catch((abortError) => {
-          console.error("Failed to abort failed memory agent session:", abortError)
+          log?.("error", "Failed to abort failed memory agent session", {
+            sessionId,
+            error: (abortError as Error).message
+          })
         })
+
+        // Remove from tracking on failure too
+        memoryAgentSessions.delete(sessionId)
       }
-      
+
       // Continue to next model in fallback chain
     }
   }
@@ -270,23 +320,43 @@ async function appendToMemory(items: string[]): Promise<void> {
 async function updateMemory(
   client: PluginInput["client"],
   sessionId: string,
-  summary: string
+  summary: string,
+  log?: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
 ): Promise<{ success: boolean; message: string }> {
   try {
     // First invocation
-    let agentOutput = await invokeMemoryAgent(client, sessionId, summary)
+    let agentOutput = await invokeMemoryAgent(client, sessionId, summary, undefined, log)
     let items = parseAgentOutput(agentOutput)
+
+    await log?.("info", "Agent output parsed", {
+      itemCount: items?.length ?? 0,
+      skipped: items === null
+    })
 
     // Check if agent decided to skip
     if (items === null) {
       return { success: true, message: "Memory agent decided not to add items (SKIP)" }
     }
 
-    // Validate item lengths
+    // Validate item lengths with retry loop
     let violations = validateItemLengths(items)
+    let retryCount = 0
 
-    // If violations, retry once with feedback
     if (violations.length > 0) {
+      await log?.("warn", "Item length violations detected", {
+        violationCount: violations.length,
+        violations
+      })
+    }
+
+    while (violations.length > 0 && retryCount < MAX_RETRIES) {
+      retryCount++
+
+      await log?.("info", "Retrying memory agent due to violations", {
+        retryCount,
+        violationCount: violations.length
+      })
+
       const violationMessage = formatViolations(violations)
       const retryPrompt = `${summary}
 
@@ -296,35 +366,48 @@ ${violationMessage}
 
 Output only the corrected items as bullet points (starting with "- "), or SKIP if you decide not to add them.`
 
-      agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPrompt)
+      agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPrompt, log)
       items = parseAgentOutput(agentOutput)
 
       // Check if agent skipped after retry
       if (items === null) {
-        return { success: true, message: "Memory agent decided not to add items after retry (SKIP)" }
+        return { success: true, message: `Memory agent decided not to add items after retry ${retryCount} (SKIP)` }
       }
 
       // Validate again
       violations = validateItemLengths(items)
+    }
 
-      // If still have violations, fail and report to user
-      if (violations.length > 0) {
-        const violationMessage = formatViolations(violations)
-        return {
-          success: false,
-          message: `Memory update failed: items still exceed 150-char limit after retry.\n\n${violationMessage}\n\nPlease add these items manually.`
-        }
+    // If still have violations after all retries, fail and report to user
+    if (violations.length > 0) {
+      const violationMessage = formatViolations(violations)
+      await log?.("error", "Items still violate length limit after retries", {
+        retryCount,
+        violations
+      })
+      return {
+        success: false,
+        message: `Memory update failed: items still exceed 150-char limit after ${MAX_RETRIES} retry(ies).\n\n${violationMessage}\n\nPlease add these items manually.`
       }
     }
 
     // All validations passed, append to memory
     await appendToMemory(items)
 
+    await log?.("info", "Items appended to memory", {
+      itemCount: items.length,
+      items: items.map(i => i.slice(0, 50) + (i.length > 50 ? "..." : ""))
+    })
+
     return {
       success: true,
       message: `Added ${items.length} item(s) to memory`
     }
   } catch (error) {
+    await log?.("error", "Memory update error", {
+      error: (error as Error).message,
+      stack: (error as Error).stack
+    })
     return {
       success: false,
       message: `Memory update error: ${(error as Error).message}`
@@ -337,6 +420,21 @@ Output only the corrected items as bullet points (starting with "- "), or SKIP i
  */
 export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
   const { client } = ctx
+
+  // Helper function for logging
+  async function log(level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) {
+    await client.app.log({
+      body: {
+        service: "memory-manager",
+        level,
+        message,
+        extra
+      }
+    }).catch((err) => {
+      // Fallback to console if logging fails
+      console.error("Failed to log:", err)
+    })
+  }
 
   // Cache memory content to avoid repeated file reads
   let memoryCache: string | null = null
@@ -368,11 +466,23 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
   return {
     // Inject memory into system prompt (invisible to user, only for primary agent)
     "experimental.chat.system.transform": async (input, output) => {
-      // Only inject for primary agent (not subagents)
-      // Subagents are identified by having an agent property
-      const agent = (input as any).agent
+      // CRITICAL: Skip memory injection for memory agent sessions (oh-my-openagent pattern)
+      const sessionID = (input as any).sessionID
+      if (memoryAgentSessions.has(sessionID)) {
+        await log("info", "Skipping memory injection for tracked memory agent session", { sessionID })
+        return
+      }
+
+      // Also check agent field as backup (in case session tracking missed it)
+      const agent = (input as any).agent || (input as any).body?.agent
+      if (agent === "memory/memory" || agent?.includes("memory")) {
+        await log("info", "Skipping memory injection for memory agent session (by agent field)", { agent })
+        return
+      }
+
+      // Skip for all subagents (non-primary sessions)
       if (agent) {
-        // This is a subagent - skip memory injection
+        await log("info", "Skipping memory injection for subagent", { agent })
         return
       }
 
@@ -381,8 +491,17 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 
         // Add memory context to system prompt
         output.system.push(`# Working Memory Context\n\nBelow is your short-term working memory. This contains recent work context across all projects.\n\n${memoryContent}`)
+
+        await log("info", "Memory context injected into system prompt", {
+          sessionID,
+          contentLength: memoryContent.length,
+          cached: memoryCache !== null
+        })
       } catch (error) {
-        console.error("Failed to inject memory context:", error)
+        await log("error", "Failed to inject memory context", {
+          error: (error as Error).message,
+          stack: (error as Error).stack
+        })
       }
     },
 
@@ -391,25 +510,75 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
       if (event.type === "session.idle") {
         const sessionId = event.properties.sessionID
 
+        // CRITICAL: Do not trigger memory updates for memory agent sessions (prevent recursion)
+        if (memoryAgentSessions.has(sessionId)) {
+          await log("info", "Skipping memory update for tracked memory agent session (idle event)", {
+            sessionId
+          })
+          return
+        }
+
+        // Also check session info as backup
+        try {
+          const session = await client.session.get({
+            path: { id: sessionId }
+          }).catch(() => null)
+
+          const agent = session?.data?.agent
+          if (agent === "memory/memory" || agent?.includes("memory")) {
+            await log("info", "Skipping memory update for memory agent idle event (by agent field)", {
+              sessionId,
+              agent
+            })
+            return
+          }
+        } catch (error) {
+          await log("warn", "Could not check session agent type", {
+            sessionId,
+            error: (error as Error).message
+          })
+        }
+
+        await log("info", "Session idle event received, starting memory update", { sessionId })
+
         try {
           // Get recent conversation context for the summary
           // Note: In a real implementation, you'd extract recent messages
           // For now, we'll invoke with a generic prompt
           const summary = "Review the recent conversation and evaluate if any information is significant enough to add to memory. Consider decisions, patterns, blockers, or context that would be valuable across sessions."
 
-          const result = await updateMemory(client, sessionId, summary)
+          await log("info", "Invoking memory agent", { sessionId, summaryLength: summary.length })
+
+          const result = await updateMemory(client, sessionId, summary, log)
 
           // Invalidate cache after successful update
           if (result.success) {
             invalidateCache()
-          }
-
-          // Log result (in production, you might want to report to user differently)
-          if (!result.success) {
-            console.error(result.message)
+            await log("info", "Memory update completed", {
+              sessionId,
+              message: result.message
+            })
+          } else {
+            await log("error", "Memory update failed", {
+              sessionId,
+              message: result.message
+            })
           }
         } catch (error) {
-          console.error("Failed to update memory on idle:", error)
+          await log("error", "Failed to update memory on idle", {
+            sessionId,
+            error: (error as Error).message,
+            stack: (error as Error).stack
+          })
+        }
+      }
+
+      // Handle session.deleted - cleanup tracking
+      if (event.type === "session.deleted") {
+        const sessionId = event.properties.info?.id
+        if (sessionId && memoryAgentSessions.has(sessionId)) {
+          memoryAgentSessions.delete(sessionId)
+          await log("info", "Cleaned up deleted memory agent session from tracking", { sessionId })
         }
       }
     }
