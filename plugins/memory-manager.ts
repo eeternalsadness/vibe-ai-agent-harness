@@ -33,11 +33,69 @@ const FALLBACK_MODELS = [
   { providerID: "ollama", modelID: "llama3.2:3b" },
 ]
 
+// Prompt templates - customize these to improve memory agent behavior
+const PROMPTS = {
+  /**
+   * Template for initial memory evaluation prompt
+   * Available variables: {conversationContext}
+   */
+  evaluation: (conversationContext: string) =>
+    `Review the most recent exchange below and evaluate if any information is significant enough to add to memory.
+
+Most recent exchange:
+
+${conversationContext}`,
+
+  /**
+   * Template for explicit memory save (when user says "remember this")
+   * Available variables: {conversationContext}
+   */
+  explicitSave: (conversationContext: string) =>
+    `The user has EXPLICITLY requested to save information to memory. You MUST extract and save the key information.
+
+Recent conversation:
+
+${conversationContext}
+
+Extract the most important information and output it as bullet points (starting with "- "). Do NOT output SKIP.`,
+
+  /**
+   * Template for retry prompt when items exceed character limit
+   * Available variables: {originalPrompt}, {violationMessage}
+   */
+  retry: (originalPrompt: string, violationMessage: string) =>
+    `${originalPrompt}
+
+The following items exceed the 150-character limit. Please shorten or split them:
+
+${violationMessage}
+
+Output only the corrected items as bullet points (starting with "- "), or SKIP if you decide not to add them.`
+}
+
 // File locking using promise-based mutex
 const locks = new Map<string, Promise<void>>()
 
 // Track memory agent session IDs to prevent hook recursion (oh-my-openagent pattern)
 const memoryAgentSessions = new Set<string>()
+
+// Keywords that trigger explicit memory save (without agent evaluation)
+const MEMORY_KEYWORDS = ["remember", "save this", "don't forget", "memorize", "add to memory"]
+const MEMORY_KEYWORD_PATTERN = new RegExp(`\\b(${MEMORY_KEYWORDS.join("|")})\\b`, "i")
+
+// Code block patterns for filtering
+const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g
+const INLINE_CODE_PATTERN = /`[^`]+`/g
+
+/**
+ * Detect if user is explicitly asking to remember something
+ */
+function detectMemoryKeyword(text: string): boolean {
+  const cleaned = text
+    .replace(CODE_BLOCK_PATTERN, "")
+    .replace(INLINE_CODE_PATTERN, "")
+  return MEMORY_KEYWORD_PATTERN.test(cleaned)
+}
 
 /**
  * Acquires a lock on a file path and executes callback
@@ -358,13 +416,7 @@ async function updateMemory(
       })
 
       const violationMessage = formatViolations(violations)
-      const retryPrompt = `${summary}
-
-The following items exceed the 150-character limit. Please shorten or split them:
-
-${violationMessage}
-
-Output only the corrected items as bullet points (starting with "- "), or SKIP if you decide not to add them.`
+      const retryPrompt = PROMPTS.retry(summary, violationMessage)
 
       agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPrompt, log)
       items = parseAgentOutput(agentOutput)
@@ -464,6 +516,89 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
   }
 
   return {
+    // Intercept user messages to detect explicit "remember" commands
+    "chat.message": async (input, output) => {
+      const textParts = output.parts.filter((p: any) => p.type === "text")
+      const userMessage = textParts.map((p: any) => p.text).join("\n")
+
+      // Skip for memory agent sessions
+      if (memoryAgentSessions.has(input.sessionID)) {
+        return
+      }
+
+      // Detect if user is asking to remember something
+      if (detectMemoryKeyword(userMessage)) {
+        await log("info", "Explicit memory save request detected", {
+          sessionID: input.sessionID,
+          messagePreview: userMessage.slice(0, 100)
+        })
+
+        try {
+          // Get last 4 messages for context (2 exchanges) - lightweight context
+          const response = await client.session.messages({
+            path: { id: input.sessionID }
+          })
+
+          const messages = response.data ?? []
+          const recentMessages = messages.slice(-4)
+
+          // Format conversation context
+          const conversationContext = recentMessages
+            .map(msg => {
+              const role = msg.role === "user" ? "User" : "Assistant"
+              const textParts = msg.parts
+                .filter((p: any) => p.type === "text")
+                .map((p: any) => p.text)
+                .join("\n")
+              return `${role}: ${textParts}`
+            })
+            .join("\n\n")
+
+          // Create MANDATORY save prompt (no SKIP allowed)
+          const summary = PROMPTS.explicitSave(conversationContext)
+
+          await log("info", "Processing explicit memory save", {
+            sessionId: input.sessionID,
+            messageCount: recentMessages.length,
+            contextLength: conversationContext.length,
+            conversationPreview: conversationContext.slice(0, 200) + (conversationContext.length > 200 ? "..." : "")
+          })
+
+          // Invoke memory agent in background
+          updateMemory(client, input.sessionID, summary, log).then(result => {
+            invalidateCache()
+            log("info", result.success ? "Explicit memory save completed" : "Explicit memory save failed", {
+              sessionId: input.sessionID,
+              message: result.message
+            })
+          }).catch(error => {
+            log("error", "Explicit memory save error", {
+              sessionId: input.sessionID,
+              error: (error as Error).message
+            })
+          })
+
+        } catch (error) {
+          await log("error", "Failed to process explicit memory save", {
+            sessionID: input.sessionID,
+            error: (error as Error).message
+          })
+        }
+
+        // Add synthetic nudge to acknowledge the save
+        const nudgePart = {
+          id: `memory-nudge-${Date.now()}`,
+          sessionID: input.sessionID,
+          messageID: output.message.id,
+          type: "text",
+          text: `[MEMORY TRIGGER] The user has requested to save information to memory. Acknowledge that you're saving it and briefly summarize what key points you're capturing.`,
+          synthetic: true
+        }
+
+        output.parts.push(nudgePart)
+      }
+    },
+
     // Inject memory into system prompt (invisible to user, only for primary agent)
     "experimental.chat.system.transform": async (input, output) => {
       // CRITICAL: Skip memory injection for memory agent sessions (oh-my-openagent pattern)
@@ -542,12 +677,41 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
         await log("info", "Session idle event received, starting memory update", { sessionId })
 
         try {
-          // Get recent conversation context for the summary
-          // Note: In a real implementation, you'd extract recent messages
-          // For now, we'll invoke with a generic prompt
-          const summary = "Review the recent conversation and evaluate if any information is significant enough to add to memory. Consider decisions, patterns, blockers, or context that would be valuable across sessions."
+          // Get the session messages (not metadata)
+          const response = await client.session.messages({
+            path: { id: sessionId }
+          })
 
-          await log("info", "Invoking memory agent", { sessionId, summaryLength: summary.length })
+          const messages = response.data ?? []
+
+          if (messages.length === 0) {
+            await log("info", "No messages in session, skipping memory update", { sessionId })
+            return
+          }
+
+          // Get the last 2 messages (user request + assistant response)
+          const lastMessages = messages.slice(-2)
+
+          // Format the last exchange for the memory agent
+          const conversationContext = lastMessages
+            .map(msg => {
+              const role = msg.role === "user" ? "User" : "Assistant"
+              const textParts = msg.parts
+                .filter((p: any) => p.type === "text")
+                .map((p: any) => p.text)
+                .join("\n")
+              return `${role}: ${textParts}`
+            })
+            .join("\n\n")
+
+          const summary = PROMPTS.evaluation(conversationContext)
+
+          await log("info", "Invoking memory agent", {
+            sessionId,
+            summaryLength: summary.length,
+            messageCount: lastMessages.length,
+            conversationPreview: conversationContext.slice(0, 200) + (conversationContext.length > 200 ? "..." : "")
+          })
 
           const result = await updateMemory(client, sessionId, summary, log)
 
