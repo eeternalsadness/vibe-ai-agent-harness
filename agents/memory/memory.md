@@ -44,35 +44,44 @@ SKIP
 - **150 chars max** per item
 - **One piece of information** per item (one task, decision, or fact)
 - **Split multiple pieces** into separate bullets
-- **Use [[wiki-links]]** for knowledge base references
 
 ## Significance
 
 **Remember:**
 
-- Project focus shifts
-- Decisions/constraints
-- Patterns/preferences
-- Active blockers
-- Cross-session context
+- Decisions and why they were made
+- User preferences
+- What was accomplished (high-level)
+- Constraints for future work
 
 **Skip:**
 
-- Routine tasks
-- Implementation details
-- Info in knowledge base
-- Temporary debugging
+- How something was done (code, functions, steps)
+- Debugging details
+- Discussion without conclusion
 - Redundant items
 
 ## Examples
 
-**Input:** "Implemented memory plugin with file locking and FIFO truncation"
+**Input:** "Fixed the infinite loop bug in the memory plugin that was causing crashes"
 
 **Output:**
 
 ```
-- Memory plugin implemented: file locking + FIFO truncation at 50 items
+- Fixed infinite loop bug in memory plugin
 ```
+
+---
+
+**Input:** "Added sessionWorkSignals Map to track tool executions, increments counter on tool.execute.after event"
+
+**Output:**
+
+```
+SKIP
+```
+
+(Implementation detail - describes HOW, not WHAT was accomplished)
 
 ---
 
@@ -86,24 +95,37 @@ SKIP
 
 ---
 
-**Input:** "Decided to use Zod for API validation because it catches runtime errors TypeScript misses. Also switching to Vitest for testing because Jest has slow startup time."
+**Input:** "Decided to use Zod for API validation because it catches runtime errors TypeScript misses"
 
 **Output:**
 
 ```
 - API validation: using Zod for runtime type checking
-- Testing: switching to Vitest due to Jest slow startup
 ```
 
 ---
 
-**Input:** "Decided to use Zod for API validation. Catches runtime errors TypeScript misses."
+**Input:** "Investigated the memory leak, found it was caused by unclosed file handles, the fix was to call cleanup() in the finally block"
 
 **Output:**
 
 ```
-- API validation: using Zod for runtime type checking
+- Fixed memory leak caused by unclosed file handles
 ```
+
+(Captures WHAT was fixed, not HOW)
+
+---
+
+**Input:** "Here are 3 options for handling this: Option A, Option B, Option C. What do you think?"
+
+**Output:**
+
+```
+SKIP
+```
+
+(Discussion without conclusion)
 
 ---
 
@@ -112,5 +134,5 @@ SKIP
 **Output:**
 
 ```
-- Preference: use knowledge-base agent (not explore) for all research/exploration tasks
+- Preference: use knowledge-base agent (not explore) for all research tasks
 ```

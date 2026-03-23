@@ -38,24 +38,17 @@ const FALLBACK_MODELS = [
 const PROMPTS = {
   /**
    * Template for initial memory evaluation prompt
+   * Instructions live in memory.md - this prompt provides context only
    * Available variables: {existingMemory}, {conversationContext}
    */
   evaluation: (existingMemory: string, conversationContext: string) =>
-    `Review the most recent exchange below and evaluate if any information is significant enough to add to memory.
-
-Existing memory:
+    `Existing memory:
 
 ${existingMemory}
 
-Most recent exchange:
+Recent exchange:
 
-${conversationContext}
-
-If the exchange contains significant information worth remembering (discoveries, decisions, technical details, etc.), extract the key points and output them as bullet points (starting with "- "). Each item should be clear, specific, and self-contained (150 chars max).
-
-If there is nothing significant to remember (e.g., greetings, status checks, trivial updates), output EXACTLY: SKIP
-
-Do NOT explain your reasoning. Output only the bullet points or "SKIP".`,
+${conversationContext}`,
 
   /**
    * Template for explicit memory save (when user uses remember tool)
@@ -71,11 +64,9 @@ Do NOT explain your reasoning. Output only the bullet points or "SKIP".`,
   retry: (originalPrompt: string, violationMessage: string) =>
     `${originalPrompt}
 
-The following items exceed the 150-character limit. Please shorten or split them:
+These items exceed 150 chars - shorten or split them:
 
-${violationMessage}
-
-Output only the corrected items as bullet points (starting with "- "), or SKIP if you decide not to add them.`
+${violationMessage}`
 }
 
 // File locking using promise-based mutex
@@ -83,6 +74,18 @@ const locks = new Map<string, Promise<void>>()
 
 // Track memory agent session IDs to prevent hook recursion (oh-my-openagent pattern)
 const memoryAgentSessions = new Set<string>()
+
+// Track work signals per session to determine if memory update is warranted
+// Only trigger memory evaluation if actual work was done (not just discussion)
+interface WorkSignals {
+  highTools: number    // edit, write, bash (code changes/commands)
+  agentCalls: number   // task tool invocations (subagent work)
+  filesChanged: number // session.diff file changes
+}
+const sessionWorkSignals = new Map<string, WorkSignals>()
+
+// High-signal tools that indicate actual work was done
+const HIGH_SIGNAL_TOOLS = new Set(["edit", "write", "bash", "task"])
 
 /**
  * Acquires a lock on a file path and executes callback
@@ -627,7 +630,55 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
     },
 
     event: async ({ event }) => {
-      // Handle session.idle - automatic memory update
+      // Track tool executions for work signal detection
+      if (event.type === "tool.execute.after") {
+        const sessionId = event.properties.sessionID
+        const toolName = event.properties.tool
+
+        // Skip tracking for memory agent sessions
+        if (memoryAgentSessions.has(sessionId)) return
+
+        // Initialize signals for this session if needed
+        if (!sessionWorkSignals.has(sessionId)) {
+          sessionWorkSignals.set(sessionId, { highTools: 0, agentCalls: 0, filesChanged: 0 })
+        }
+
+        const signals = sessionWorkSignals.get(sessionId)!
+
+        if (toolName === "task") {
+          signals.agentCalls++
+          await log("info", "Work signal: agent call detected", { sessionId, toolName })
+        } else if (HIGH_SIGNAL_TOOLS.has(toolName)) {
+          signals.highTools++
+          await log("info", "Work signal: high-signal tool detected", { sessionId, toolName })
+        }
+      }
+
+      // Track file changes for work signal detection
+      if (event.type === "session.diff") {
+        const sessionId = event.properties.sessionID
+        const diff = event.properties.diff as Array<{ path: string }> | undefined
+
+        // Skip tracking for memory agent sessions
+        if (memoryAgentSessions.has(sessionId)) return
+
+        if (diff && diff.length > 0) {
+          // Initialize signals for this session if needed
+          if (!sessionWorkSignals.has(sessionId)) {
+            sessionWorkSignals.set(sessionId, { highTools: 0, agentCalls: 0, filesChanged: 0 })
+          }
+
+          const signals = sessionWorkSignals.get(sessionId)!
+          signals.filesChanged += diff.length
+          await log("info", "Work signal: file changes detected", {
+            sessionId,
+            filesChanged: diff.length,
+            paths: diff.map(d => d.path)
+          })
+        }
+      }
+
+      // Handle session.idle - automatic memory update (only if work was done)
       if (event.type === "session.idle") {
         const sessionId = event.properties.sessionID
 
@@ -638,6 +689,30 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
           })
           return
         }
+
+        // Check work signals - only proceed if actual work was done
+        const signals = sessionWorkSignals.get(sessionId)
+        const workWasDone = signals && (
+          signals.highTools > 0 ||
+          signals.agentCalls > 0 ||
+          signals.filesChanged > 0
+        )
+
+        // Reset signals for this session regardless of outcome
+        sessionWorkSignals.delete(sessionId)
+
+        if (!workWasDone) {
+          await log("info", "Skipping memory update - no work signals detected (pure discussion)", {
+            sessionId,
+            signals: signals || { highTools: 0, agentCalls: 0, filesChanged: 0 }
+          })
+          return
+        }
+
+        await log("info", "Work signals detected, proceeding with memory update", {
+          sessionId,
+          signals
+        })
 
         // Also check session info as backup
         try {
@@ -737,9 +812,16 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
       // Handle session.deleted - cleanup tracking
       if (event.type === "session.deleted") {
         const sessionId = event.properties.info?.id
-        if (sessionId && memoryAgentSessions.has(sessionId)) {
-          memoryAgentSessions.delete(sessionId)
-          await log("info", "Cleaned up deleted memory agent session from tracking", { sessionId })
+        if (sessionId) {
+          if (memoryAgentSessions.has(sessionId)) {
+            memoryAgentSessions.delete(sessionId)
+            await log("info", "Cleaned up deleted memory agent session from tracking", { sessionId })
+          }
+          // Also clean up work signals for deleted sessions
+          if (sessionWorkSignals.has(sessionId)) {
+            sessionWorkSignals.delete(sessionId)
+            await log("info", "Cleaned up work signals for deleted session", { sessionId })
+          }
         }
       }
     }
@@ -747,3 +829,5 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 }
 
 export default MemoryManagerPlugin
+
+
