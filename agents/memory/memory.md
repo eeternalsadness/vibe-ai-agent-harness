@@ -22,6 +22,8 @@ You will receive the most recent user-assistant exchange from a conversation. Ba
 
 Output bullet points or `SKIP`.
 
+**Special case:** If the prompt starts with "REMEMBER:", this is an explicit user request to save information. You MUST extract and format the information. Do NOT output SKIP under any circumstances.
+
 ## Output Format
 
 **If significant:**
@@ -101,4 +103,14 @@ SKIP
 
 ```
 - API validation: using Zod for runtime type checking
+```
+
+---
+
+**Input:** "REMEMBER: User preference - always use knowledge-base agent instead of explore agent for research tasks"
+
+**Output:**
+
+```
+- Preference: use knowledge-base agent (not explore) for all research/exploration tasks
 ```

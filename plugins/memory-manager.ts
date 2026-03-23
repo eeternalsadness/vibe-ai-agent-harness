@@ -1,4 +1,5 @@
 import type { Plugin, PluginInput } from "@opencode-ai/plugin"
+import { tool } from "@opencode-ai/plugin"
 import { readFile, writeFile, mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { homedir } from "node:os"
@@ -37,27 +38,31 @@ const FALLBACK_MODELS = [
 const PROMPTS = {
   /**
    * Template for initial memory evaluation prompt
-   * Available variables: {conversationContext}
+   * Available variables: {existingMemory}, {conversationContext}
    */
-  evaluation: (conversationContext: string) =>
+  evaluation: (existingMemory: string, conversationContext: string) =>
     `Review the most recent exchange below and evaluate if any information is significant enough to add to memory.
+
+Existing memory:
+
+${existingMemory}
 
 Most recent exchange:
 
-${conversationContext}`,
+${conversationContext}
+
+If the exchange contains significant information worth remembering (discoveries, decisions, technical details, etc.), extract the key points and output them as bullet points (starting with "- "). Each item should be clear, specific, and self-contained (150 chars max).
+
+If there is nothing significant to remember (e.g., greetings, status checks, trivial updates), output EXACTLY: SKIP
+
+Do NOT explain your reasoning. Output only the bullet points or "SKIP".`,
 
   /**
-   * Template for explicit memory save (when user says "remember this")
+   * Template for explicit memory save (when user uses remember tool)
    * Available variables: {conversationContext}
    */
   explicitSave: (conversationContext: string) =>
-    `The user has EXPLICITLY requested to save information to memory. You MUST extract and save the key information.
-
-Recent conversation:
-
-${conversationContext}
-
-Extract the most important information and output it as bullet points (starting with "- "). Do NOT output SKIP.`,
+    `REMEMBER: ${conversationContext}`,
 
   /**
    * Template for retry prompt when items exceed character limit
@@ -78,24 +83,6 @@ const locks = new Map<string, Promise<void>>()
 
 // Track memory agent session IDs to prevent hook recursion (oh-my-openagent pattern)
 const memoryAgentSessions = new Set<string>()
-
-// Keywords that trigger explicit memory save (without agent evaluation)
-const MEMORY_KEYWORDS = ["remember", "save this", "don't forget", "memorize", "add to memory"]
-const MEMORY_KEYWORD_PATTERN = new RegExp(`\\b(${MEMORY_KEYWORDS.join("|")})\\b`, "i")
-
-// Code block patterns for filtering
-const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g
-const INLINE_CODE_PATTERN = /`[^`]+`/g
-
-/**
- * Detect if user is explicitly asking to remember something
- */
-function detectMemoryKeyword(text: string): boolean {
-  const cleaned = text
-    .replace(CODE_BLOCK_PATTERN, "")
-    .replace(INLINE_CODE_PATTERN, "")
-  return MEMORY_KEYWORD_PATTERN.test(cleaned)
-}
 
 /**
  * Acquires a lock on a file path and executes callback
@@ -288,8 +275,19 @@ async function invokeMemoryAgent(
         }
       })
 
+      // Log the full response structure for debugging
+      await log?.("info", "Memory agent raw response", {
+        sessionId,
+        hasData: !!response.data,
+        hasParts: !!response.data?.parts,
+        partsCount: response.data?.parts?.length || 0,
+        partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
+        fullResponse: JSON.stringify(response.data, null, 2)
+      })
+
       // Extract the text result from the response
-      const textPart = response.data?.message?.parts?.find((p: any) => p.type === "text")
+      // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
+      const textPart = response.data?.parts?.find((p: any) => p.type === "text")
       const result = textPart?.text || ""
 
       await log?.("info", "Memory agent response received", {
@@ -516,87 +514,75 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
   }
 
   return {
-    // Intercept user messages to detect explicit "remember" commands
-    "chat.message": async (input, output) => {
-      const textParts = output.parts.filter((p: any) => p.type === "text")
-      const userMessage = textParts.map((p: any) => p.text).join("\n")
-
-      // Skip for memory agent sessions
-      if (memoryAgentSessions.has(input.sessionID)) {
-        return
-      }
-
-      // Detect if user is asking to remember something
-      if (detectMemoryKeyword(userMessage)) {
-        await log("info", "Explicit memory save request detected", {
-          sessionID: input.sessionID,
-          messagePreview: userMessage.slice(0, 100)
-        })
-
-        try {
-          // Get last 4 messages for context (2 exchanges) - lightweight context
-          const response = await client.session.messages({
-            path: { id: input.sessionID }
-          })
-
-          const messages = response.data ?? []
-          const recentMessages = messages.slice(-4)
-
-          // Format conversation context
-          const conversationContext = recentMessages
-            .map(msg => {
-              const role = msg.role === "user" ? "User" : "Assistant"
-              const textParts = msg.parts
-                .filter((p: any) => p.type === "text")
-                .map((p: any) => p.text)
-                .join("\n")
-              return `${role}: ${textParts}`
+    // Tool for explicit memory saves
+    tool: {
+      remember: tool({
+        description: "Save information to persistent working memory. Use this when the user explicitly asks to remember something or when capturing important context that should persist across sessions.",
+        args: {
+          content: tool.schema.string().describe("The information to save to memory. Should be clear, specific, and self-contained."),
+        },
+        async execute(args, context) {
+          try {
+            await log("info", "remember tool invoked", {
+              sessionID: context.sessionID,
+              contentLength: args.content.length,
+              contentPreview: args.content.slice(0, 100)
             })
-            .join("\n\n")
 
-          // Create MANDATORY save prompt (no SKIP allowed)
-          const summary = PROMPTS.explicitSave(conversationContext)
+            // Get recent conversation context for the memory agent
+            const response = await client.session.messages({
+              path: { id: context.sessionID }
+            })
 
-          await log("info", "Processing explicit memory save", {
-            sessionId: input.sessionID,
-            messageCount: recentMessages.length,
-            contextLength: conversationContext.length,
-            conversationPreview: conversationContext.slice(0, 200) + (conversationContext.length > 200 ? "..." : "")
-          })
+            const messages = response.data ?? []
+            const recentMessages = messages.slice(-4)
 
-          // Invoke memory agent in background
-          updateMemory(client, input.sessionID, summary, log).then(result => {
-            invalidateCache()
-            log("info", result.success ? "Explicit memory save completed" : "Explicit memory save failed", {
-              sessionId: input.sessionID,
+            // Format conversation context
+            const conversationContext = recentMessages
+              .map(msg => {
+                const role = msg.role === "user" ? "User" : "Assistant"
+                const textParts = msg.parts
+                  .filter((p: any) => p.type === "text")
+                  .map((p: any) => p.text)
+                  .join("\n")
+                return `${role}: ${textParts}`
+              })
+              .join("\n\n")
+
+            // Create explicit save prompt
+            const prompt = PROMPTS.explicitSave(conversationContext + "\n\nUser's explicit content to save: " + args.content)
+
+            await log("info", "Processing remember tool save", {
+              sessionId: context.sessionID,
+              messageCount: recentMessages.length,
+              promptLength: prompt.length
+            })
+
+            // Invoke memory agent
+            const result = await updateMemory(client, context.sessionID, prompt, log)
+
+            // Invalidate cache after update
+            if (result.success) {
+              invalidateCache()
+            }
+
+            return JSON.stringify({
+              success: result.success,
               message: result.message
             })
-          }).catch(error => {
-            log("error", "Explicit memory save error", {
-              sessionId: input.sessionID,
-              error: (error as Error).message
+          } catch (error) {
+            await log("error", "remember tool error", {
+              sessionID: context.sessionID,
+              error: (error as Error).message,
+              stack: (error as Error).stack
             })
-          })
-
-        } catch (error) {
-          await log("error", "Failed to process explicit memory save", {
-            sessionID: input.sessionID,
-            error: (error as Error).message
-          })
+            return JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : String(error)
+            })
+          }
         }
-
-        // Add synthetic nudge to acknowledge the save
-        const nudgePart = {
-          id: `memory-nudge-${Date.now()}`,
-          sessionID: input.sessionID,
-          messageID: output.message.id,
-          type: "text",
-          text: `[MEMORY TRIGGER] The user has requested to save information to memory. Acknowledge that you're saving it and briefly summarize what key points you're capturing.`,
-          synthetic: true
-        }
-
-        output.parts.push(nudgePart)
-      }
+      })
     },
 
     // Inject memory into system prompt (invisible to user, only for primary agent)
@@ -692,6 +678,14 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
           // Get the last 2 messages (user request + assistant response)
           const lastMessages = messages.slice(-2)
 
+          // DEBUG: Log the actual message structure
+          await log("info", "Message structure debug", {
+            sessionId,
+            messageCount: messages.length,
+            lastMessagesCount: lastMessages.length,
+            lastMessagesStructure: JSON.stringify(lastMessages, null, 2)
+          })
+
           // Format the last exchange for the memory agent
           const conversationContext = lastMessages
             .map(msg => {
@@ -704,13 +698,16 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
             })
             .join("\n\n")
 
-          const summary = PROMPTS.evaluation(conversationContext)
+          // Read existing memory to pass to agent for comparison
+          const existingMemory = await readMemory()
+          const summary = PROMPTS.evaluation(existingMemory, conversationContext)
 
           await log("info", "Invoking memory agent", {
             sessionId,
             summaryLength: summary.length,
             messageCount: lastMessages.length,
-            conversationPreview: conversationContext.slice(0, 200) + (conversationContext.length > 200 ? "..." : "")
+            existingMemoryLength: existingMemory.length,
+            conversationPreview: conversationContext
           })
 
           const result = await updateMemory(client, sessionId, summary, log)
