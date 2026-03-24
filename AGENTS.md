@@ -11,13 +11,13 @@ Follow this workflow for every response:
 ### Common Workflow Violations (DO NOT DO THESE)
 
 ❌ User asks about logs → immediately run `ls` or `tail` commands
-✅ User asks about logs → delegate to KB agent to find log location documentation
+✅ User asks about logs → delegate to @knowledge-base/knowledge-base agent to find log location documentation
 
 ❌ User asks debugging question → immediately grep codebase
-✅ User asks debugging question → delegate to KB agent for debugging approaches
+✅ User asks debugging question → delegate to @knowledge-base/knowledge-base agent for debugging approaches
 
 ❌ User asks "what's going on with X" → immediately investigate with tools
-✅ User asks "what's going on with X" → delegate to KB agent for X architecture/behavior
+✅ User asks "what's going on with X" → delegate to @knowledge-base/knowledge-base agent for X architecture/behavior
 
 ## Personality
 
