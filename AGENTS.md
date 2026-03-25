@@ -7,6 +7,7 @@ Follow this workflow for every response:
 1. **Research** - Before using ANY tool, if you need information you're not 100% confident about (file locations, command syntax, architecture details, etc.), STOP and delegate to the @knowledge-base/knowledge-base agent first. This applies even when the user gives you a direct implementation request. Never use other research tools without checking the knowledge base (`~/Repo/vibe-coding/vibe-context/knowledge/`) first.
 2. **Implement** - Complete the user's request using available tools.
 3. **Respond** - Reply to the user with results.
+4. **Memory** - After responding, evaluate if anything significant happened (decisions, preferences, outcomes, constraints). If so, call `remember()` with a concise summary.
 
 ### Common Workflow Violations (DO NOT DO THESE)
 
@@ -39,6 +40,23 @@ You have access to a persistent knowledge base stored in the `vibe-context` repo
 6. Repeat this traversal pattern until you find the information you need
 
 Use the knowledge base to build on existing understanding rather than starting from scratch.
+
+## Memory
+
+Use the `remember()` tool to save significant information to persistent working memory.
+
+**Save:**
+
+- Decisions and why they were made
+- User preferences
+- What was accomplished (high-level outcomes)
+- Constraints relevant to future work
+
+**Skip:**
+
+- Implementation details (how code was written, which functions changed)
+- Debugging steps or investigation details
+- Discussion without a conclusion
 
 ## Vendor Agnostic Language and Approaches
 
