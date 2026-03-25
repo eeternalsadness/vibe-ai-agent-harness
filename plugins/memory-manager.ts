@@ -6,20 +6,15 @@ import { homedir } from "node:os"
 
 /**
  * Memory Manager Plugin
- * 
+ *
  * Manages a global, cross-project working memory file with:
  * - FIFO truncation at 50 items
  * - 150-char limit per item with validation
  * - File locking for concurrent access
  * - Automatic context injection on session start
- * - Automatic memory updates on session idle
- * 
- * Subagent Invocation Strategy:
- * - Creates NEW independent session for memory agent (not subtask in parent session)
- * - Tracks subagent session IDs to prevent hook recursion (oh-my-openagent pattern)
- * - Tools are explicitly disabled via tools config
- * - Session is aborted after getting result to clean up resources
- * - Follows oh-my-openagent background-agent pattern
+ *
+ * The primary agent evaluates significance and calls remember().
+ * The memory subagent formats content into valid memory items.
  */
 
 const MEMORY_FILE_PATH = join(homedir(), "Repo/vibe-coding/vibe-context/memory/Memory.md")
@@ -34,35 +29,9 @@ const FALLBACK_MODELS = [
   { providerID: "ollama", modelID: "llama3.2:3b" },
 ]
 
-// Prompt templates - customize these to improve memory agent behavior
-const PROMPTS = {
-  /**
-   * Template for initial memory evaluation prompt
-   * Instructions live in memory.md - this prompt provides context only
-   * Available variables: {existingMemory}, {conversationContext}
-   */
-  evaluation: (existingMemory: string, conversationContext: string) =>
-    `Existing memory:
-
-${existingMemory}
-
-Recent exchange:
-
-${conversationContext}`,
-
-  /**
-   * Template for explicit memory save (when user uses remember tool)
-   * Available variables: {conversationContext}
-   */
-  explicitSave: (conversationContext: string) =>
-    `REMEMBER: ${conversationContext}`,
-
-  /**
-   * Template for retry prompt when items exceed character limit
-   * Available variables: {originalPrompt}, {violationMessage}
-   */
-  retry: (originalPrompt: string, violationMessage: string) =>
-    `${originalPrompt}
+// Retry prompt template for when items exceed character limit
+function retryPrompt(originalPrompt: string, violationMessage: string): string {
+  return `${originalPrompt}
 
 These items exceed 150 chars - shorten or split them:
 
@@ -74,18 +43,6 @@ const locks = new Map<string, Promise<void>>()
 
 // Track memory agent session IDs to prevent hook recursion (oh-my-openagent pattern)
 const memoryAgentSessions = new Set<string>()
-
-// Track work signals per session to determine if memory update is warranted
-// Only trigger memory evaluation if actual work was done (not just discussion)
-interface WorkSignals {
-  highTools: number    // edit, write, bash (code changes/commands)
-  agentCalls: number   // task tool invocations (subagent work)
-  filesChanged: number // session.diff file changes
-}
-const sessionWorkSignals = new Map<string, WorkSignals>()
-
-// High-signal tools that indicate actual work was done
-const HIGH_SIGNAL_TOOLS = new Set(["edit", "write", "bash", "task"])
 
 /**
  * Acquires a lock on a file path and executes callback
@@ -153,23 +110,13 @@ function buildMemoryContent(items: string[]): string {
 }
 
 /**
- * Parses agent output to extract bullet points or detect SKIP
+ * Parses agent output to extract bullet points
  */
-function parseAgentOutput(output: string): string[] | null {
-  const trimmed = output.trim()
-
-  // Check for SKIP
-  if (trimmed === "SKIP") {
-    return null
-  }
-
-  // Extract lines starting with "- "
-  const lines = trimmed.split("\n")
-  const items = lines
+function parseAgentOutput(output: string): string[] {
+  const lines = output.trim().split("\n")
+  return lines
     .filter(line => line.trim().startsWith("- "))
     .map(line => line.trim())
-
-  return items.length > 0 ? items : null
 }
 
 /**
@@ -383,19 +330,10 @@ async function updateMemory(
   log?: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // First invocation
     let agentOutput = await invokeMemoryAgent(client, sessionId, summary, undefined, log)
     let items = parseAgentOutput(agentOutput)
 
-    await log?.("info", "Agent output parsed", {
-      itemCount: items?.length ?? 0,
-      skipped: items === null
-    })
-
-    // Check if agent decided to skip
-    if (items === null) {
-      return { success: true, message: "Memory agent decided not to add items (SKIP)" }
-    }
+    await log?.("info", "Agent output parsed", { itemCount: items.length })
 
     // Validate item lengths with retry loop
     let violations = validateItemLengths(items)
@@ -417,15 +355,10 @@ async function updateMemory(
       })
 
       const violationMessage = formatViolations(violations)
-      const retryPrompt = PROMPTS.retry(summary, violationMessage)
+      const retryPromptText = retryPrompt(summary, violationMessage)
 
-      agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPrompt, log)
+      agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPromptText, log)
       items = parseAgentOutput(agentOutput)
-
-      // Check if agent skipped after retry
-      if (items === null) {
-        return { success: true, message: `Memory agent decided not to add items after retry ${retryCount} (SKIP)` }
-      }
 
       // Validate again
       violations = validateItemLengths(items)
@@ -532,37 +465,8 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
               contentPreview: args.content.slice(0, 100)
             })
 
-            // Get recent conversation context for the memory agent
-            const response = await client.session.messages({
-              path: { id: context.sessionID }
-            })
-
-            const messages = response.data ?? []
-            const recentMessages = messages.slice(-4)
-
-            // Format conversation context
-            const conversationContext = recentMessages
-              .map(msg => {
-                const role = msg.role === "user" ? "User" : "Assistant"
-                const textParts = msg.parts
-                  .filter((p: any) => p.type === "text")
-                  .map((p: any) => p.text)
-                  .join("\n")
-                return `${role}: ${textParts}`
-              })
-              .join("\n\n")
-
-            // Create explicit save prompt
-            const prompt = PROMPTS.explicitSave(conversationContext + "\n\nUser's explicit content to save: " + args.content)
-
-            await log("info", "Processing remember tool save", {
-              sessionId: context.sessionID,
-              messageCount: recentMessages.length,
-              promptLength: prompt.length
-            })
-
             // Invoke memory agent
-            const result = await updateMemory(client, context.sessionID, prompt, log)
+            const result = await updateMemory(client, context.sessionID, args.content, log)
 
             // Invalidate cache after update
             if (result.success) {
@@ -630,185 +534,6 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
     },
 
     event: async ({ event }) => {
-      // Track tool executions for work signal detection
-      if (event.type === "tool.execute.after") {
-        const sessionId = event.properties.sessionID
-        const toolName = event.properties.tool
-
-        // Skip tracking for memory agent sessions
-        if (memoryAgentSessions.has(sessionId)) return
-
-        // Initialize signals for this session if needed
-        if (!sessionWorkSignals.has(sessionId)) {
-          sessionWorkSignals.set(sessionId, { highTools: 0, agentCalls: 0, filesChanged: 0 })
-        }
-
-        const signals = sessionWorkSignals.get(sessionId)!
-
-        if (toolName === "task") {
-          signals.agentCalls++
-          await log("info", "Work signal: agent call detected", { sessionId, toolName })
-        } else if (HIGH_SIGNAL_TOOLS.has(toolName)) {
-          signals.highTools++
-          await log("info", "Work signal: high-signal tool detected", { sessionId, toolName })
-        }
-      }
-
-      // Track file changes for work signal detection
-      if (event.type === "session.diff") {
-        const sessionId = event.properties.sessionID
-        const diff = event.properties.diff as Array<{ path: string }> | undefined
-
-        // Skip tracking for memory agent sessions
-        if (memoryAgentSessions.has(sessionId)) return
-
-        if (diff && diff.length > 0) {
-          // Initialize signals for this session if needed
-          if (!sessionWorkSignals.has(sessionId)) {
-            sessionWorkSignals.set(sessionId, { highTools: 0, agentCalls: 0, filesChanged: 0 })
-          }
-
-          const signals = sessionWorkSignals.get(sessionId)!
-          signals.filesChanged += diff.length
-          await log("info", "Work signal: file changes detected", {
-            sessionId,
-            filesChanged: diff.length,
-            paths: diff.map(d => d.path)
-          })
-        }
-      }
-
-      // Handle session.idle - automatic memory update (only if work was done)
-      if (event.type === "session.idle") {
-        const sessionId = event.properties.sessionID
-
-        // CRITICAL: Do not trigger memory updates for memory agent sessions (prevent recursion)
-        if (memoryAgentSessions.has(sessionId)) {
-          await log("info", "Skipping memory update for tracked memory agent session (idle event)", {
-            sessionId
-          })
-          return
-        }
-
-        // Check work signals - only proceed if actual work was done
-        const signals = sessionWorkSignals.get(sessionId)
-        const workWasDone = signals && (
-          signals.highTools > 0 ||
-          signals.agentCalls > 0 ||
-          signals.filesChanged > 0
-        )
-
-        // Reset signals for this session regardless of outcome
-        sessionWorkSignals.delete(sessionId)
-
-        if (!workWasDone) {
-          await log("info", "Skipping memory update - no work signals detected (pure discussion)", {
-            sessionId,
-            signals: signals || { highTools: 0, agentCalls: 0, filesChanged: 0 }
-          })
-          return
-        }
-
-        await log("info", "Work signals detected, proceeding with memory update", {
-          sessionId,
-          signals
-        })
-
-        // Also check session info as backup
-        try {
-          const session = await client.session.get({
-            path: { id: sessionId }
-          }).catch(() => null)
-
-          const agent = session?.data?.agent
-          if (agent === "memory/memory" || agent?.includes("memory")) {
-            await log("info", "Skipping memory update for memory agent idle event (by agent field)", {
-              sessionId,
-              agent
-            })
-            return
-          }
-        } catch (error) {
-          await log("warn", "Could not check session agent type", {
-            sessionId,
-            error: (error as Error).message
-          })
-        }
-
-        await log("info", "Session idle event received, starting memory update", { sessionId })
-
-        try {
-          // Get the session messages (not metadata)
-          const response = await client.session.messages({
-            path: { id: sessionId }
-          })
-
-          const messages = response.data ?? []
-
-          if (messages.length === 0) {
-            await log("info", "No messages in session, skipping memory update", { sessionId })
-            return
-          }
-
-          // Get the last 2 messages (user request + assistant response)
-          const lastMessages = messages.slice(-2)
-
-          // DEBUG: Log the actual message structure
-          await log("info", "Message structure debug", {
-            sessionId,
-            messageCount: messages.length,
-            lastMessagesCount: lastMessages.length,
-            lastMessagesStructure: JSON.stringify(lastMessages, null, 2)
-          })
-
-          // Format the last exchange for the memory agent
-          const conversationContext = lastMessages
-            .map(msg => {
-              const role = msg.role === "user" ? "User" : "Assistant"
-              const textParts = msg.parts
-                .filter((p: any) => p.type === "text")
-                .map((p: any) => p.text)
-                .join("\n")
-              return `${role}: ${textParts}`
-            })
-            .join("\n\n")
-
-          // Read existing memory to pass to agent for comparison
-          const existingMemory = await readMemory()
-          const summary = PROMPTS.evaluation(existingMemory, conversationContext)
-
-          await log("info", "Invoking memory agent", {
-            sessionId,
-            summaryLength: summary.length,
-            messageCount: lastMessages.length,
-            existingMemoryLength: existingMemory.length,
-            conversationPreview: conversationContext
-          })
-
-          const result = await updateMemory(client, sessionId, summary, log)
-
-          // Invalidate cache after successful update
-          if (result.success) {
-            invalidateCache()
-            await log("info", "Memory update completed", {
-              sessionId,
-              message: result.message
-            })
-          } else {
-            await log("error", "Memory update failed", {
-              sessionId,
-              message: result.message
-            })
-          }
-        } catch (error) {
-          await log("error", "Failed to update memory on idle", {
-            sessionId,
-            error: (error as Error).message,
-            stack: (error as Error).stack
-          })
-        }
-      }
-
       // Handle session.deleted - cleanup tracking
       if (event.type === "session.deleted") {
         const sessionId = event.properties.info?.id
@@ -816,11 +541,6 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
           if (memoryAgentSessions.has(sessionId)) {
             memoryAgentSessions.delete(sessionId)
             await log("info", "Cleaned up deleted memory agent session from tracking", { sessionId })
-          }
-          // Also clean up work signals for deleted sessions
-          if (sessionWorkSignals.has(sessionId)) {
-            sessionWorkSignals.delete(sessionId)
-            await log("info", "Cleaned up work signals for deleted session", { sessionId })
           }
         }
       }
