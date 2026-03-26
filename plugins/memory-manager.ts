@@ -29,13 +29,26 @@ const FALLBACK_MODELS = [
   { providerID: "ollama", modelID: "llama3.2:3b" },
 ]
 
-// Retry prompt template for when items exceed character limit
-function retryPrompt(originalPrompt: string, violationMessage: string): string {
-  return `${originalPrompt}
+// Configurable prompts — edit these to adjust agent behavior without touching business logic
+const PROMPTS = {
+  // Injected into the system prompt to guide memory usage
+  systemInjection: (memoryContent: string) => `# Working Memory Context
+
+Below is your short-term working memory. This contains recent work context across all projects.
+
+**How to use this memory:**
+- Check here FIRST for recent decisions, preferences, and high-level context
+- For details and implementation specifics, check the knowledge base at ~/Repo/vibe-coding/vibe-context/knowledge/ (start at Index.md)
+- Only delegate to agents or use external tools if neither memory nor knowledge base has the answer
+
+${memoryContent}`,
+
+  // Sent to memory agent when items exceed the character limit
+  retryViolations: (originalPrompt: string, violationMessage: string) => `${originalPrompt}
 
 These items exceed 150 chars - shorten or split them:
 
-${violationMessage}`
+${violationMessage}`,
 }
 
 // File locking using promise-based mutex
@@ -355,7 +368,7 @@ async function updateMemory(
       })
 
       const violationMessage = formatViolations(violations)
-      const retryPromptText = retryPrompt(summary, violationMessage)
+      const retryPromptText = PROMPTS.retryViolations(summary, violationMessage)
 
       agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPromptText, log)
       items = parseAgentOutput(agentOutput)
@@ -518,7 +531,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
         const memoryContent = await getCachedMemory()
 
         // Add memory context to system prompt
-        output.system.push(`# Working Memory Context\n\nBelow is your short-term working memory. This contains recent work context across all projects.\n\n${memoryContent}`)
+        output.system.push(PROMPTS.systemInjection(memoryContent))
 
         await log("info", "Memory context injected into system prompt", {
           sessionID,
