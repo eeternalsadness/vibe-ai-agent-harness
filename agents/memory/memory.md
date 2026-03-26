@@ -64,3 +64,13 @@ Format the provided content into memory items.
 ```
 - Fixed infinite loop bug in memory plugin
 ```
+
+---
+
+**Input:** "Added PROMPTS config object with systemInjection and retryViolations templates to memory-manager.ts. systemInjection tells the agent to check memory first, then knowledge base. retryViolations is sent when items exceed the char limit."
+
+**Output:**
+
+```
+- Made prompts in memory plugin configurable through a PROMPTS config object
+```
