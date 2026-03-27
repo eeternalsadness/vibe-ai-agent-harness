@@ -34,24 +34,24 @@ Leaf notes are atomic — each one covers a single topic in detail. This is wher
 \`\`\`markdown
 # AI coding workflow
 
-1. Plan
+The AI coding workflow consists of planning, prompting, scaffolding, debugging, and deployment. Each phase builds on the previous one.
 
-- Outline detailed plan for what you want to do, including:
-  - Inputs
-  - Outputs
-  - Tech stack
+## Planning
 
-2. Prompt
+- Outline what you want to do
+- Include inputs, outputs, and tech stack
 
-- The better the prompt, the better the output
-- After planning & breaking down tasks, prompt for the broken down tasks.
+## Prompting
 
-3. Scaffold
+- Better prompts yield better outputs
+- Break down tasks before prompting
 
-- Define a code structure/template for the AI agent to use.
+## Scaffolding
 
-4. Debug
-5. Deploy
+- Define code structure for the agent to use
+
+## Debugging
+## Deployment
 \`\`\`
 
 ### Index
@@ -64,9 +64,9 @@ Leaf notes are atomic — each one covers a single topic in detail. This is wher
 - Use \`[[wiki-link]]\` syntax to reference other notes
 - Keep notes concise — aim for 50-100 lines
 
-### Table of Contents (for notes exceeding 100 lines)
+### Table of Contents (for long notes)
 
-If a note exceeds 100 lines, you MUST add a table of contents with these rules:
+If a note MUST exceed the 100-line soft limit, add a table of contents to help readers navigate. Follow these rules:
 
 1. **Placement:** The TOC must come immediately after the H1 heading
 2. **Format:** Use \`## Contents\` as the section heading, then a bulleted list of all main H2 section names
