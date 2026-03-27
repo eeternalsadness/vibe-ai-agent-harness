@@ -22,5 +22,5 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 7** — Create `src/render.ts`
 - [x] **Task 8** — Create `install.sh`
 - [x] **Task 9** — Add `.gitignore`
-- [ ] **Task 10** — Delete superseded files (`agents/`, `skills/`, `plugins/`, `.opencode/plugins/`)
+- [x] **Task 10** — Delete superseded files (`agents/`, `skills/`, `plugins/`, `.opencode/plugins/`) — manual
 - [ ] **Task 11** — Verify end-to-end
