@@ -1,5 +1,9 @@
-export default `---
+import type { Profile } from "../../../../config"
+
+export default function memoryAgent(profile: Profile): string {
+  return `---
 description: Formats content into memory items.
+model: ${profile.memory.providerID}/${profile.memory.modelID}
 mode: subagent
 temperature: 0.2
 tools:
@@ -95,3 +99,4 @@ Format the provided content into memory items.
 - Updated global instructions to strengthen memory workflow adherence
 \`\`\`
 `
+}

@@ -23,13 +23,6 @@ const MAX_ITEMS = 50
 const MAX_CHAR_LIMIT = 150
 const MAX_RETRIES = 1
 
-// Model fallback chain for memory agent invocation (small models only)
-const FALLBACK_MODELS = [
-  { providerID: "github-copilot", modelID: "gpt-5-mini" },
-  { providerID: "ollama", modelID: "qwen2.5:7b" },
-  { providerID: "ollama", modelID: "llama3.2:3b" },
-]
-
 // Configurable prompts — edit these to adjust agent behavior without touching business logic
 const PROMPTS = {
   // Injected into the system prompt to guide memory usage
@@ -164,7 +157,7 @@ function formatViolations(violations: Array<{ index: number; length: number; exc
 }
 
 /**
- * Invokes memory agent with fallback logic using new session approach
+ * Invokes memory agent using new session approach (oh-my-openagent pattern)
  */
 async function invokeMemoryAgent(
   client: PluginInput["client"],
@@ -173,143 +166,105 @@ async function invokeMemoryAgent(
   retryPrompt?: string,
   log?: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
 ): Promise<string> {
-  let lastError: Error | null = null
+  let sessionId: string | null = null
 
-  for (const model of FALLBACK_MODELS) {
-    let sessionId: string | null = null
+  try {
+    const prompt = retryPrompt || summary
 
-    try {
-      const prompt = retryPrompt || summary
+    await log?.("info", "Invoking memory agent", { promptLength: prompt.length })
 
-      await log?.("info", "Attempting memory agent with model", {
-        providerID: model.providerID,
-        modelID: model.modelID,
-        promptLength: prompt.length
-      })
+    // Get parent session's directory (optional, for context)
+    const parentSession = await client.session.get({
+      path: { id: parentSessionId }
+    }).catch(() => null)
+    const directory = parentSession?.data?.directory
 
-      // Get parent session's directory (optional, for context)
-      const parentSession = await client.session.get({
-        path: { id: parentSessionId }
-      }).catch(() => null)
-      const directory = parentSession?.data?.directory
+    // Step 1: Create a new independent session for the memory agent
+    const createResult = await client.session.create({
+      body: {
+        parentID: parentSessionId,
+      },
+      ...(directory ? { query: { directory } } : {}),
+    })
 
-      // Step 1: Create a new independent session for the memory agent
-      const createResult = await client.session.create({
-        body: {
-          parentID: parentSessionId,
-        },
-        ...(directory ? { query: { directory } } : {}),
-      })
+    if (createResult.error) {
+      throw new Error(`Failed to create memory agent session: ${createResult.error}`)
+    }
 
-      if (createResult.error) {
-        throw new Error(`Failed to create memory agent session: ${createResult.error}`)
+    sessionId = createResult.data.id
+
+    // CRITICAL: Mark this session as a memory agent session to prevent hook recursion
+    memoryAgentSessions.add(sessionId)
+
+    await log?.("info", "Memory agent session created and tracked", {
+      parentSessionId,
+      sessionId,
+      directory
+    })
+
+    // Step 2: Prompt the new session with the memory agent
+    const response = await client.session.prompt({
+      path: { id: sessionId },
+      body: {
+        agent: "memory",
+        parts: [{ type: "text", text: prompt }]
       }
+    })
 
-      sessionId = createResult.data.id
+    // Log the full response structure for debugging
+    await log?.("info", "Memory agent raw response", {
+      sessionId,
+      hasData: !!response.data,
+      hasParts: !!response.data?.parts,
+      partsCount: response.data?.parts?.length || 0,
+      partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
+      fullResponse: JSON.stringify(response.data, null, 2)
+    })
 
-      // CRITICAL: Mark this session as a memory agent session to prevent hook recursion
-      memoryAgentSessions.add(sessionId)
+    // Extract the text result from the response
+    // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
+    const textPart = response.data?.parts?.find((p: any) => p.type === "text")
+    const result = textPart?.text || ""
 
-      await log?.("info", "Memory agent session created and tracked", {
-        parentSessionId,
+    await log?.("info", "Memory agent response received", {
+      sessionId,
+      resultLength: result.length,
+      resultPreview: result.slice(0, 100)
+    })
+
+    // Step 3: Clean up - abort the session after getting result
+    await client.session.abort({
+      path: { id: sessionId }
+    }).catch((error) => {
+      log?.("warn", "Failed to abort memory agent session", {
         sessionId,
-        directory
+        error: (error as Error).message
       })
+    })
 
-      // Step 2: Prompt the new session with the memory agent
-      const response = await client.session.prompt({
-        path: { id: sessionId },
-        body: {
-          agent: "memory",
-          model: {
-            providerID: model.providerID,
-            modelID: model.modelID
-          },
-          tools: {
-            task: false,
-            write: false,
-            edit: false,
-            read: false,
-            glob: false,
-            grep: false,
-            webfetch: false,
-            bash: false,
-          },
-          parts: [{ type: "text", text: prompt }]
-        }
-      })
+    // Remove from tracking after cleanup
+    memoryAgentSessions.delete(sessionId)
 
-      // Log the full response structure for debugging
-      await log?.("info", "Memory agent raw response", {
-        sessionId,
-        hasData: !!response.data,
-        hasParts: !!response.data?.parts,
-        partsCount: response.data?.parts?.length || 0,
-        partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
-        fullResponse: JSON.stringify(response.data, null, 2)
-      })
+    await log?.("info", "Memory agent invocation successful", { sessionId })
 
-      // Extract the text result from the response
-      // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
-      const textPart = response.data?.parts?.find((p: any) => p.type === "text")
-      const result = textPart?.text || ""
-
-      await log?.("info", "Memory agent response received", {
-        sessionId,
-        resultLength: result.length,
-        resultPreview: result.slice(0, 100)
-      })
-
-      // Step 3: Clean up - abort the session after getting result
+    return result
+  } catch (error) {
+    // CRITICAL: Clean up session if it was created but failed
+    if (sessionId) {
       await client.session.abort({
         path: { id: sessionId }
-      }).catch((error) => {
-        log?.("warn", "Failed to abort memory agent session", {
+      }).catch((abortError) => {
+        log?.("error", "Failed to abort failed memory agent session", {
           sessionId,
-          error: (error as Error).message
+          error: (abortError as Error).message
         })
       })
 
-      // Remove from tracking after cleanup
       memoryAgentSessions.delete(sessionId)
-
-      await log?.("info", "Memory agent invocation successful", {
-        sessionId,
-        providerID: model.providerID,
-        modelID: model.modelID
-      })
-
-      return result
-    } catch (error) {
-      lastError = error as Error
-
-      await log?.("warn", "Memory agent model attempt failed", {
-        providerID: model.providerID,
-        modelID: model.modelID,
-        error: lastError.message,
-        sessionId
-      })
-
-      // CRITICAL: Clean up session if it was created but failed
-      if (sessionId) {
-        await client.session.abort({
-          path: { id: sessionId }
-        }).catch((abortError) => {
-          log?.("error", "Failed to abort failed memory agent session", {
-            sessionId,
-            error: (abortError as Error).message
-          })
-        })
-
-        // Remove from tracking on failure too
-        memoryAgentSessions.delete(sessionId)
-      }
-
-      // Continue to next model in fallback chain
     }
-  }
 
-  throw new Error(`Memory agent failed with all models: ${lastError?.message}`)
+    throw error
+  }
 }
 
 /**

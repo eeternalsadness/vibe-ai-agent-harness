@@ -37,8 +37,8 @@ export const config = {
 
 1. `install.sh` reads available profile keys from `config.ts` (or hardcodes the list for now)
 2. Prompts the user to select one (skips prompt if only `default` exists)
-3. Exports `PROFILE=<name>` and calls `bun run src/render.ts`
-4. `render.ts` reads `process.env.PROFILE`, looks up `config.profiles[profile]`, passes model refs into template functions
+3. Passes the profile name as a CLI arg and calls `bun run src/render.ts <profile>`
+4. `render.ts` reads `process.argv[2]`, looks up `config.profiles[profile]`, passes profile into template functions
 5. `memory.md.ts` accepts a `memoryModel` arg and interpolates `model: providerID/modelID` into frontmatter
 6. Plugin: `FALLBACK_MODELS` removed; `model` field removed from `session.prompt` call
 
