@@ -6,6 +6,7 @@ description: Formats content into memory items.
 model: ${profile.memory.providerID}/${profile.memory.modelID}
 mode: subagent
 temperature: 0.2
+hidden: true
 permission:
   "*": deny
   read: deny
