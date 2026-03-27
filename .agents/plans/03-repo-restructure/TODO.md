@@ -17,7 +17,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 4** — Convert `skills/` → `src/global/skills/`
   - [x] `skills/creating-agent-skills/SKILL.md`
   - [x] `skills/creating-agent-skills/reference/opencode-conventions.md`
-- [ ] **Task 5** — Convert `AGENTS.md` → `src/global/AGENTS.md.ts`
+- [x] **Task 5** — Convert `AGENTS.md` → `src/global/AGENTS.md.ts`
 - [ ] **Task 6** — Move plugin to `src/platforms/opencode/plugins/`
 - [ ] **Task 7** — Create `src/render.ts`
 - [ ] **Task 8** — Create `install.sh`
