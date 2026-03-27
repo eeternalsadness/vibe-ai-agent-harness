@@ -14,9 +14,9 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
   - [x] `agents/knowledge-base/knowledge-base.md`
   - [x] `agents/knowledge-base/reference/zettelkasten-conventions.md`
   - [x] `agents/memory/memory.md`
-- [ ] **Task 4** — Convert `skills/` → `src/global/skills/`
-  - [ ] `skills/creating-agent-skills/SKILL.md`
-  - [ ] `skills/creating-agent-skills/reference/opencode-conventions.md`
+- [x] **Task 4** — Convert `skills/` → `src/global/skills/`
+  - [x] `skills/creating-agent-skills/SKILL.md`
+  - [x] `skills/creating-agent-skills/reference/opencode-conventions.md`
 - [ ] **Task 5** — Convert `AGENTS.md` → `src/global/AGENTS.md.ts`
 - [ ] **Task 6** — Move plugin to `src/platforms/opencode/plugins/`
 - [ ] **Task 7** — Create `src/render.ts`
