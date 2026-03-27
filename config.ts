@@ -4,6 +4,7 @@ const models = {
   gptMini: { providerID: "github-copilot", modelID: "gpt-5-mini" },
   bigPickle: { providerID: "opencode", modelID: "big-pickle" },
   gptOss120b: { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
+  llama3b: { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
 }
 
 export type ModelRef = { providerID: string; modelID: string }
@@ -25,7 +26,7 @@ export const config = {
     },
     personal: {
       primary: models.bigPickle,
-      memory: models.gptOss120b,
+      memory: models.llama3b,
       research: models.gptOss120b,
       knowledgeBase: models.gptOss120b,
     },
