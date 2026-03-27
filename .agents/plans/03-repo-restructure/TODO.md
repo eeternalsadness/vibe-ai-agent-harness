@@ -21,6 +21,6 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 6** — Move plugin to `src/platforms/opencode/plugins/`
 - [x] **Task 7** — Create `src/render.ts`
 - [x] **Task 8** — Create `install.sh`
-- [ ] **Task 9** — Add `.gitignore`
+- [x] **Task 9** — Add `.gitignore`
 - [ ] **Task 10** — Delete superseded files (`agents/`, `skills/`, `plugins/`, `.opencode/plugins/`)
 - [ ] **Task 11** — Verify end-to-end
