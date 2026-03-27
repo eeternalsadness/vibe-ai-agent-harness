@@ -30,8 +30,8 @@ Files to convert:
 
 | Source | Destination | Interpolation needed |
 |---|---|---|
-| `agents/knowledge-base/knowledge-base.md` | `src/global/agents/knowledge-base/knowledge-base.md.ts` | `config.knowledgeBasePath` (knowledge base path), `config.harnessPath` (zettelkasten ref path, permission rule) |
-| `agents/knowledge-base/reference/zettelkasten-conventions.md` | `src/global/agents/knowledge-base/reference/zettelkasten-conventions.md.ts` | `config.knowledgeBasePath` (stale `vibe-knowledge-base` repo reference in lines 7 and 107) |
+| `agents/knowledge-base/knowledge-base.md` | `src/global/agents/knowledge-base/knowledge-base.md.ts` | `config.knowledgeBasePath` (knowledge base path), `config.harnessPath` (zettelkasten ref path via `dist/`, permission rule) |
+| `agents/knowledge-base/reference/zettelkasten-conventions.md` | `src/global/agents/knowledge-base/reference/zettelkasten-conventions.md.ts` | `config.knowledgeBasePath` (stale `vibe-knowledge-base` repo reference in lines 7 and 107). Renders to `dist/opencode/agents/knowledge-base/reference/` — **not installed**; referenced at runtime via `${config.harnessPath}/dist/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md` |
 | `agents/memory/memory.md` | `src/global/agents/memory/memory.md.ts` | None |
 
 **Escaping rule:** Any backtick inside the template literal must be escaped as `` \` ``. This includes fenced code blocks (`` ``` `` → `` \`\`\` ``).
@@ -89,7 +89,7 @@ check bun in PATH → exit 1 if missing
 bun run src/render.ts
 
 copy dist/opencode/AGENTS.md           → ~/.config/opencode/AGENTS.md
-copy dist/opencode/agents/             → ~/.config/opencode/agents/
+copy each dist/opencode/agents/**/*.md (top-level only, skip reference/) → ~/.config/opencode/agents/<name>.md
 copy dist/opencode/skills/             → ~/.config/opencode/skills/
 copy src/platforms/opencode/plugins/memory-manager.ts → ~/.config/opencode/plugins/memory-manager.ts
 

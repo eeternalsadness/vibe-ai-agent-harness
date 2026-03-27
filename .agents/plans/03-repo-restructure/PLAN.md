@@ -65,6 +65,10 @@ vibe-ai-agent-harness/
 │   └── opencode/
 │       ├── AGENTS.md
 │       ├── agents/
+│       │   └── knowledge-base/
+│       │       ├── knowledge-base.md          # installed flat → ~/.config/opencode/agents/knowledge-base.md
+│       │       └── reference/
+│       │           └── zettelkasten-conventions.md  # NOT installed; referenced by path from repo
 │       ├── skills/
 │       └── plugins/
 │
@@ -95,7 +99,7 @@ export const config = {
 2. Check `bun` is available
 3. `bun run src/render.ts` — renders templates to `dist/opencode/`
 4. Copy `dist/opencode/AGENTS.md` → `~/.config/opencode/AGENTS.md`
-5. Copy `dist/opencode/agents/` → `~/.config/opencode/agents/`
+5. Copy each agent `.md` flat: `dist/opencode/agents/**/*.md` → `~/.config/opencode/agents/<name>.md` (reference subdirs are NOT copied)
 6. Copy `dist/opencode/skills/` → `~/.config/opencode/skills/`
 7. Copy `dist/opencode/plugins/` → `~/.config/opencode/plugins/`
 8. `bun install` in `~/.config/opencode/` (plugin dependencies)
