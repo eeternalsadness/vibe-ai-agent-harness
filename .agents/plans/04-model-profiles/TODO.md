@@ -12,5 +12,5 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 2** — Update `memory.md.ts`: accept `memoryModel` arg, interpolate `model` frontmatter
 - [x] **Task 3** — Update `render.ts`: read profile from CLI arg, pass profile object to templates
 - [x] **Task 4** — Update `memory-manager.ts`: remove `FALLBACK_MODELS`, remove `model` override from `session.prompt`
-- [ ] **Task 5** — Update `install.sh`: interactive profile selection, export `PROFILE`
-- [ ] **Task 6** — Verify end-to-end: run install, confirm `memory.md` has correct `model` frontmatter
+- [x] **Task 5** — Update `install.sh`: add `--profile` flag, default to `default`, pass as CLI arg to render
+- [x] **Task 6** — Verify end-to-end: run install, confirm `memory.md` has correct `model` frontmatter

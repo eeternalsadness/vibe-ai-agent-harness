@@ -35,8 +35,8 @@ export const config = {
 
 ## Flow
 
-1. `install.sh` reads available profile keys from `config.ts` (or hardcodes the list for now)
-2. Prompts the user to select one (skips prompt if only `default` exists)
+1. `install.sh` accepts an optional `--profile <name>` flag; defaults to `default` if not provided
+2. Validates the profile exists in `config.ts`
 3. Passes the profile name as a CLI arg and calls `bun run src/render.ts <profile>`
 4. `render.ts` reads `process.argv[2]`, looks up `config.profiles[profile]`, passes profile into template functions
 5. `memory.md.ts` accepts a `memoryModel` arg and interpolates `model: providerID/modelID` into frontmatter

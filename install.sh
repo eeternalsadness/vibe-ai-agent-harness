@@ -6,6 +6,7 @@ OPENCODE_CONFIG="${HOME}/.config/opencode"
 
 DRY_RUN=false
 FORCE=false
+PROFILE=""
 
 usage() {
   cat <<EOF
@@ -14,9 +15,10 @@ Usage: $(basename "$0") [OPTIONS]
 Renders templates and installs files to ~/.config/opencode/.
 
 Options:
-  --dry-run   Print planned actions without writing anything
-  --force     Overwrite existing files without prompting
-  --help      Show this help message
+  --dry-run         Print planned actions without writing anything
+  --force           Overwrite existing files without prompting
+  --profile <name>  Select a profile (default: "default")
+  --help            Show this help message
 EOF
   exit 0
 }
@@ -41,6 +43,7 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
     --force)   FORCE=true; shift ;;
+    --profile) PROFILE="$2"; shift 2 ;;
     --help)    usage ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
@@ -52,11 +55,27 @@ if ! command -v bun &>/dev/null; then
   exit 1
 fi
 
+# Resolve available profiles from config.ts
+PROFILES=$(bun -e "import { config } from './config.ts'; console.log(Object.keys(config.profiles).join(' '))")
+
+# Default to "default" profile if not provided via --profile
+if [ -z "$PROFILE" ]; then
+  PROFILE="default"
+fi
+
+# Validate selected profile exists
+if ! echo "$PROFILES" | grep -qw "$PROFILE"; then
+  echo "Error: unknown profile \"$PROFILE\". Available: $PROFILES" >&2
+  exit 1
+fi
+
+log "Using profile: $PROFILE"
+
 # Render templates
 if [ "$DRY_RUN" = true ]; then
-  log "[dry-run] bun run src/render.ts"
+  log "[dry-run] bun run src/render.ts $PROFILE"
 else
-  bun run "$SCRIPT_DIR/src/render.ts"
+  bun run "$SCRIPT_DIR/src/render.ts" "$PROFILE"
 fi
 
 # Bundle plugin
