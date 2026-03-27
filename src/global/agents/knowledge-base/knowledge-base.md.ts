@@ -7,17 +7,18 @@ export default `---
 description: Handles all interactions with the knowledge base. Knows zettelkasten conventions, structure, and format. Use for reading or writing knowledge base notes.
 mode: subagent
 temperature: 0.3
-tools:
-  read: true
-  write: true
-  edit: true
-  glob: true
-  grep: true
-  webfetch: false
-  websearch: false
-  task: false
-  bash: false
 permission:
+  "*": deny
+  webfetch: deny
+  websearch: deny
+  codesearch: deny
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  skill: deny
+  bash: deny
+  task: deny
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow

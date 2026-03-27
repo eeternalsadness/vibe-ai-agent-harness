@@ -6,18 +6,20 @@ description: Formats content into memory items.
 model: ${profile.memory.providerID}/${profile.memory.modelID}
 mode: subagent
 temperature: 0.2
-tools:
-  write: false
-  edit: false
-  read: false
-  glob: false
-  grep: false
-  webfetch: false
-  bash: false
-  task: false
-steps: 2
 permission:
   "*": deny
+  read: deny
+  edit: deny
+  list: deny
+  glob: deny
+  grep: deny
+  webfetch: deny
+  websearch: deny
+  codesearch: deny
+  bash: deny
+  task: deny
+  skill: deny
+  external_directory: deny
 ---
 
 # Memory Agent
