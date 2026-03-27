@@ -1,10 +1,13 @@
+import type { Profile } from "../../../../config"
 import { config } from "../../../../config"
 
 // TODO: the zettelkasten reference preamble below is OpenCode-specific (local file path).
 // Future: make this a platform-specific parameter so Claude Code can inject its own equivalent.
 
-export default `---
+export default function knowledgeBaseAgent(profile: Profile): string {
+  return `---
 description: Handles all interactions with the knowledge base. Knows zettelkasten conventions, structure, and format. Use for reading or writing knowledge base notes.
+model: ${profile.knowledgeBase.providerID}/${profile.knowledgeBase.modelID}
 mode: subagent
 temperature: 0.3
 permission:
@@ -64,3 +67,4 @@ When asked to write synthesized findings:
 - **Hub vs leaf** - Broad areas need hub notes linking to atomic leaves. Narrow topics can be single leaf notes.
 - **Updating existing notes** - Update rather than duplicate. Preserve existing voice and style, integrate new info. If update would exceed 100 lines, split instead.
 `
+}
