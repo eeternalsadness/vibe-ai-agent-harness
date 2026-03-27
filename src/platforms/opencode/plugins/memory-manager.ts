@@ -3,6 +3,7 @@ import { tool } from "@opencode-ai/plugin"
 import { readFile, writeFile, mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { homedir } from "node:os"
+import { config } from "../../../config"
 
 /**
  * Memory Manager Plugin
@@ -17,7 +18,7 @@ import { homedir } from "node:os"
  * The memory subagent formats content into valid memory items.
  */
 
-const MEMORY_FILE_PATH = join(homedir(), "Repo/vibe-coding/vibe-context/memory/Memory.md")
+const MEMORY_FILE_PATH = join(homedir(), config.memoryFilePath.replace("~/", ""))
 const MAX_ITEMS = 50
 const MAX_CHAR_LIMIT = 150
 const MAX_RETRIES = 1
@@ -38,7 +39,7 @@ Below is your short-term working memory. This contains recent work context acros
 
 **How to use this memory:**
 - Check here FIRST for recent decisions, preferences, and high-level context
-- For details and implementation specifics, check the knowledge base at ~/Repo/vibe-coding/vibe-context/knowledge/ (start at Index.md)
+- For details and implementation specifics, check the knowledge base at ${config.knowledgeBasePath}/ (start at Index.md)
 - Only delegate to agents or use external tools if neither memory nor knowledge base has the answer
 
 ${memoryContent}`,
@@ -219,7 +220,7 @@ async function invokeMemoryAgent(
       const response = await client.session.prompt({
         path: { id: sessionId },
         body: {
-          agent: "memory/memory",
+          agent: "memory",
           model: {
             providerID: model.providerID,
             modelID: model.modelID
@@ -516,7 +517,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 
       // Also check agent field as backup (in case session tracking missed it)
       const agent = (input as any).agent || (input as any).body?.agent
-      if (agent === "memory/memory" || agent?.includes("memory")) {
+      if (agent === "memory" || agent?.includes("memory")) {
         await log("info", "Skipping memory injection for memory agent session (by agent field)", { agent })
         return
       }

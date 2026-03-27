@@ -1,5 +1,6 @@
 export const config = {
   knowledgeBasePath: "~/Repo/vibe-coding/vibe-context/knowledge",
+  memoryFilePath: "~/Repo/vibe-coding/vibe-context/memory/Memory.md",
   harnessPath: "~/Repo/vibe-coding/vibe-ai-agent-harness",
 
   models: {
