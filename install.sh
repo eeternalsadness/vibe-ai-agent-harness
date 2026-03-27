@@ -70,28 +70,17 @@ while IFS= read -r -d '' src; do
   maybe_copy "$src" "$OPENCODE_CONFIG/agents/$name"
 done < <(find "$SCRIPT_DIR/dist/opencode/agents" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
 
-# Install skills (full tree)
+# Install skills .md files flat per skill dir (skip reference/ subdirs)
 while IFS= read -r -d '' src; do
-  relative="${src#"$SCRIPT_DIR/dist/opencode/skills/"}"
-  maybe_copy "$src" "$OPENCODE_CONFIG/skills/$relative"
-done < <(find "$SCRIPT_DIR/dist/opencode/skills" -type f -name "*.md" -print0)
+  skill_dir="$(basename "$(dirname "$src")")"
+  name="$(basename "$src")"
+  maybe_copy "$src" "$OPENCODE_CONFIG/skills/$skill_dir/$name"
+done < <(find "$SCRIPT_DIR/dist/opencode/skills" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
 
 # Install plugin
 maybe_copy \
   "$SCRIPT_DIR/src/platforms/opencode/plugins/memory-manager.ts" \
   "$OPENCODE_CONFIG/plugins/memory-manager.ts"
-
-# Run bun install in ~/.config/opencode/
-if [ "$DRY_RUN" = true ]; then
-  log "[dry-run] bun install in $OPENCODE_CONFIG"
-else
-  if [ -f "$OPENCODE_CONFIG/package.json" ]; then
-    bun install --cwd "$OPENCODE_CONFIG"
-    log "bun install complete"
-  else
-    log "no package.json in $OPENCODE_CONFIG, skipping bun install"
-  fi
-fi
 
 log ""
 log "done"
