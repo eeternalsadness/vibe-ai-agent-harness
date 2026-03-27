@@ -32,7 +32,7 @@ Format the provided content into memory items.
 - **150 chars max** per item
 - **One piece of information** per item (one task, decision, or fact)
 - **Prefer one item** — only split if the input contains genuinely distinct pieces of information that would each be useful independently
-- **Condense** verbose input into concise items — capture the outcome, not the mechanism or details
+- **Preserve wording** — keep the original wording as much as possible; condense only to remove noise or fit the limit
 
 ## Examples
 
@@ -41,7 +41,7 @@ Format the provided content into memory items.
 **Output:**
 
 \`\`\`
-- API validation: using Zod for runtime type checking
+- Decided to use Zod for API validation — catches runtime errors TypeScript misses
 \`\`\`
 
 ---
@@ -82,7 +82,7 @@ Format the provided content into memory items.
 **Output:**
 
 \`\`\`
-- Created plan to restructure vibe-ai-agent-harness repo — details in .agents/plans/03-repo-restructure/PLAN.md
+- vibe-ai-agent-harness: added plan to restructure repo — symlinks replaced with a build pipeline
 \`\`\`
 
 ---
