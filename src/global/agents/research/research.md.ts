@@ -1,4 +1,5 @@
 import type { Profile } from "../../../../config"
+import { config } from "../../../../config"
 
 export default function researchAgent(profile: Profile): string {
   return `---
@@ -6,22 +7,24 @@ description: Conducts research on topics. Checks the knowledge base first, then 
 model: ${profile.research.providerID}/${profile.research.modelID}
 mode: subagent
 temperature: 0.3
-tools:
-  webfetch: true
-  websearch: true
-  read: true
-  glob: true
-  grep: true
+permission:
+  "*": deny
+  webfetch: allow
+  websearch: allow
+  codesearch: allow
+  read: allow
+  glob: allow
+  grep: allow
+  list: allow
+  edit: deny
+  skill: deny
+  bash: deny
   task:
     "*": deny
     knowledge-base: allow
-  write: false
-  edit: false
-  bash: false
-permission:
   external_directory:
     "*": ask
-    "${profile.repoPath}/**": allow
+    "${config.repoPath}/**": allow
 ---
 
 # Research Agent
