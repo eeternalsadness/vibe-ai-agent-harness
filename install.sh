@@ -59,6 +59,17 @@ else
   bun run "$SCRIPT_DIR/src/render.ts"
 fi
 
+# Bundle plugin
+if [ "$DRY_RUN" = true ]; then
+  log "[dry-run] bun build src/platforms/opencode/plugins/memory-manager.ts → dist/opencode/plugins/memory-manager.js"
+else
+  bun build "$SCRIPT_DIR/src/platforms/opencode/plugins/memory-manager.ts" \
+    --target=bun \
+    --external=@opencode-ai/plugin \
+    --outfile="$SCRIPT_DIR/dist/opencode/plugins/memory-manager.js"
+  log "bundled dist/opencode/plugins/memory-manager.js"
+fi
+
 # Install AGENTS.md
 maybe_copy \
   "$SCRIPT_DIR/dist/opencode/AGENTS.md" \
@@ -79,8 +90,8 @@ done < <(find "$SCRIPT_DIR/dist/opencode/skills" -maxdepth 2 -name "*.md" -not -
 
 # Install plugin
 maybe_copy \
-  "$SCRIPT_DIR/src/platforms/opencode/plugins/memory-manager.ts" \
-  "$OPENCODE_CONFIG/plugins/memory-manager.ts"
+  "$SCRIPT_DIR/dist/opencode/plugins/memory-manager.js" \
+  "$OPENCODE_CONFIG/plugins/memory-manager.js"
 
 log ""
 log "done"

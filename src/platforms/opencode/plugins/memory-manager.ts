@@ -3,7 +3,7 @@ import { tool } from "@opencode-ai/plugin"
 import { readFile, writeFile, mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { homedir } from "node:os"
-import { config } from "../../../config"
+import { config } from "../../../../config"
 
 /**
  * Memory Manager Plugin
