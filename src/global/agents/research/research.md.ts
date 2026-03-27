@@ -55,5 +55,9 @@ Use when the primary agent specifies a particular source (URL, file, etc.).
 2. **Capture** — Call \`@knowledge-base\` to write the synthesized findings.
 
 3. **Report** — Return synthesized findings (not raw notes) to the primary agent. Include all relevant details.
+
+## Inconclusive Research
+
+If reliable information cannot be found, tell the primary agent. No speculation.
 `
 }
