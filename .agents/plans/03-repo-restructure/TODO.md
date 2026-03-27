@@ -19,8 +19,8 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
   - [x] `skills/creating-agent-skills/reference/opencode-conventions.md`
 - [x] **Task 5** — Convert `AGENTS.md` → `src/global/AGENTS.md.ts`
 - [x] **Task 6** — Move plugin to `src/platforms/opencode/plugins/`
-- [ ] **Task 7** — Create `src/render.ts`
-- [ ] **Task 8** — Create `install.sh`
+- [x] **Task 7** — Create `src/render.ts`
+- [x] **Task 8** — Create `install.sh`
 - [ ] **Task 9** — Add `.gitignore`
 - [ ] **Task 10** — Delete superseded files (`agents/`, `skills/`, `plugins/`, `.opencode/plugins/`)
 - [ ] **Task 11** — Verify end-to-end
