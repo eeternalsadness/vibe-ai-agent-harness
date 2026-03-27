@@ -31,8 +31,8 @@ Format the provided content into memory items.
 
 - **150 chars max** per item
 - **One piece of information** per item (one task, decision, or fact)
-- **Split multiple pieces** into separate bullets
-- **Condense** verbose input into concise items
+- **Prefer one item** — only split if the input contains genuinely distinct pieces of information that would each be useful independently
+- **Condense** verbose input into concise items — capture the outcome, not the mechanism or details
 
 ## Examples
 
@@ -73,4 +73,24 @@ Format the provided content into memory items.
 
 ```
 - Made prompts in memory plugin configurable through a PROMPTS config object
+```
+
+---
+
+**Input:** "Restructure plan agreed: replace symlinks with install.sh that renders TypeScript template literals to dist/ then copies to ~/.config/opencode/. config.ts holds paths/models. Source moves to src/global/ and src/platforms/opencode/."
+
+**Output:**
+
+```
+- Created plan to restructure vibe-ai-agent-harness repo — details in .agents/plans/03-repo-restructure/PLAN.md
+```
+
+---
+
+**Input:** "Updated global AGENTS.md memory instructions to require calling remember() after every response where a decision, preference, plan, constraint, or completed task occurred. Added bad/good examples and common workflow violations section."
+
+**Output:**
+
+```
+- Updated global instructions to strengthen memory workflow adherence
 ```

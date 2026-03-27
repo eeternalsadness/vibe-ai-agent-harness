@@ -12,7 +12,7 @@ Follow this workflow for every response:
    Never skip to external tools without checking memory and the knowledge base first.
 2. **Implement** - Complete the user's request using available tools.
 3. **Respond** - Reply to the user with results.
-4. **Memory** - After responding, evaluate if anything significant happened (decisions, preferences, outcomes, constraints). If so, call `remember()` with a concise summary.
+4. **Memory** - After every response, call `remember()` if any of the following occurred: a decision was made, a preference was expressed, a plan was agreed upon, a constraint was established, or a task was completed. When in doubt, save it.
 
 ### Common Workflow Violations (DO NOT DO THESE)
 
@@ -67,6 +67,17 @@ Use the `remember()` tool to save significant information to persistent working 
 
 ❌ "Added PROMPTS config object with systemInjection and retryViolations templates to memory-manager.ts"
 ✅ "Made prompts in memory plugin configurable through a PROMPTS config object"
+
+❌ "Restructure plan agreed: replace symlinks with install.sh that renders TypeScript template literals to dist/ then copies to ~/.config/opencode/. config.ts holds paths/models. Source moves to src/global/ and src/platforms/opencode/."
+✅ "Created plan to restructure vibe-ai-agent-harness repo — details in .agents/plans/03-repo-restructure/PLAN.md"
+
+### Common Workflow Violations (Memory)
+
+❌ Plan agreed, files written, response sent → no `remember()` call
+✅ Plan agreed, files written, response sent → call `remember()` with one-line outcome
+
+❌ User preference stated → no `remember()` call
+✅ User preference stated → call `remember()` immediately
 
 ## Vendor Agnostic Language and Approaches
 
