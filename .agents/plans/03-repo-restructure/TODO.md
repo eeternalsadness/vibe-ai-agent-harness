@@ -8,12 +8,12 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Tasks
 
-- [ ] **Task 1** — Create `config.ts`
-- [ ] **Task 2** — Create `src/` directory structure
-- [ ] **Task 3** — Convert `agents/` → `src/global/agents/`
-  - [ ] `agents/knowledge-base/knowledge-base.md`
-  - [ ] `agents/knowledge-base/reference/zettelkasten-conventions.md`
-  - [ ] `agents/memory/memory.md`
+- [x] **Task 1** — Create `config.ts`
+- [x] **Task 2** — Create `src/` directory structure
+- [x] **Task 3** — Convert `agents/` → `src/global/agents/`
+  - [x] `agents/knowledge-base/knowledge-base.md`
+  - [x] `agents/knowledge-base/reference/zettelkasten-conventions.md`
+  - [x] `agents/memory/memory.md`
 - [ ] **Task 4** — Convert `skills/` → `src/global/skills/`
   - [ ] `skills/creating-agent-skills/SKILL.md`
   - [ ] `skills/creating-agent-skills/reference/opencode-conventions.md`
