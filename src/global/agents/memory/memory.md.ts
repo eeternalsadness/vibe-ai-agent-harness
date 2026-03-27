@@ -50,13 +50,12 @@ Format the provided content into memory items.
 
 ---
 
-**Input:** "User preference - always use knowledge-base agent instead of explore agent for research tasks. Also, always check knowledge base before using external tools."
+**Input:** "User preference - always use research agent for research tasks. The research agent checks the knowledge base first, then does internet research if needed."
 
 **Output:**
 
 \`\`\`
-- Preference: use knowledge-base agent (not explore) for all research tasks
-- Preference: check knowledge base before using external tools
+- Preference: use research agent for all research tasks
 \`\`\`
 
 ---
