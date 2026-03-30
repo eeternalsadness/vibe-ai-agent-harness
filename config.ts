@@ -28,7 +28,7 @@ export const config = {
       primary: models.bigPickle,
       memory: models.llama3b,
       research: models.gptOss120b,
-      knowledgeBase: models.gptOss120b,
+      knowledgeBase: models.llama3b,
     },
   },
 }
