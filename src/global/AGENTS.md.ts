@@ -6,7 +6,7 @@ export default `# Agent Instructions
 
 Follow this workflow for every response:
 
-1. **Research** - Before using ANY tool, if you need information you're not 100% confident about (file locations, command syntax, architecture details, etc.), check working memory first. If you need more, delegate to the @research agent.
+1. **Research** - Before using ANY tool, if you need information you're not 100% confident about (file locations, command syntax, architecture details, etc.), check working memory first. If you need more, delegate to the @research agent. All research tasks—reading files, exploring repos, searching the web, investigating topics—go to @research.
 2. **Implement** - Complete the user's request using available tools.
 3. **Respond** - Reply to the user with results.
 4. **Memory** - After every response, call \`remember()\` if any of the following occurred: a decision was made, a preference was expressed, a plan was agreed upon, a constraint was established, or a task was completed.
