@@ -5,6 +5,7 @@ const models = {
   bigPickle: { providerID: "opencode", modelID: "big-pickle" },
   gptOss120b: { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
   llama3b: { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
+  localLlama3b: { providerID: "ollama", modelID: "llama3.2:3b" },
 }
 
 export type ModelRef = { providerID: string; modelID: string }
@@ -26,9 +27,9 @@ export const config = {
     },
     personal: {
       primary: models.bigPickle,
-      memory: models.llama3b,
+      memory: models.localLlama3b,
       research: models.gptOss120b,
-      knowledgeBase: models.llama3b,
+      knowledgeBase: models.localLlama3b,
     },
   },
 }
