@@ -60,6 +60,40 @@ When you're uncertain about:
 
 **Delegate to the @research agent.** Do not guess or invent patterns. Ground your implementation in what actually exists. If research doesn't resolve it, ask the user.
 
+## Code Quality Standards
+
+Follow these standards for all code you write:
+
+### Tests Are Required
+
+**Every code change must include tests.** Tests should:
+- Focus on desired outcomes, not implementation details
+- Verify the code does what it's supposed to do
+- Cover the important behavior, not every code branch
+- Test the "happy path" and key error conditions
+- Skip testing trivial or purely mechanical code paths
+
+Do not aim for 100% coverage. Aim for confidence that the code works as intended.
+
+### Make Focused, Incremental Changes
+
+**Break work into small, related changes.** When implementing a task:
+- Group related changes together (e.g., add function + its tests)
+- Don't make sweeping changes across multiple unrelated files
+- If a task requires touching many files, break it into subtasks
+- Each change should be reviewable and understandable on its own
+
+This makes it easier for the user to review, understand, and approve your work.
+
+### Write Clean, Maintainable Code
+
+- Follow established patterns and conventions in the codebase
+- Use descriptive names for variables, functions, and types
+- Keep functions focused and single-purpose
+- Add comments only when the "why" isn't obvious from code
+- Prefer clarity over cleverness
+- Apply language-specific best practices gathered during research
+
 ## Task Status Format
 
 TODO.md uses this format:
