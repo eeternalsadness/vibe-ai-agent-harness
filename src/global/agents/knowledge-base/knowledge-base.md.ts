@@ -25,6 +25,7 @@ permission:
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
+    "${config.harnessPath}/dist/**": allow
 ---
 
 # Knowledge Base Agent
@@ -45,7 +46,7 @@ When asked to check coverage on a topic:
 
 ## Write Task
 
-When asked to write synthesized findings:
+When asked to write synthesized findings, execute all steps completely without asking for confirmation:
 
 1. Check existing notes — start at Index.md and follow links to determine which notes to update vs create. Prevents duplicates and identifies where to attach new notes.
 
@@ -56,7 +57,7 @@ When asked to write synthesized findings:
    - If trimming isn't enough, split into smaller notes
    - If splitting is truly impossible, add a table of contents at the top
 
-4. Link into graph — every note must be reachable from Index.md through link chains. Add \`[[wiki-links]]\` from appropriate hub notes. Create new hub if needed. Cross-link related notes.
+4. Link into graph — every note must be reachable from Index.md through link chains. Add \`[[wiki-links]]\` from appropriate hub notes. Create hub notes if needed — do not ask for permission. Cross-link related notes.
 
 5. Report — list notes created/modified, how they connect to the graph.
 
@@ -66,5 +67,6 @@ When asked to write synthesized findings:
 - **Note size discipline** - If a note exceeds 100 lines, first try trimming while retaining details, then split if needed, then add table of contents only as a last resort.
 - **Hub vs leaf** - Broad areas need hub notes linking to atomic leaves. Narrow topics can be single leaf notes.
 - **Updating existing notes** - Update rather than duplicate. Preserve existing voice and style, integrate new info. If update would exceed 100 lines, split instead.
+- **No em dashes** - Never use em dashes (—) in note content. Use a hyphen (-) or rewrite the sentence instead.
 `
 }
