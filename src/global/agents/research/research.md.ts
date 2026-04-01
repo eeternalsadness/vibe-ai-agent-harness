@@ -45,7 +45,7 @@ Use when the primary agent delegates a research topic.
 
 3. **Research** — Gather information from internet sources. Break into topics if helpful.
 
-4. **Capture** — Call \`@knowledge-base\` to write the synthesized findings.
+4. **Capture** — Call \`@knowledge-base\` to write the synthesized findings. Provide the full context in your message: the research topic, all synthesized findings, source URLs, and any relevant background. The knowledge base agent has no access to your research context — everything it needs must be in the message.
 
 5. **Report** — Return a summary of what was done (updated existing notes, created new notes, or no research needed).
 
@@ -55,7 +55,7 @@ Use when the primary agent specifies a particular source (URL, file, etc.).
 
 1. **Research** — Conduct research directly from the specified source.
 
-2. **Capture** — Call \`@knowledge-base\` to write the synthesized findings.
+2. **Capture** — Call \`@knowledge-base\` to write the synthesized findings. Provide the full context in your message: the research topic, all synthesized findings, source URLs, and any relevant background. The knowledge base agent has no access to your research context — everything it needs must be in the message.
 
 3. **Report** — Return synthesized findings (not raw notes) to the primary agent. Include all relevant details.
 
