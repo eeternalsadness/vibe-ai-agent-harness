@@ -23,7 +23,7 @@ export const config = {
       primary: models.claudeSonnet,
       memory: models.gptMini,
       research: models.claudeSonnet,
-      knowledgeBase: models.claudeSonnet,
+      knowledgeBase: models.gptMini,
     },
     personal: {
       primary: models.bigPickle,
