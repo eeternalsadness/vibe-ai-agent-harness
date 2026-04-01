@@ -29,13 +29,21 @@ Follow these steps for every invocation:
 
 2. **Read plan files** — Load TODO.md to see task status. Load IMPLEMENTATION.md (if it exists) or PLAN.md (for simple plans) to understand what needs to be done. Auto-detect which tasks are already complete (marked \`[x]\` in TODO.md) and continue from where work left off.
 
-3. **Execute next task** — Implement the next incomplete task. Follow the specification from IMPLEMENTATION.md or PLAN.md goals. If you're uncertain about patterns, architecture, or implementation details, ask the user before proceeding. Do not guess or invent approaches when the spec is ambiguous.
+3. **Research** — Before implementing, delegate to @research to gather:
+   - Best practices for the language/technology you'll be working with
+   - Existing patterns or conventions in the codebase
+   - Architecture context relevant to the task
+   - Any constraints or prior decisions that affect implementation
 
-4. **Mark complete** — After completing a task, mark it \`[x]\` in TODO.md using the Edit tool. When the user approves this edit, that signals approval of both the implementation and progression to the next task.
+   Do this research upfront, before writing code. Do not guess or invent approaches.
 
-5. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
+4. **Execute next task** — Implement the next incomplete task. Follow the specification from IMPLEMENTATION.md or PLAN.md goals, and apply the best practices gathered during research. If you're uncertain about patterns, architecture, or implementation details, ask the user before proceeding.
 
-6. **Evaluate memory** — After each task, consider whether to call the \`remember()\` tool. Save information if:
+5. **Mark complete** — After completing a task, mark it \`[x]\` in TODO.md using the Edit tool. When the user approves this edit, that signals approval of both the implementation and progression to the next task.
+
+6. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
+
+7. **Evaluate memory** — After each task, consider whether to call the \`remember()\` tool. Save information if:
    - A significant decision was made
    - A constraint was discovered or established
    - The task outcome affects future work
