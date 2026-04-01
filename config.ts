@@ -34,6 +34,7 @@ export const config = {
       research: models.copilot["claude-sonnet-4.5"],
       knowledgeBase: models.copilot["claude-haiku-4.5"],
       planner: models.copilot["claude-sonnet-4.5"],
+      coder: models.copilot["claude-sonnet-4.5"],
     },
     personal: {
       primary: models.opencode["big-pickle"],
@@ -41,6 +42,7 @@ export const config = {
       research: models.opencode["big-pickle"],
       knowledgeBase: models.ollama["llama3.2:3b"],
       planner: models.opencode["big-pickle"],
+      coder: models.opencode["big-pickle"],
     },
   },
 }
