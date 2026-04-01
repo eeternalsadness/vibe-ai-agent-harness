@@ -26,12 +26,14 @@ export const config = {
       memory: models.gptMini,
       research: models.claudeSonnet,
       knowledgeBase: models.claudeHaiku,
+      planner: models.claudeSonnet,
     },
     personal: {
       primary: models.bigPickle,
       memory: models.localLlama3b,
       research: models.gptOss120b,
       knowledgeBase: models.localLlama3b,
+      planner: models.claudeSonnet,
     },
   },
 }
