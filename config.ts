@@ -1,6 +1,6 @@
 // Named model variables — reusable across profiles
 const models = {
-  claudeSonnet: { providerID: "github-copilot", modelID: "claude-sonnet-4-6" },
+  claudeSonnet: { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
   gptMini: { providerID: "github-copilot", modelID: "gpt-5-mini" },
   bigPickle: { providerID: "opencode", modelID: "big-pickle" },
   gptOss120b: { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
