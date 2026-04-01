@@ -1,16 +1,22 @@
-// Named model variables — reusable across profiles
+// Model registry — nested by provider
 const models = {
-  claudeSonnet: { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
-  claudeHaiku: { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
-  gptMini: { providerID: "github-copilot", modelID: "gpt-5-mini" },
-  gpt4: { providerID: "github-copilot", modelID: "gpt-4.1" },
-  bigPickle: { providerID: "opencode", modelID: "big-pickle" },
-  gptOss120b: { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
-  llama3b: { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
-  localLlama3b: { providerID: "ollama", modelID: "llama3.2:3b" },
+  copilot: {
+    "claude-sonnet-4.6": { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
+    "claude-haiku-4.5": { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
+    "gpt-5-mini": { providerID: "github-copilot", modelID: "gpt-5-mini" },
+    "gpt-4.1": { providerID: "github-copilot", modelID: "gpt-4.1" },
+  },
+  opencode: {
+    "big-pickle": { providerID: "opencode", modelID: "big-pickle" },
+  },
+  openrouter: {
+    "gpt-oss-120b": { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
+    "llama-3.2-3b-instruct": { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
+  },
+  ollama: {
+    "llama3.2:3b": { providerID: "ollama", modelID: "llama3.2:3b" },
+  },
 }
-
-export type ModelRef = { providerID: string; modelID: string }
 
 const repoPath = "~/Repo"
 
@@ -22,18 +28,18 @@ export const config = {
 
   profiles: {
     default: {
-      primary: models.claudeSonnet,
-      memory: models.gptMini,
-      research: models.claudeSonnet,
-      knowledgeBase: models.claudeHaiku,
-      planner: models.claudeSonnet,
+      primary: models.copilot["claude-sonnet-4.6"],
+      memory: models.copilot["gpt-5-mini"],
+      research: models.copilot["claude-sonnet-4.6"],
+      knowledgeBase: models.copilot["claude-haiku-4.5"],
+      planner: models.copilot["claude-sonnet-4.6"],
     },
     personal: {
-      primary: models.bigPickle,
-      memory: models.localLlama3b,
-      research: models.gptOss120b,
-      knowledgeBase: models.localLlama3b,
-      planner: models.claudeSonnet,
+      primary: models.opencode["big-pickle"],
+      memory: models.ollama["llama3.2:3b"],
+      research: models.opencode["big-pickle"],
+      knowledgeBase: models.ollama["llama3.2:3b"],
+      planner: models.copilot["claude-sonnet-4.6"],
     },
   },
 }
