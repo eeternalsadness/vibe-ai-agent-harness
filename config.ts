@@ -1,7 +1,9 @@
 // Named model variables — reusable across profiles
 const models = {
   claudeSonnet: { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
+  claudeHaiku: { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
   gptMini: { providerID: "github-copilot", modelID: "gpt-5-mini" },
+  gpt4: { providerID: "github-copilot", modelID: "gpt-4.1" },
   bigPickle: { providerID: "opencode", modelID: "big-pickle" },
   gptOss120b: { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
   llama3b: { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
@@ -23,7 +25,7 @@ export const config = {
       primary: models.claudeSonnet,
       memory: models.gptMini,
       research: models.claudeSonnet,
-      knowledgeBase: models.gptMini,
+      knowledgeBase: models.claudeHaiku,
     },
     personal: {
       primary: models.bigPickle,
