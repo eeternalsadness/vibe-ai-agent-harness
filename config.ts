@@ -1,6 +1,7 @@
 // Model registry — nested by provider
 const models = {
   copilot: {
+    "claude-sonnet-4.5": { providerID: "github-copilot", modelID: "claude-sonnet-4.5" },
     "claude-sonnet-4.6": { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
     "claude-haiku-4.5": { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
     "gpt-5-mini": { providerID: "github-copilot", modelID: "gpt-5-mini" },
@@ -28,18 +29,18 @@ export const config = {
 
   profiles: {
     default: {
-      primary: models.copilot["claude-sonnet-4.6"],
+      primary: models.copilot["claude-sonnet-4.5"],
       memory: models.copilot["gpt-5-mini"],
-      research: models.copilot["claude-sonnet-4.6"],
+      research: models.copilot["claude-sonnet-4.5"],
       knowledgeBase: models.copilot["claude-haiku-4.5"],
-      planner: models.copilot["claude-sonnet-4.6"],
+      planner: models.copilot["claude-sonnet-4.5"],
     },
     personal: {
       primary: models.opencode["big-pickle"],
       memory: models.ollama["llama3.2:3b"],
       research: models.opencode["big-pickle"],
       knowledgeBase: models.ollama["llama3.2:3b"],
-      planner: models.copilot["claude-sonnet-4.6"],
+      planner: models.opencode["big-pickle"],
     },
   },
 }
