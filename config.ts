@@ -16,6 +16,7 @@ const models = {
   },
   ollama: {
     "llama3.2:3b": { providerID: "ollama", modelID: "llama3.2:3b" },
+    "llama3.1:8b": { providerID: "ollama", modelID: "llama3.1:8b" },
   },
 }
 
@@ -40,11 +41,19 @@ export const config = {
     },
     broke: {
       primary: models.opencode["big-pickle"],
-      memory: models.ollama["llama3.2:3b"],
+      memory: models.ollama["llama3.1:8b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.ollama["llama3.2:3b"],
+      knowledgeBase: models.ollama["llama3.1:8b"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
+    },
+    based: {
+      primary: models.opencode["big-pickle"],
+      memory: models.ollama["llama3.1:8b"],
+      research: models.opencode["big-pickle"],
+      knowledgeBase: models.ollama["llama3.1:8b"],
+      planner: models.opencode["big-pickle"],
+      coder: models.copilot["claude-sonnet-4.6"],
     },
   },
 }
