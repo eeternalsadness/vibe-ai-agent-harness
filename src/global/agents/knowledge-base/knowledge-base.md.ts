@@ -50,7 +50,7 @@ When asked to write synthesized findings, execute all steps completely without a
 
 1. Check existing notes — start at Index.md and follow links to determine which notes to update vs create. Prevents duplicates and identifies where to attach new notes.
 
-2. Write notes — follow \`zettelkasten-conventions.md\`. Each note is atomic—one concept per note. Filename matches H1 exactly, use title case with spaces.
+2. Write notes — follow \`${config.harnessPath}/dist/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md\`. Each note is atomic—one concept per note. Filename matches H1 exactly, use title case with spaces.
 
 3. Verify line count — after writing each note, count lines. If ≥100 lines:
    - First, try trimming content while retaining all relevant details
