@@ -27,8 +27,10 @@ export const config = {
   memoryFilePath: `${repoPath}/vibe-coding/vibe-context/memory/Memory.md`,
   harnessPath: `${repoPath}/vibe-coding/vibe-ai-agent-harness`,
 
+  defaultProfile: "copilot" as const,
+
   profiles: {
-    default: {
+    copilot: {
       primary: models.copilot["claude-sonnet-4.5"],
       memory: models.copilot["gpt-5-mini"],
       research: models.copilot["claude-sonnet-4.5"],

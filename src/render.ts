@@ -17,7 +17,7 @@ async function findTemplates(dir: string): Promise<string[]> {
 }
 
 // Resolve selected profile from CLI arg
-const profileName = (process.argv[2] ?? "default") as keyof typeof config.profiles
+const profileName = (process.argv[2] ?? config.defaultProfile) as keyof typeof config.profiles
 const profile = config.profiles[profileName]
 if (!profile) {
   console.error(`Unknown profile: "${profileName}". Available: ${Object.keys(config.profiles).join(", ")}`)

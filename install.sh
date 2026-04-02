@@ -55,12 +55,13 @@ if ! command -v bun &>/dev/null; then
   exit 1
 fi
 
-# Resolve available profiles from config.ts
+# Resolve available profiles and default from config.ts
 PROFILES=$(bun -e "import { config } from './config.ts'; console.log(Object.keys(config.profiles).join(' '))")
+DEFAULT_PROFILE=$(bun -e "import { config } from './config.ts'; console.log(config.defaultProfile)")
 
-# Default to "default" profile if not provided via --profile
+# Default to config's defaultProfile if not provided via --profile
 if [ -z "$PROFILE" ]; then
-  PROFILE="default"
+  PROFILE="$DEFAULT_PROFILE"
 fi
 
 # Validate selected profile exists
