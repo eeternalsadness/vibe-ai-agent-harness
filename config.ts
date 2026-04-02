@@ -36,7 +36,7 @@ export const config = {
       planner: models.copilot["claude-sonnet-4.5"],
       coder: models.copilot["claude-sonnet-4.5"],
     },
-    personal: {
+    broke: {
       primary: models.opencode["big-pickle"],
       memory: models.ollama["llama3.2:3b"],
       research: models.opencode["big-pickle"],
