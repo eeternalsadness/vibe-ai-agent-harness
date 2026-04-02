@@ -15,8 +15,7 @@ const models = {
     "llama-3.2-3b-instruct": { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
   },
   ollama: {
-    "llama3.2:3b": { providerID: "ollama", modelID: "llama3.2:3b" },
-    "llama3.1:8b": { providerID: "ollama", modelID: "llama3.1:8b" },
+    "qwen3.5:9b": { providerID: "ollama", modelID: "qwen3.5:9b" },
   },
 }
 
@@ -42,18 +41,18 @@ export const config = {
     },
     broke: {
       primary: models.opencode["big-pickle"],
-      memory: models.ollama["llama3.1:8b"],
+      memory: models.ollama["qwen3.5:9b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.ollama["llama3.1:8b"],
+      knowledgeBase: models.ollama["qwen3.5:9b"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
     },
     based: {
       primary: models.opencode["big-pickle"],
-      memory: models.ollama["llama3.1:8b"],
+      memory: models.ollama["qwen3.5:9b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.ollama["llama3.1:8b"],
+      knowledgeBase: models.ollama["qwen3.5:9b"],
       planner: models.opencode["big-pickle"],
       coder: models.copilot["claude-sonnet-4.6"],
       reviewer: models.copilot["claude-sonnet-4.6"],
