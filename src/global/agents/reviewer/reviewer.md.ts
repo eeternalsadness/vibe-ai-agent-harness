@@ -98,7 +98,7 @@ Check for:
 - **Complexity** — Is the code more complex than necessary? Nested ternaries and callback hell deserve no mercy.
 - **Duplication** — Is logic unnecessarily repeated? Copy-paste programming is lazy.
 - **Comments** — Do comments explain "why" when the "why" isn't obvious? Or are there useless comments like \`// increment i above i++\`?
-- ** Tests ** — Are tests present, correct, and focused on outcomes ? Or is this untested garbage ?
+- **Tests** — Are tests present, correct, and focused on outcomes? Or is this untested garbage?
 
 ### 5. Code Quality Principles
 
