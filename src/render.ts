@@ -1,8 +1,8 @@
 import { mkdir, writeFile, readdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { config } from "../config"
+import { config, type Profile } from "../config"
 
-async function findTemplates(dir: string): Promise<string[]> {
+export async function findTemplates(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
   for (const entry of entries) {
@@ -16,26 +16,38 @@ async function findTemplates(dir: string): Promise<string[]> {
   return files
 }
 
-// Resolve selected profile from CLI arg
-const profileName = (process.argv[2] ?? config.defaultProfile) as keyof typeof config.profiles
-const profile = config.profiles[profileName]
-if (!profile) {
-  console.error(`Unknown profile: "${profileName}". Available: ${Object.keys(config.profiles).join(", ")}`)
-  process.exit(1)
+export async function renderTemplates(
+  sourceDir: string,
+  outputDir: string,
+  profile: Profile
+): Promise<void> {
+  const srcPrefix = sourceDir + "/"
+
+  for (const srcPath of await findTemplates(sourceDir)) {
+    const mod = await import(srcPath) as { default: string | ((profile: Profile) => string) }
+    const content = typeof mod.default === "function" ? mod.default(profile) : mod.default
+    const relative = srcPath.replace(srcPrefix, "").replace(/\.ts$/, "")
+    const distPath = join(outputDir, relative)
+
+    await mkdir(dirname(distPath), { recursive: true })
+    await writeFile(distPath, content, "utf-8")
+    console.log(`wrote ${distPath}`)
+  }
 }
 
-console.log(`Using profile: ${profileName}`)
+// CLI entry point
+if (import.meta.main) {
+  const profileName = (process.argv[2] ?? config.defaultProfile) as keyof typeof config.profiles
+  const profile = config.profiles[profileName]
+  if (!profile) {
+    console.error(`Unknown profile: "${profileName}". Available: ${Object.keys(config.profiles).join(", ")}`)
+    process.exit(1)
+  }
 
-const globalDir = join(import.meta.dir, "global")
-const srcPrefix = join(import.meta.dir, "global") + "/"
+  console.log(`Using profile: ${profileName}`)
 
-for (const srcPath of await findTemplates(globalDir)) {
-  const mod = await import(srcPath) as { default: string | ((profile: typeof profile) => string) }
-  const content = typeof mod.default === "function" ? mod.default(profile) : mod.default
-  const relative = srcPath.replace(srcPrefix, "").replace(/\.ts$/, "")
-  const distPath = join("dist/opencode", relative)
+  const globalDir = join(import.meta.dir, "global")
+  const outputDir = join("dist/opencode")
 
-  await mkdir(dirname(distPath), { recursive: true })
-  await writeFile(distPath, content, "utf-8")
-  console.log(`wrote ${distPath}`)
+  await renderTemplates(globalDir, outputDir, profile)
 }
