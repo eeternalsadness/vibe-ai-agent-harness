@@ -18,7 +18,10 @@ import { config } from "../../../../config"
  * The memory subagent formats content into valid memory items.
  */
 
-const MEMORY_FILE_PATH = join(homedir(), config.memoryFilePath.replace("~/", ""))
+// Safely expand ~ to home directory — only if path starts with ~ (guard against silent corruption)
+const MEMORY_FILE_PATH = config.memoryFilePath.startsWith("~/")
+  ? join(homedir(), config.memoryFilePath.replace("~/", ""))
+  : config.memoryFilePath
 const MAX_ITEMS = 50
 const MAX_CHAR_LIMIT = 150
 const MAX_RETRIES = 1

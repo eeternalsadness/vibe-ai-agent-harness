@@ -4,7 +4,7 @@ Findings from code reviewer — address in any order.
 
 ## High Priority
 
-- [ ] **`MEMORY_FILE_PATH` construction is fragile** — `config.memoryFilePath.replace("~/", "")` silently produces wrong path if value doesn't start with `~/`. Use `startsWith("~/")` guard or store path without tilde and expand once.
+- [x] **`MEMORY_FILE_PATH` construction is fragile** — `config.memoryFilePath.replace("~/", "")` silently produces wrong path if value doesn't start with `~/`. Use `startsWith("~/")` guard or store path without tilde and expand once.
 
 - [ ] **`(input as any)` casts x3 in memory plugin** — `sessionID` and `agent` fields are not in the SDK type definition. Silent breakage if they disappear in an SDK update. Needs proper typing or explicit acknowledgment with a comment.
 
