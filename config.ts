@@ -38,6 +38,7 @@ export const config = {
       knowledgeBase: models.copilot["claude-haiku-4.5"],
       planner: models.copilot["claude-sonnet-4.5"],
       coder: models.copilot["claude-sonnet-4.5"],
+      reviewer: models.copilot["claude-sonnet-4.6"],
     },
     broke: {
       primary: models.opencode["big-pickle"],
@@ -46,6 +47,7 @@ export const config = {
       knowledgeBase: models.ollama["llama3.1:8b"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
+      reviewer: models.opencode["big-pickle"],
     },
     based: {
       primary: models.opencode["big-pickle"],
@@ -54,6 +56,7 @@ export const config = {
       knowledgeBase: models.ollama["llama3.1:8b"],
       planner: models.opencode["big-pickle"],
       coder: models.copilot["claude-sonnet-4.6"],
+      reviewer: models.copilot["claude-sonnet-4.6"],
     },
   },
 }
