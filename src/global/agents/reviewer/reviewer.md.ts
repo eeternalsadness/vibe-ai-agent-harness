@@ -11,7 +11,7 @@ permission:
   "*": deny
   webfetch: deny
   websearch: deny
-  codesearch: allow
+  codesearch: deny
   read: allow
   glob: allow
   grep: allow
