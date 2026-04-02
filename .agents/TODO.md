@@ -6,11 +6,11 @@ Findings from code reviewer — address in any order.
 
 - [x] **`MEMORY_FILE_PATH` construction is fragile** — `config.memoryFilePath.replace("~/", "")` silently produces wrong path if value doesn't start with `~/`. Use `startsWith("~/")` guard or store path without tilde and expand once.
 
-- [ ] **`(input as any)` casts x3 in memory plugin** — `sessionID` and `agent` fields are not in the SDK type definition. Silent breakage if they disappear in an SDK update. Needs proper typing or explicit acknowledgment with a comment.
+- [x] **`(input as any)` casts x3 in memory plugin** — `sessionID` and `agent` fields are not in the SDK type definition. Silent breakage if they disappear in an SDK update. Needs proper typing or explicit acknowledgment with a comment.
 
 ## Medium Priority
 
-- [ ] **CWD assumption in `render.ts`** — `join("dist/opencode", relative)` resolves relative to CWD at runtime. `install.sh` doesn't `cd` to repo root before invoking bun. Add `process.chdir(import.meta.dir + "/..")` or use an absolute path derived from `import.meta.dir`.
+- [x] **CWD assumption in `render.ts`** — `join("dist/opencode", relative)` resolves relative to CWD at runtime. `install.sh` doesn't `cd` to repo root before invoking bun. Add `process.chdir(import.meta.dir + "/..")` or use an absolute path derived from `import.meta.dir`.
 
 - [ ] **`render.ts` hardcodes `dist/opencode/`** — contradicts platform-agnostic philosophy. `src/global/` is portable but the renderer bakes in `opencode`. Consider making the output subdirectory configurable.
 

@@ -220,12 +220,15 @@ async function invokeMemoryAgent(
       hasData: !!response.data,
       hasParts: !!response.data?.parts,
       partsCount: response.data?.parts?.length || 0,
+      // NOTE: Using 'any' for SDK part types that aren't in official type definitions
+      // If SDK updates these types, this will need updating - watch for breakage
       partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
       fullResponse: JSON.stringify(response.data, null, 2)
     })
 
     // Extract the text result from the response
     // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
+    // NOTE: Using 'any' for SDK part types that aren't in official type definitions
     const textPart = response.data?.parts?.find((p: any) => p.type === "text")
     const result = textPart?.text || ""
 
@@ -467,6 +470,9 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
     // Inject memory into system prompt (invisible to user, only for primary agent)
     "experimental.chat.system.transform": async (input, output) => {
       // CRITICAL: Skip memory injection for memory agent sessions (oh-my-openagent pattern)
+      // NOTE: Using 'any' for SDK sessionID property not in official type definitions
+      // sessionID is used for memory agent session tracking - if SDK removes this, the
+      // memory injection will silently break for all sessions. Watch for SDK changes.
       const sessionID = (input as any).sessionID
       if (memoryAgentSessions.has(sessionID)) {
         await log("info", "Skipping memory injection for tracked memory agent session", { sessionID })
@@ -474,6 +480,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
       }
 
       // Also check agent field as backup (in case session tracking missed it)
+      // NOTE: Using 'any' for SDK agent property not in official type definitions
       const agent = (input as any).agent || (input as any).body?.agent
       if (agent === "memory" || agent?.includes("memory")) {
         await log("info", "Skipping memory injection for memory agent session (by agent field)", { agent })

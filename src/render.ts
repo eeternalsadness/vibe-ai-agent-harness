@@ -46,8 +46,11 @@ if (import.meta.main) {
 
   console.log(`Using profile: ${profileName}`)
 
-  const globalDir = join(import.meta.dir, "global")
-  const outputDir = join("dist/opencode")
+  // Derive absolute paths from this file's directory to avoid CWD dependency
+  // This ensures render.ts works regardless of current working directory
+  const repoRoot = dirname(import.meta.dir)
+  const globalDir = join(repoRoot, "src/global")
+  const outputDir = join(repoRoot, "dist/opencode")
 
   await renderTemplates(globalDir, outputDir, profile)
 }
