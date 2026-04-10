@@ -56,6 +56,8 @@ Use when the primary agent specifies a particular source (URL, file, etc.).
 1. **Research** — Conduct research directly from the specified source.
 
 2. **Capture** — Call \`@knowledge-base\` to write the synthesized findings. Provide the full context in your message: the research topic, all synthesized findings, source URLs, and any relevant background. The knowledge base agent has no access to your research context — everything it needs must be in the message.
+   
+   **Exception:** Do NOT capture when researching local codebases or project files. Only capture external sources.
 
 3. **Report** — Return synthesized findings (not raw notes) to the primary agent. Include all relevant details.
 
