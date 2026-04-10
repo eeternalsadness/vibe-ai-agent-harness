@@ -6,9 +6,7 @@ A **build and install pipeline** for an AI coding assistant harness. It is not a
 
 ## Philosophy
 
-**Platform-agnostic by default.** Instructions, agents, and skills are authored without vendor-specific terminology or APIs. The goal is for portable content to work across multiple AI coding platforms with minimal adaptation.
-
-**Modular and configurable.** `config.ts` is the single source of truth for paths and model IDs — imported by all templates. Structure is kept modular so individual agents, skills, and plugins can be added, removed, or swapped independently.
+See [README.md](./README.md) for the system philosophy and design.
 
 ## Structure
 
@@ -19,9 +17,8 @@ src/render.ts                # Walks src/global/, imports each *.md.ts, writes s
 
 src/global/                  # Platform-agnostic: instructions, agents, skills (TypeScript template literals)
   AGENTS.md.ts               # Global agent instructions (the installed AGENTS.md)
-  agents/knowledge-base/     # Knowledge base subagent + zettelkasten reference
-  agents/memory/             # Memory formatter subagent (no tools, strict output format)
-  skills/creating-agent-skills/  # Skill for authoring new agent skills
+  agents/                    # Subagent definitions
+  skills/                    # Skill definitions
 
 src/platforms/opencode/      # OpenCode-specific runtime code (non-portable)
   plugins/memory-manager.ts  # Plugin: injects memory into system prompt, exposes remember() tool
