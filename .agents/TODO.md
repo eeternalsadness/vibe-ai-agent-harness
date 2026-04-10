@@ -12,7 +12,7 @@ Findings from code reviewer — address in any order.
 
 - [x] **CWD assumption in `render.ts`** — `join("dist/opencode", relative)` resolves relative to CWD at runtime. `install.sh` doesn't `cd` to repo root before invoking bun. Add `process.chdir(import.meta.dir + "/..")` or use an absolute path derived from `import.meta.dir`.
 
-- [ ] **`render.ts` hardcodes `dist/opencode/`** — contradicts platform-agnostic philosophy. `src/global/` is portable but the renderer bakes in `opencode`. Consider making the output subdirectory configurable.
+- [x] **`render.ts` hardcodes `dist/opencode/`** — contradicts platform-agnostic philosophy. `src/global/` is portable but the renderer bakes in `opencode`. Consider making the output subdirectory configurable.
 
 - [x] **`parseMemoryItems` and `parseAgentOutput` are duplicates** — identical logic in two functions. Collapse into one.
 

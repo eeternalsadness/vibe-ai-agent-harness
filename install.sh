@@ -7,6 +7,7 @@ OPENCODE_CONFIG="${HOME}/.config/opencode"
 DRY_RUN=false
 FORCE=false
 PROFILE=""
+PLATFORM="opencode"
 
 usage() {
   cat <<EOF
@@ -15,10 +16,11 @@ Usage: $(basename "$0") [OPTIONS]
 Renders templates and installs files to ~/.config/opencode/.
 
 Options:
-  --dry-run         Print planned actions without writing anything
-  --force           Overwrite existing files without prompting
-  --profile <name>  Select a profile (default: "default")
-  --help            Show this help message
+  --dry-run           Print planned actions without writing anything
+  --force             Overwrite existing files without prompting
+  --profile <name>    Select a profile (default: from config.ts)
+  --platform <name>   Target platform (default: "opencode")
+  --help              Show this help message
 EOF
   exit 0
 }
@@ -41,10 +43,11 @@ maybe_copy() {
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --dry-run) DRY_RUN=true; shift ;;
-    --force)   FORCE=true; shift ;;
-    --profile) PROFILE="$2"; shift 2 ;;
-    --help)    usage ;;
+    --dry-run)   DRY_RUN=true; shift ;;
+    --force)     FORCE=true; shift ;;
+    --profile)   PROFILE="$2"; shift 2 ;;
+    --platform)  PLATFORM="$2"; shift 2 ;;
+    --help)      usage ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -71,46 +74,47 @@ if ! echo "$PROFILES" | grep -qw "$PROFILE"; then
 fi
 
 log "Using profile: $PROFILE"
+log "Target platform: $PLATFORM"
 
 # Render templates
 if [ "$DRY_RUN" = true ]; then
-  log "[dry-run] bun run src/render.ts $PROFILE"
+  log "[dry-run] bun run src/render.ts $PLATFORM $PROFILE"
 else
-  bun run "$SCRIPT_DIR/src/render.ts" "$PROFILE"
+  bun run "$SCRIPT_DIR/src/render.ts" "$PLATFORM" "$PROFILE"
 fi
 
 # Bundle plugin
 if [ "$DRY_RUN" = true ]; then
-  log "[dry-run] bun build src/platforms/opencode/plugins/memory-manager.ts → dist/opencode/plugins/memory-manager.js"
+  log "[dry-run] bun build src/platforms/$PLATFORM/plugins/memory-manager.ts → dist/$PLATFORM/plugins/memory-manager.js"
 else
-  bun build "$SCRIPT_DIR/src/platforms/opencode/plugins/memory-manager.ts" \
+  bun build "$SCRIPT_DIR/src/platforms/$PLATFORM/plugins/memory-manager.ts" \
     --target=bun \
     --external=@opencode-ai/plugin \
-    --outfile="$SCRIPT_DIR/dist/opencode/plugins/memory-manager.js"
-  log "bundled dist/opencode/plugins/memory-manager.js"
+    --outfile="$SCRIPT_DIR/dist/$PLATFORM/plugins/memory-manager.js"
+  log "bundled dist/$PLATFORM/plugins/memory-manager.js"
 fi
 
 # Install AGENTS.md
 maybe_copy \
-  "$SCRIPT_DIR/dist/opencode/AGENTS.md" \
+  "$SCRIPT_DIR/dist/$PLATFORM/AGENTS.md" \
   "$OPENCODE_CONFIG/AGENTS.md"
 
 # Install agent .md files flat (skip reference/ subdirs)
 while IFS= read -r -d '' src; do
   name="$(basename "$src")"
   maybe_copy "$src" "$OPENCODE_CONFIG/agents/$name"
-done < <(find "$SCRIPT_DIR/dist/opencode/agents" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
+done < <(find "$SCRIPT_DIR/dist/$PLATFORM/agents" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
 
 # Install skills .md files flat per skill dir (skip reference/ subdirs)
 while IFS= read -r -d '' src; do
   skill_dir="$(basename "$(dirname "$src")")"
   name="$(basename "$src")"
   maybe_copy "$src" "$OPENCODE_CONFIG/skills/$skill_dir/$name"
-done < <(find "$SCRIPT_DIR/dist/opencode/skills" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
+done < <(find "$SCRIPT_DIR/dist/$PLATFORM/skills" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
 
 # Install plugin
 maybe_copy \
-  "$SCRIPT_DIR/dist/opencode/plugins/memory-manager.js" \
+  "$SCRIPT_DIR/dist/$PLATFORM/plugins/memory-manager.js" \
   "$OPENCODE_CONFIG/plugins/memory-manager.js"
 
 log ""

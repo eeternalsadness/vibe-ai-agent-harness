@@ -37,20 +37,23 @@ export async function renderTemplates(
 
 // CLI entry point
 if (import.meta.main) {
-  const profileName = (process.argv[2] ?? config.defaultProfile) as keyof typeof config.profiles
+  const platform = process.argv[2] ?? "opencode"
+  const profileName = (process.argv[3] ?? config.defaultProfile) as keyof typeof config.profiles
+  
   const profile = config.profiles[profileName]
   if (!profile) {
     console.error(`Unknown profile: "${profileName}". Available: ${Object.keys(config.profiles).join(", ")}`)
     process.exit(1)
   }
 
+  console.log(`Target platform: ${platform}`)
   console.log(`Using profile: ${profileName}`)
 
   // Derive absolute paths from this file's directory to avoid CWD dependency
   // This ensures render.ts works regardless of current working directory
   const repoRoot = dirname(import.meta.dir)
   const globalDir = join(repoRoot, "src/global")
-  const outputDir = join(repoRoot, "dist/opencode")
+  const outputDir = join(repoRoot, "dist", platform)
 
   await renderTemplates(globalDir, outputDir, profile)
 }
