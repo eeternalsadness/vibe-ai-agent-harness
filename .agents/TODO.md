@@ -14,13 +14,13 @@ Findings from code reviewer — address in any order.
 
 - [ ] **`render.ts` hardcodes `dist/opencode/`** — contradicts platform-agnostic philosophy. `src/global/` is portable but the renderer bakes in `opencode`. Consider making the output subdirectory configurable.
 
-- [ ] **`parseMemoryItems` and `parseAgentOutput` are duplicates** — identical logic in two functions. Collapse into one.
+- [x] **`parseMemoryItems` and `parseAgentOutput` are duplicates** — identical logic in two functions. Collapse into one.
 
-- [ ] **`invokeMemoryAgent` does too much** — handles session creation, tracking, prompting, response parsing, cleanup, and error recovery. Split response extraction into a separate function.
+- [x] **`invokeMemoryAgent` does too much** — handles session creation, tracking, prompting, response parsing, cleanup, and error recovery. Split response extraction into a separate function.
 
-- [ ] **`withLock` is hard to follow** — externally-captured resolver pattern and while-loop busy-wait both look like bugs without explanation. Add comments.
+- [x] **`withLock` is hard to follow** — externally-captured resolver pattern and while-loop busy-wait both look like bugs without explanation. Add comments.
 
-- [ ] **`cached: memoryCache !== null` log is misleading** — always `true` at the point it fires. Capture whether cache was hit before calling `getCachedMemory()`.
+- [x] **`cached: memoryCache !== null` log is misleading** — always `true` at the point it fires. Capture whether cache was hit before calling `getCachedMemory()`.
 
 ## Low Priority
 

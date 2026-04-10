@@ -56,14 +56,19 @@ const memoryAgentSessions = new Set<string>()
 
 /**
  * Acquires a lock on a file path and executes callback
+ * 
+ * Uses an externally-captured resolver pattern: the resolver is captured
+ * outside the promise constructor, then invoked in the finally block to
+ * signal lock release. The while-loop busy-waits for existing locks before
+ * acquiring a new one — simple but effective for low-contention scenarios.
  */
 async function withLock<T>(filePath: string, callback: () => Promise<T>): Promise<T> {
-  // Wait for existing lock if any
+  // Busy-wait for existing lock if any
   while (locks.has(filePath)) {
     await locks.get(filePath)
   }
 
-  // Create new lock
+  // Create new lock with externally-captured resolver
   let resolve: () => void
   const lockPromise = new Promise<void>((r) => { resolve = r })
   locks.set(filePath, lockPromise)
@@ -103,11 +108,11 @@ async function readMemory(): Promise<string> {
 }
 
 /**
- * Parses memory file and extracts items (lines starting with "- ")
+ * Parses content and extracts bullet point items (lines starting with "- ")
+ * Used for both memory file parsing and agent output extraction
  */
-function parseMemoryItems(content: string): string[] {
-  const lines = content.split("\n")
-  return lines
+function parseBulletPoints(content: string): string[] {
+  return content.split("\n")
     .filter(line => line.trim().startsWith("- "))
     .map(line => line.trim())
 }
@@ -117,16 +122,6 @@ function parseMemoryItems(content: string): string[] {
  */
 function buildMemoryContent(items: string[]): string {
   return "# Memory\n\n" + items.join("\n") + "\n"
-}
-
-/**
- * Parses agent output to extract bullet points
- */
-function parseAgentOutput(output: string): string[] {
-  const lines = output.trim().split("\n")
-  return lines
-    .filter(line => line.trim().startsWith("- "))
-    .map(line => line.trim())
 }
 
 /**
@@ -157,6 +152,27 @@ function formatViolations(violations: Array<{ index: number; length: number; exc
   return violations
     .map(v => `Item ${v.index} was ${v.length} chars (${v.excess} over limit)`)
     .join("\n")
+}
+
+/**
+ * Extracts text content from session.prompt() response
+ */
+function extractResponseText(response: any, log?: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>): string {
+  // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
+  // NOTE: Using 'any' for SDK part types that aren't in official type definitions
+  const textPart = response.data?.parts?.find((p: any) => p.type === "text")
+  const result = textPart?.text || ""
+  
+  log?.("info", "Extracted response text", {
+    hasData: !!response.data,
+    hasParts: !!response.data?.parts,
+    partsCount: response.data?.parts?.length || 0,
+    partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
+    resultLength: result.length,
+    resultPreview: result.slice(0, 100)
+  })
+  
+  return result
 }
 
 /**
@@ -214,29 +230,8 @@ async function invokeMemoryAgent(
       }
     })
 
-    // Log the full response structure for debugging
-    await log?.("info", "Memory agent raw response", {
-      sessionId,
-      hasData: !!response.data,
-      hasParts: !!response.data?.parts,
-      partsCount: response.data?.parts?.length || 0,
-      // NOTE: Using 'any' for SDK part types that aren't in official type definitions
-      // If SDK updates these types, this will need updating - watch for breakage
-      partsTypes: response.data?.parts?.map((p: any) => p.type) || [],
-      fullResponse: JSON.stringify(response.data, null, 2)
-    })
-
-    // Extract the text result from the response
-    // session.prompt() returns parts in response.data.parts (not response.data.message.parts)
-    // NOTE: Using 'any' for SDK part types that aren't in official type definitions
-    const textPart = response.data?.parts?.find((p: any) => p.type === "text")
-    const result = textPart?.text || ""
-
-    await log?.("info", "Memory agent response received", {
-      sessionId,
-      resultLength: result.length,
-      resultPreview: result.slice(0, 100)
-    })
+    await log?.("info", "Memory agent raw response received", { sessionId })
+    const result = extractResponseText(response, log)
 
     // Step 3: Clean up - abort the session after getting result
     await client.session.abort({
@@ -279,7 +274,7 @@ async function invokeMemoryAgent(
 async function appendToMemory(items: string[]): Promise<void> {
   await withLock(MEMORY_FILE_PATH, async () => {
     const content = await readMemory()
-    const existingItems = parseMemoryItems(content)
+    const existingItems = parseBulletPoints(content)
 
     // Add new items
     const allItems = [...existingItems, ...items]
@@ -306,7 +301,7 @@ async function updateMemory(
 ): Promise<{ success: boolean; message: string }> {
   try {
     let agentOutput = await invokeMemoryAgent(client, sessionId, summary, undefined, log)
-    let items = parseAgentOutput(agentOutput)
+    let items = parseBulletPoints(agentOutput)
 
     await log?.("info", "Agent output parsed", { itemCount: items.length })
 
@@ -333,7 +328,7 @@ async function updateMemory(
       const retryPromptText = PROMPTS.retryViolations(summary, violationMessage)
 
       agentOutput = await invokeMemoryAgent(client, sessionId, summary, retryPromptText, log)
-      items = parseAgentOutput(agentOutput)
+      items = parseBulletPoints(agentOutput)
 
       // Validate again
       violations = validateItemLengths(items)
@@ -494,6 +489,8 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
       }
 
       try {
+        const now = Date.now()
+        const cacheHit = memoryCache !== null && (now - lastCacheTime) < CACHE_TTL_MS
         const memoryContent = await getCachedMemory()
 
         // Add memory context to system prompt
@@ -502,7 +499,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
         await log("info", "Memory context injected into system prompt", {
           sessionID,
           contentLength: memoryContent.length,
-          cached: memoryCache !== null
+          cached: cacheHit
         })
       } catch (error) {
         await log("error", "Failed to inject memory context", {
