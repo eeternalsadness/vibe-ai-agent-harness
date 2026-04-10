@@ -72,7 +72,7 @@ The harness uses two persistence layers with different purposes.
 2. Run `./install.sh` to render and install
 
 ```bash
-./install.sh                     # install with default profile
-./install.sh --profile broke     # install with a different profile
-./install.sh --dry-run           # preview without writing
+./install.sh                                         # install with default profile
+./install.sh --platform opencode --profile broke     # install with a different profile
+./install.sh --dry-run                               # preview without writing
 ```
