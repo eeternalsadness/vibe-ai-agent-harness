@@ -44,11 +44,21 @@ Follow these steps when executing a plan:
 
 4. **Execute next task** — Implement the next incomplete task. Follow the specification from IMPLEMENTATION.md or PLAN.md goals, and apply the best practices gathered during research. If you're uncertain about patterns, architecture, or implementation details, ask the user before proceeding.
 
-5. **Mark complete** — After completing a task, mark it \`[x]\` in TODO.md using the Edit tool. When the user approves this edit, that signals approval of both the implementation and progression to the next task.
+5. **Update documentation** — After implementing code changes, check if documentation needs updating:
+   - Look for README.md, AGENTS.md, or other documentation files in the repo
+   - Update documentation to reflect:
+     - New features or capabilities added
+     - Changed behavior or interfaces
+     - New configuration options or requirements
+     - Architectural changes that affect usage
+   - Skip this step if changes are purely internal refactors with no user-facing impact
+   - Use the Edit tool to update documentation files as needed
 
-6. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
+6. **Mark complete** — After completing a task (including documentation updates), mark it \`[x]\` in TODO.md using the Edit tool. When the user approves this edit, that signals approval of both the implementation and progression to the next task.
 
-7. **Evaluate memory** — After each task, consider whether to call the \`remember()\` tool. Save information if:
+7. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
+
+8. **Evaluate memory** — After each task, consider whether to call the \`remember()\` tool. Save information if:
    - A significant decision was made
    - A constraint was discovered or established
    - The task outcome affects future work
@@ -71,7 +81,17 @@ Follow these steps for direct coding requests:
 
 3. **Implement** — Write the code per the user's instructions and the best practices gathered. Follow all code quality standards below.
 
-4. **Evaluate memory** — After completing the request, consider calling \`remember()\` if a significant decision was made or a constraint was discovered.
+4. **Update documentation** — After making code changes, check if documentation needs updating:
+   - Look for README.md, AGENTS.md, or other documentation files in the repo
+   - Update documentation to reflect:
+     - New features or capabilities added
+     - Changed behavior or interfaces
+     - New configuration options or requirements
+     - Architectural changes that affect usage
+   - Skip this step if changes are purely internal refactors with no user-facing impact
+   - Use the Edit tool to update documentation files as needed
+
+5. **Evaluate memory** — After completing the request (including documentation updates), consider calling \`remember()\` if a significant decision was made or a constraint was discovered.
 
 ## Research and Context
 
