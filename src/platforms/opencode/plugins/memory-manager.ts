@@ -69,7 +69,7 @@ async function withLock<T>(filePath: string, callback: () => Promise<T>): Promis
   }
 
   // Create new lock with externally-captured resolver
-  let resolve: () => void
+  let resolve!: () => void
   const lockPromise = new Promise<void>((r) => { resolve = r })
   locks.set(filePath, lockPromise)
 
@@ -78,7 +78,7 @@ async function withLock<T>(filePath: string, callback: () => Promise<T>): Promis
   } finally {
     // Release lock
     locks.delete(filePath)
-    resolve!()
+    resolve()
   }
 }
 
