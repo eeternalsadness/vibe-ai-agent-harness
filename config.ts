@@ -14,8 +14,10 @@ const models = {
     "gpt-oss-120b": { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
     "llama-3.2-3b-instruct": { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
   },
-  ollama: {
-    "qwen3.5:9b": { providerID: "ollama", modelID: "qwen3.5:9b" },
+  lmstudio: {
+    "qwen3.5:9b": { providerID: "lmstudio", modelID: "qwen/qwen3.5-9b" },
+    "gemma4:e4b": { providerID: "lmstudio", modelID: "google/gemma-4-e4b" },
+    "gpt-oss:20b": { providerID: "lmstudio", modelID: "openai/gpt-oss-20b" },
   },
 }
 
@@ -41,18 +43,18 @@ export const config = {
     },
     broke: {
       primary: models.opencode["big-pickle"],
-      memory: models.ollama["qwen3.5:9b"],
+      memory: models.lmstudio["gpt-oss:20b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.ollama["qwen3.5:9b"],
+      knowledgeBase: models.lmstudio["gpt-oss:20b"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
     },
     based: {
       primary: models.opencode["big-pickle"],
-      memory: models.ollama["qwen3.5:9b"],
+      memory: models.lmstudio["qwen3.5:9b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.ollama["qwen3.5:9b"],
+      knowledgeBase: models.lmstudio["qwen3.5:9b"],
       planner: models.opencode["big-pickle"],
       coder: models.copilot["claude-sonnet-4.6"],
       reviewer: models.copilot["claude-sonnet-4.6"],
