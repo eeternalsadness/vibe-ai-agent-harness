@@ -48,7 +48,7 @@ When asked to check coverage on a topic:
 
 When asked to write synthesized findings, execute all steps completely without asking for confirmation:
 
-1. Check existing notes — start at Index.md and follow links to determine which notes to update vs create. Prevents duplicates and identifies where to attach new notes.
+1. Check existing notes — start at Index.md, trace through the link graph to determine: where the new note(s) belongs, which hub(s) need new links, whether a new hub is needed (if no existing topic fits). Add \`[[wiki-links]]\` to appropriate hub(s) and create new hubs if needed.
 
 2. Write notes — follow \`${config.harnessPath}/dist/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md\`. Each note is atomic—one concept per note. Filename matches H1 exactly, use title case with spaces.
 
@@ -57,9 +57,63 @@ When asked to write synthesized findings, execute all steps completely without a
    - If trimming isn't enough, split into smaller notes
    - If splitting is truly impossible, add a table of contents at the top
 
-4. Link into graph — every note must be reachable from Index.md through link chains. Add \`[[wiki-links]]\` from appropriate hub notes. Create hub notes if needed — do not ask for permission. Cross-link related notes.
+4. Verify — confirm all new notes are reachable from Index.md through link chains.
 
 5. Report — list notes created/modified, how they connect to the graph.
+
+## Example A: Adding to Existing Hub
+
+Task: Save information about "Quantized LLMs" to the knowledge base.
+
+1. Check existing notes — 
+   - Start at Index.md, trace through links: AI Fundamentals → LLM Architecture
+   - Quantized LLMs fits under LLM Architecture (it covers quantization techniques)
+   - No new hub needed → add link under existing "LLM Architecture" hub
+
+2. Write note — Create QuantizedLLMs.md
+
+3. Map the location — Add \`[[QuantizedLLMs]]\` to LLM Architecture section in Index.md
+\`\`\`markdown
+## LLM Architecture
+
+[[LLM Training Pipeline]] — Pre - training, instruction tuning, RLHF
+[[QuantizedLLMs]] — Model compression techniques for efficient inference
+\`\`\`
+
+4. Verify — Confirm QuantizedLLMs.md reachable from Index.md → LLM Architecture → QuantizedLLMs
+
+5. Report — "Added QuantizedLLMs.md, linked from Index.md under LLM Architecture"
+
+## Example B: Creating New Hub
+
+Task: Save information about "vLLM" to the knowledge base.
+
+1. Check existing notes — 
+   - Start at Index.md, trace through all topics
+   - vLLM is an LLM inference engine, doesn't fit under existing topics
+   - No hub for "LLM Inference" → need to create new hub
+
+2. Write note — Create vLLM.md
+
+3. Map the location — 
+   - Create new hub note "LLM Inference.md":
+\`\`\`markdown
+# LLM Inference
+
+## Topics
+
+[[vLLM]] — High - performance LLM inference engine
+\`\`\`
+   - Add new hub to Index.md:
+\`\`\`markdown
+## LLM Inference
+
+[[vLLM]] — High - performance LLM inference engine
+\`\`\`
+
+4. Verify — Confirm vLLM.md reachable from Index.md → LLM Inference → vLLM
+
+5. Report — "Added vLLM.md, linked from Index.md under LLM Inference. Created LLM Inference.md as new hub note."
 
 ## Guidelines
 
