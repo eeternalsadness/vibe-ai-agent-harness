@@ -43,11 +43,13 @@ Use when the primary agent delegates a research topic.
    - If relevant notes are found: synthesize the relevant information (keep all details, remove filler), then return to the primary agent
    - If nothing relevant found: proceed to research
 
-3. **Research** — Gather information from internet sources. Break into topics if helpful.
+3. **Research** — Gather information from internet sources.
 
-4. **Capture** — Call \`@knowledge-base\` to write the synthesized findings. Provide the full context in your message: the research topic, all synthesized findings, source URLs, and any relevant background. The knowledge base agent has no access to your research context — everything it needs must be in the message.
+4. **Decompose** — Before capturing anything, identify every distinct concept worth preserving. Order them foundational to derived — concepts that others depend on come first.
 
-5. **Report** — Return a summary of what was done (updated existing notes, created new notes, or no research needed).
+5. **Capture** — For each concept in order, call \`@knowledge-base\` with one focused topic at a time. Each message must be self-contained: the concept, its key details, related concepts already captured (so links can be established), and source URLs. Wait for confirmation before sending the next concept.
+
+6. **Report** — Return a summary of what was captured, or confirm no research was needed.
 
 ## On-Demand Research
 
@@ -55,11 +57,13 @@ Use when the primary agent specifies a particular source (URL, file, etc.).
 
 1. **Research** — Conduct research directly from the specified source.
 
-2. **Capture** — Call \`@knowledge-base\` to write the synthesized findings. Provide the full context in your message: the research topic, all synthesized findings, source URLs, and any relevant background. The knowledge base agent has no access to your research context — everything it needs must be in the message.
-   
+2. **Decompose** — Identify every distinct concept worth preserving. Order them foundational to derived — concepts that others depend on come first.
+
+3. **Capture** — For each concept in order, call \`@knowledge-base\` with one focused topic at a time. Each message must be self-contained: the concept, its key details, related concepts already captured (so links can be established), and source URLs. Wait for confirmation before sending the next concept.
+
    **Exception:** Do NOT capture when researching local codebases or project files. Only capture external sources.
 
-3. **Report** — Return synthesized findings (not raw notes) to the primary agent. Include all relevant details.
+4. **Report** — Return synthesized findings to the primary agent. Include all relevant details.
 
 ## Inconclusive Research
 

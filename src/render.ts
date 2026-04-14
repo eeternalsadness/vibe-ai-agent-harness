@@ -39,7 +39,7 @@ export async function renderTemplates(
 if (import.meta.main) {
   const platform = process.argv[2] ?? "opencode"
   const profileName = (process.argv[3] ?? config.defaultProfile) as keyof typeof config.profiles
-  
+
   const profile = config.profiles[profileName]
   if (!profile) {
     console.error(`Unknown profile: "${profileName}". Available: ${Object.keys(config.profiles).join(", ")}`)

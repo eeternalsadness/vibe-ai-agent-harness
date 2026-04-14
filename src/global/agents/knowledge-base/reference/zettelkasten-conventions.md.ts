@@ -12,47 +12,58 @@ The knowledge base lives at \`${config.knowledgeBasePath}\`. All notes are store
 
 ### Hub notes
 
-Hub notes act as topic indexes. They contain a title and a list of links to related notes. They exist to organize the graph — they carry no substantive content themselves.
+Hub notes act as topic indexes. They exist to organize the graph — they carry no substantive content themselves, only links to child notes.
 
-**Example** (\`AI.md\`):
+Use a flat list when all links fall under one coherent topic with no meaningful subdivisions. Use sections when there are clear logical groupings. Sections can themselves become separate hub notes when a grouping grows large enough.
+
+All links in hub notes must include a short description — they lack the surrounding prose that would otherwise provide context.
+
+**Flat example** (\`Cooking.md\`):
 
 \`\`\`markdown
-# AI
+# Cooking
 
-[[AI agent skill]]
-[[AI agent training]]
-[[AI prompt library]]
-[[Model Context Protocol]]
+[[Knife skills]] - Chopping, dicing, and julienning techniques
+[[Mise en place]] - Preparing and organizing ingredients before cooking
+[[Heat control]] - Managing temperature for different cooking methods
+\`\`\`
+
+**Sectioned example** (\`Baking.md\`):
+
+\`\`\`markdown
+# Baking
+
+## Bread
+
+[[Sourdough starter]] - Live culture of wild yeast used to leaven bread
+[[Bulk fermentation]] - First rise after mixing dough
+
+## Pastry
+
+[[Shortcrust pastry]] - Crumbly pastry used for tarts and pies
+[[Laminated dough]] - Layered dough used for croissants and puff pastry
 \`\`\`
 
 ### Leaf notes
 
-Leaf notes are atomic — each one covers a single topic in detail. This is where actual knowledge lives.
+Leaf notes are atomic — each one covers exactly one concept. If a section within a note could stand alone as its own concept, it should be its own note. This is where actual knowledge lives.
 
-**Example** (\`AI coding workflow.md\`):
+**Example** (\`Sourdough starter.md\`):
 
 \`\`\`markdown
-# AI coding workflow
+# Sourdough starter
 
-The AI coding workflow consists of planning, prompting, scaffolding, debugging, and deployment. Each phase builds on the previous one.
+A sourdough starter is a live culture of wild yeast and bacteria used to leaven [[bread]]. It must be fed regularly with flour and water to stay active.
 
-## Planning
+A starter is ready to use when it doubles in size within 4-8 hours of feeding and smells pleasantly sour. An unfed starter becomes too acidic and produces dense, overly sour bread.
 
-- Outline what you want to do
-- Include inputs, outputs, and tech stack
+## See also
 
-## Prompting
-
-- Better prompts yield better outputs
-- Break down tasks before prompting
-
-## Scaffolding
-
-- Define code structure for the agent to use
-
-## Debugging
-## Deployment
+[[Bulk fermentation]] - First rise after mixing; timing depends on starter activity
+[[Sourdough hydration]] - Ratio of water to flour; affects crumb structure
 \`\`\`
+
+Note what this example does NOT do: it does not include sections on hydration or bulk fermentation. Those are separate concepts with their own notes, linked from here.
 
 ### Index
 
@@ -96,9 +107,27 @@ Introductory paragraph explaining the note's purpose or scope goes here.
 ## Linking Rules
 
 - Hub notes link to their child notes (sub-topics or leaf notes)
-- Leaf notes can link to any other note as a reference using \`[[Note Name]]\`
+- Leaf notes can link to any other note using \`[[Note Name]]\`
 - When creating a new note, link it from at least one existing hub note so it's reachable from the index
 - If no suitable hub exists, create one and link it from an existing hub or from \`Index.md\`
+
+### Inline links
+
+Embed links naturally in prose where the surrounding sentence provides context. No description needed — the prose does that work.
+
+\`\`\`markdown
+A sourdough starter must be fed before use in [[bulk fermentation]].
+\`\`\`
+
+### Out-of-prose links
+
+Links that appear outside of prose — in hub notes or \`## See also\` sections — must include a short description, since there is no surrounding context.
+
+\`\`\`markdown
+[[Bulk fermentation]] - First rise after mixing; timing depends on starter activity
+\`\`\`
+
+Use a \`## See also\` section at the bottom of a leaf note for related concepts that are relevant but don't fit naturally into the prose.
 
 ## Naming Conventions
 
