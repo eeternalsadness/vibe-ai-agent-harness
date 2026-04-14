@@ -45,20 +45,7 @@ Use the \`remember()\` tool to save significant information to persistent workin
 - Debugging steps or investigation details
 - Discussion without a conclusion
 
-**Granularity — enough context to understand what happened, no implementation details:**
-
-The item should tell a reader what changed and why in one sentence — no file names, function names, or steps.
-
-**Prefix project-specific items with the project name.** Omit the prefix for global preferences or cross-cutting decisions.
-
-❌ "Added PROMPTS config object with systemInjection and retryViolations templates to memory-manager.ts"
-✅ "vibe-ai-agent-harness: made prompts in memory plugin configurable"
-
-❌ "Restructure plan agreed: replace symlinks with install.sh that renders TypeScript template literals to dist/ then copies to ~/.config/opencode/. config.ts holds paths/models. Source moves to src/global/ and src/platforms/opencode/."
-✅ "vibe-ai-agent-harness: added plan to restructure repo — symlinks replaced with a build pipeline"
-
-❌ "Created model profiles plan at .agents/plans/04-model-profiles/PLAN.md + TODO.md"
-✅ "vibe-ai-agent-harness: added plan to configure model profiles for agent harness"
+Pass a concise description of what was done or decided. The memory agent handles all formatting.
 
 ### Common Workflow Violations (Memory)
 

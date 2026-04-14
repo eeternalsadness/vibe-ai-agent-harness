@@ -41,64 +41,47 @@ Format the provided content into memory items.
 - **Prefer one item** — only split if the input contains genuinely distinct pieces of information that would each be useful independently
 - **Preserve wording** — keep the original wording as much as possible; condense only to remove noise or fit the limit
 
+## Formatting
+
+Each item must be short but meaningful — summarize what was done or decided in one concise sentence. Do not list file names, function names, or step-by-step details.
+
+Prefix project-specific items with the project name. Omit the prefix for global preferences or cross-cutting decisions.
+
 ## Examples
 
-**Input:** "Decided to use Zod for API validation because it catches runtime errors TypeScript misses"
+**Input:** "user preference: never abbreviate knowledge base as KB"
 
 **Output:**
-
 \`\`\`
-- Decided to use Zod for API validation — catches runtime errors TypeScript misses
+- Preference: never abbreviate knowledge base as KB
 \`\`\`
 
 ---
 
-**Input:** "User preference - always use research agent for research tasks. The research agent checks the knowledge base first, then does internet research if needed."
+**Input:** "vibe-ai-agent-harness: agreed on a plan to restructure the repo, replacing symlinks with a build pipeline"
 
 **Output:**
-
 \`\`\`
-- Preference: use research agent for all research tasks
+- vibe-ai-agent-harness: repo restructure plan agreed — build pipeline replaces symlinks
 \`\`\`
 
 ---
 
-**Input:** "Fixed infinite loop bug in memory plugin. Root cause was session tracking set not being checked before hook recursion."
+**Input:** "vibe-ai-agent-harness: the research agent now checks the knowledge base before doing any external research, and captures all findings to the knowledge base after researching. both the normal and on-demand workflows now always end with a knowledge base capture step."
 
 **Output:**
-
 \`\`\`
-- Fixed infinite loop bug in memory plugin
+- vibe-ai-agent-harness: research agent always checks and captures to the knowledge base in both workflows
 \`\`\`
 
 ---
 
-**Input:** "Added PROMPTS config object with systemInjection and retryViolations templates to memory-manager.ts. systemInjection tells the agent to check memory first, then knowledge base. retryViolations is sent when items exceed the char limit."
+**Input:** "decided to use Vitest instead of Jest for the test suite because it has native TypeScript support and faster watch mode. also agreed that all new modules must have a corresponding test file before merging."
 
 **Output:**
-
 \`\`\`
-- Made prompts in memory plugin configurable through a PROMPTS config object
-\`\`\`
-
----
-
-**Input:** "Restructure plan agreed: replace symlinks with install.sh that renders TypeScript template literals to dist/ then copies to ~/.config/opencode/. config.ts holds paths/models. Source moves to src/global/ and src/platforms/opencode/."
-
-**Output:**
-
-\`\`\`
-- vibe-ai-agent-harness: added plan to restructure repo — symlinks replaced with a build pipeline
-\`\`\`
-
----
-
-**Input:** "Updated global AGENTS.md memory instructions to require calling remember() after every response where a decision, preference, plan, constraint, or completed task occurred. Added bad/good examples and common workflow violations section."
-
-**Output:**
-
-\`\`\`
-- Updated global instructions to strengthen memory workflow adherence
+- Decided to use Vitest over Jest — native TypeScript support and faster watch mode
+- Agreed: all new modules must have a corresponding test file before merging
 \`\`\`
 `
 }
