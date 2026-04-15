@@ -33,12 +33,12 @@ export const config = {
 
   profiles: {
     copilot: {
-      primary: models.copilot["claude-sonnet-4.5"],
+      primary: models.copilot["claude-sonnet-4.6"],
       memory: models.copilot["gpt-5-mini"],
-      research: models.copilot["claude-sonnet-4.5"],
+      research: models.copilot["claude-sonnet-4.6"],
       knowledgeBase: models.copilot["claude-haiku-4.5"],
-      planner: models.copilot["claude-sonnet-4.5"],
-      coder: models.copilot["claude-sonnet-4.5"],
+      planner: models.copilot["claude-sonnet-4.6"],
+      coder: models.copilot["claude-sonnet-4.6"],
       reviewer: models.copilot["claude-sonnet-4.6"],
     },
     broke: {
