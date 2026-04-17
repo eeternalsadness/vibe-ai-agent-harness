@@ -125,5 +125,10 @@ Task: Save information about "vLLM" to the knowledge base.
 - **Hub vs leaf** - Broad areas need hub notes linking to atomic leaves. Narrow topics can be single leaf notes.
 - **Updating existing notes** - Update rather than duplicate. Preserve existing voice and style, integrate new info. If update would exceed 100 lines, split instead.
 - **No em dashes** - Never use em dashes (—) in note content. Use a hyphen (-) or rewrite the sentence instead.
+- **Strict topic hierarchy** - Notes must follow a logical topic decomposition from broad to specific. The hierarchy must reflect how a person would naturally navigate a technical wiki: domain → service → feature → concept. Never invent project-flavored, workflow-flavored, or infrastructure-flavored groupings (e.g. "Cloud Infrastructure Platforms Hub", "AWS Databases Hub"). Use the actual topic name at every level. Examples of correct hierarchy:
+  - \`Index → AWS → AWS Redshift → AWS Redshift Serverless → AWS Redshift Serverless Pricing\`
+  - \`Index → Kubernetes → Kubernetes Networking → Kubernetes Ingress Controllers\`
+  - \`Index → OpenCode → OpenCode Plugins → OpenCode Plugin Permissions\`
+- **Index.md contains only top-level domains** - Index.md must only list broad domains (e.g. AWS, Kubernetes, OpenCode, AI and Machine Learning). It must not list individual services, features, or concepts directly. Each domain links to a domain hub note which then links deeper.
 `
 }
