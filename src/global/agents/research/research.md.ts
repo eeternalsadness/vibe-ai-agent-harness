@@ -37,7 +37,7 @@ You conduct research on topics and capture findings by calling \`@knowledge-base
 
 Use when the primary agent delegates a topic to research (no specific source provided).
 
-1. **Check existing coverage** — Call \`@knowledge-base\` with the research topic. Ask for relevant notes on this topic.
+1. **Check existing coverage** — Call \`@knowledge-base\` to check if the knowledge base already has relevant notes about the research topic.
 
 2. **Evaluate response**:
    - If relevant notes are found: synthesize the relevant information (keep all details, remove filler), then return to the primary agent. Skip remaining steps.
