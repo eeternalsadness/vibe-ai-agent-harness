@@ -9,6 +9,8 @@ const models = {
   },
   opencode: {
     "big-pickle": { providerID: "opencode", modelID: "big-pickle" },
+    "minimax-m2.5": { providerID: "opencode", modelID: "minimax-m2.5-free" },
+    "gpt-5-nano": { providerID: "opencode", modelID: "gpt-5-nano" },
   },
   openrouter: {
     "gpt-oss-120b": { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
@@ -46,6 +48,15 @@ export const config = {
       memory: models.lmstudio["gpt-oss:20b"],
       research: models.opencode["big-pickle"],
       knowledgeBase: models.lmstudio["gpt-oss:20b"],
+      planner: models.opencode["big-pickle"],
+      coder: models.opencode["big-pickle"],
+      reviewer: models.opencode["big-pickle"],
+    },
+    framework: {
+      primary: models.opencode["big-pickle"],
+      memory: models.opencode["gpt-5-nano"],
+      research: models.opencode["big-pickle"],
+      knowledgeBase: models.opencode["minimax-m2.5"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
