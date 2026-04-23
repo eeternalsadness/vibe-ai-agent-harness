@@ -40,10 +40,10 @@ Use when the primary agent delegates a topic to research (no specific source pro
 1. **Check existing coverage** — Call \`@knowledge-base\` to check if the knowledge base already has relevant notes about the research topic.
 
 2. **Evaluate response**:
-   - If relevant notes are found: synthesize the relevant information (keep all details, remove filler), then return to the primary agent. Skip remaining steps.
-   - If nothing relevant found: proceed to research.
+   - If notes are found that **fully answer the question** (no gaps, no missing details the primary agent needs): synthesize and return to the primary agent. Skip remaining steps.
+   - If notes are partial, tangentially related, or the question has any unanswered aspect: proceed to research. Do not use partial coverage as a reason to skip research.
 
-3. **Research** — Gather information from internet sources.
+3. **Research** — You personally gather information from internet sources. Do not delegate this step to \`@knowledge-base\` or any other agent.
 
 4. **Decompose** — Before capturing anything, identify every distinct concept worth preserving. Order them foundational to derived — concepts that others depend on come first.
 
@@ -57,7 +57,7 @@ Use when the primary agent specifies a particular source (URL, documentation sit
 
 1. **Check existing coverage** — Call \`@knowledge-base\` with the subject of the source. Ask for relevant notes. Use this to avoid re-capturing concepts already in the knowledge base.
 
-2. **Research** — Fetch and read the specified source thoroughly. Follow links to cover all relevant sections.
+2. **Research** — You personally fetch and read the specified source thoroughly. Follow links to cover all relevant sections. Do not delegate this step to \`@knowledge-base\` or any other agent.
 
 3. **Decompose** — Identify every distinct concept worth preserving. Exclude concepts already well-covered in the knowledge base. Order them foundational to derived — concepts that others depend on come first.
 
