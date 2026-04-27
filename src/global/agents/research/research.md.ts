@@ -37,7 +37,7 @@ You conduct research on topics and capture findings by calling \`@knowledge-base
 
 Use when the primary agent delegates a topic to research (no specific source provided).
 
-1. **Check existing coverage** — Call \`@knowledge-base\` to check if the knowledge base already has relevant notes about the research topic.
+1. **Check existing coverage** — Call \`@knowledge-base\` with a focused lookup prompt. State the specific question that needs answering and ask whether existing notes are sufficient to answer it. Do not include research instructions, source requirements, or capture requests — this is a read-only lookup. Example: "I need to answer: [specific question]. Do your existing notes cover this sufficiently? If so, return the relevant details."
 
 2. **Evaluate response**:
    - If notes are found that **fully answer the question** (no gaps, no missing details the primary agent needs): synthesize and return to the primary agent. Skip remaining steps.
@@ -55,7 +55,7 @@ Use when the primary agent delegates a topic to research (no specific source pro
 
 Use when the primary agent specifies a particular source (URL, documentation site, file, etc.).
 
-1. **Check existing coverage** — Call \`@knowledge-base\` with the subject of the source. Ask for relevant notes. Use this to avoid re-capturing concepts already in the knowledge base.
+1. **Check existing coverage** — Call \`@knowledge-base\` with a focused lookup prompt. State the specific question that needs answering and ask whether existing notes are sufficient to answer it. Do not include research instructions, source requirements, or capture requests — this is a read-only lookup. Example: "I need to answer: [specific question]. Do your existing notes cover this sufficiently? If so, return the relevant details."
 
 2. **Research** — You personally fetch and read the specified source thoroughly. Follow links to cover all relevant sections. Do not delegate this step to \`@knowledge-base\` or any other agent.
 
