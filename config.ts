@@ -23,6 +23,8 @@ const models = {
   },
   framework: {
     "qwen3.6:27b": { providerID: "framework", modelID: "Qwen3.6-27B-Q4_K_M" },
+    "qwen3.6:35b-a3b-moe": { providerID: "framework", modelID: "Qwen3.6-35B-A3B-MXFP4_MOE" },
+    "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B-UD-Q4_K_M" },
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
 }
@@ -58,9 +60,9 @@ export const config = {
     },
     framework: {
       primary: models.opencode["big-pickle"],
-      memory: models.framework["gpt-oss:120b"],
-      research: models.opencode["big-pickle"],
-      knowledgeBase: models.framework["gpt-oss:120b"],
+      memory: models.framework["qwen3.6:35b-a3b-moe"],
+      research: models.framework["qwen3.6:35b-a3b-moe"],
+      knowledgeBase: models.framework["qwen3.6:35b-a3b-moe"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
