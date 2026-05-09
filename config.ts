@@ -21,6 +21,10 @@ const models = {
     "gemma4:e4b": { providerID: "lmstudio", modelID: "google/gemma-4-e4b" },
     "gpt-oss:20b": { providerID: "lmstudio", modelID: "openai/gpt-oss-20b" },
   },
+  framework: {
+    "qwen3.6:27b": { providerID: "framework", modelID: "Qwen3.6-27B-Q4_K_M" },
+    "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
+  },
 }
 
 const repoPath = "~/Repo"
@@ -45,18 +49,18 @@ export const config = {
     },
     broke: {
       primary: models.opencode["big-pickle"],
-      memory: models.lmstudio["gpt-oss:20b"],
+      memory: models.opencode["gpt-5-nano"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.lmstudio["gpt-oss:20b"],
+      knowledgeBase: models.opencode["minimax-m2.5"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
     },
     framework: {
       primary: models.opencode["big-pickle"],
-      memory: models.opencode["gpt-5-nano"],
+      memory: models.framework["gpt-oss:120b"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.opencode["minimax-m2.5"],
+      knowledgeBase: models.framework["gpt-oss:120b"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
