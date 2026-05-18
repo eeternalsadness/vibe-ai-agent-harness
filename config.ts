@@ -27,6 +27,9 @@ const models = {
     "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B-UD-Q4_K_M" },
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
+  yescale: {
+    "gemini3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
+  }
 }
 
 const repoPath = "~/Repo"
@@ -68,11 +71,11 @@ export const config = {
       reviewer: models.opencode["big-pickle"],
     },
     based: {
-      primary: models.opencode["big-pickle"],
+      primary: models.yescale["gemini3-pro"],
       memory: models.lmstudio["qwen3.5:9b"],
-      research: models.opencode["big-pickle"],
+      research: models.yescale["gemini3-pro"],
       knowledgeBase: models.lmstudio["qwen3.5:9b"],
-      planner: models.opencode["big-pickle"],
+      planner: models.yescale["gemini3-pro"],
       coder: models.copilot["claude-sonnet-4.6"],
       reviewer: models.copilot["claude-sonnet-4.6"],
     },
