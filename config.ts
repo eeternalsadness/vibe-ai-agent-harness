@@ -28,7 +28,9 @@ const models = {
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
   yescale: {
-    "gemini3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
+    "gemini-3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
+    "deepseek-v3.2": { providerID: "yescale", modelID: "deepseek-v3.2-thinking" },
+    "gemini-3-flash": { providerID: "yescale", modelID: "gemini-3-flash-preview" },
   }
 }
 
@@ -71,11 +73,11 @@ export const config = {
       reviewer: models.opencode["big-pickle"],
     },
     based: {
-      primary: models.yescale["gemini3-pro"],
+      primary: models.yescale["gemini-3-flash"],
       memory: models.lmstudio["qwen3.5:9b"],
-      research: models.yescale["gemini3-pro"],
+      research: models.yescale["gemini-3-flash"],
       knowledgeBase: models.lmstudio["qwen3.5:9b"],
-      planner: models.yescale["gemini3-pro"],
+      planner: models.yescale["deepseek-v3.2"],
       coder: models.copilot["claude-sonnet-4.6"],
       reviewer: models.copilot["claude-sonnet-4.6"],
     },
