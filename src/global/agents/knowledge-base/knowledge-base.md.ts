@@ -40,9 +40,9 @@ Read \`${config.harnessPath}/dist/opencode/agents/knowledge-base/reference/zette
 
 When asked to check coverage on a topic:
 
-1. Start at \`Index.md\` — it contains high-level topic hub notes
-2. Follow \`[[wiki-links]]\` to relevant hub notes
-3. Hub notes link to more specific topics or atomic notes — keep following links until you find relevant content
+1. Start at \`Index.md\` — it lists only the top-level domain notes (AI, AWS, Kubernetes, etc.)
+2. Follow \`[[wiki-links]]\` to the relevant domain note
+3. Domain notes link to sub-topics; sub-topics link to atomic notes — keep following links until you find relevant content
  4. Return exactly one of the following response types. No other output — no suggestions, no questions, no next steps.
 
    **Sufficient:**
@@ -71,7 +71,7 @@ When asked to check coverage on a topic:
 
 When asked to write synthesized findings, execute all steps completely without asking for confirmation:
 
-1. Check existing notes — start at Index.md, trace through the link graph to determine: where the new note(s) belongs, which hub(s) need new links, whether a new hub is needed (if no existing topic fits). Add \`[[wiki-links]]\` to appropriate hub(s) and create new hubs if needed.
+1. Check existing notes — start at Index.md, trace through the link graph to determine: where the new note(s) belongs, which parent note needs a new link, whether a new domain or sub-domain note is needed (if no existing topic fits). Add \`[[wiki-links]]\` to the appropriate parent and create new domain/sub-domain notes if needed. Never add links directly to Index.md except for new top-level domains.
 
 2. Write notes — follow \`${config.harnessPath}/dist/opencode/agents/knowledge-base/reference/zettelkasten-conventions.md\`. Each note is atomic—one concept per note. Filename matches H1 exactly, use title case with spaces.
 
@@ -84,72 +84,86 @@ When asked to write synthesized findings, execute all steps completely without a
 
 5. Report — list notes created/modified, how they connect to the graph.
 
-## Example A: Adding to Existing Hub
+## Example A: Adding to Existing Topic
 
 Task: Save information about "Quantized LLMs" to the knowledge base.
 
 1. Check existing notes — 
-   - Start at Index.md, trace through links: AI Fundamentals → LLM Architecture
-   - Quantized LLMs fits under LLM Architecture (it covers quantization techniques)
-   - No new hub needed → add link under existing "LLM Architecture" hub
+   - Start at Index.md → AI → AI Fundamentals and LLMs → LLM Architecture
+   - Quantized LLMs fits under LLM Architecture (covers quantization techniques)
+   - No new topic note needed → add link under existing LLM Architecture note
 
-2. Write note — Create QuantizedLLMs.md
+2. Write note — Create LLM Quantization.md
 
-3. Map the location — Add \`[[QuantizedLLMs]]\` to LLM Architecture section in Index.md
+3. Map the location — Add \`[[LLM Quantization]]\` to LLM Architecture.md
 \`\`\`markdown
-## LLM Architecture
+## Techniques
 
-[[LLM Training Pipeline]] — Pre - training, instruction tuning, RLHF
-[[QuantizedLLMs]] — Model compression techniques for efficient inference
+[[LLM Training Pipeline]] — Pre-training, instruction tuning, RLHF
+[[LLM Quantization]] — Model compression techniques for efficient inference
 \`\`\`
 
-4. Verify — Confirm QuantizedLLMs.md reachable from Index.md → LLM Architecture → QuantizedLLMs
+4. Verify — Confirm LLM Quantization.md reachable from Index.md → AI → AI Fundamentals and LLMs → LLM Architecture → LLM Quantization
 
-5. Report — "Added QuantizedLLMs.md, linked from Index.md under LLM Architecture"
+5. Report — "Added LLM Quantization.md, linked from LLM Architecture.md"
 
-## Example B: Creating New Hub
+## Example B: Creating a New Topic Note
 
 Task: Save information about "vLLM" to the knowledge base.
 
 1. Check existing notes — 
-   - Start at Index.md, trace through all topics
-   - vLLM is an LLM inference engine, doesn't fit under existing topics
-   - No hub for "LLM Inference" → need to create new hub
+   - Start at Index.md → AI → Local LLM Inference
+   - vLLM is an LLM inference engine; Local LLM Inference is the right parent
+   - No existing note for vLLM → create one and link it from Local LLM Inference.md
 
 2. Write note — Create vLLM.md
 
-3. Map the location — 
-   - Create new hub note "LLM Inference.md":
+3. Map the location — Add \`[[vLLM]]\` to Local LLM Inference.md:
 \`\`\`markdown
-# LLM Inference
+## Inference Engines
 
-## Topics
-
-[[vLLM]] — High - performance LLM inference engine
-\`\`\`
-   - Add new hub to Index.md:
-\`\`\`markdown
-## LLM Inference
-
-[[vLLM]] — High - performance LLM inference engine
+[[vLLM]] — High-performance LLM inference engine with continuous batching
 \`\`\`
 
-4. Verify — Confirm vLLM.md reachable from Index.md → LLM Inference → vLLM
+4. Verify — Confirm vLLM.md reachable from Index.md → AI → Local LLM Inference → vLLM
 
-5. Report — "Added vLLM.md, linked from Index.md under LLM Inference. Created LLM Inference.md as new hub note."
+5. Report — "Added vLLM.md, linked from Local LLM Inference.md"
+
+## Example C: Creating a New Domain or Sub-Domain
+
+Task: Save information about "Pulumi" to the knowledge base.
+
+1. Check existing notes — 
+   - Start at Index.md → Infrastructure as Code
+   - Pulumi is an IaC tool; Infrastructure as Code is the right domain
+   - No existing Pulumi note → create one and link from Infrastructure as Code.md
+
+2. Write note — Create Pulumi.md
+
+3. Map the location — Add \`[[Pulumi]]\` to Infrastructure as Code.md:
+\`\`\`markdown
+## Tools
+
+[[Terraform Infrastructure]] — HashiCorp IaC: HCL, modules, state management
+[[Pulumi]] — IaC with general-purpose programming languages
+\`\`\`
+
+4. Verify — Confirm Pulumi.md reachable from Index.md → Infrastructure as Code → Pulumi
+
+5. Report — "Added Pulumi.md, linked from Infrastructure as Code.md"
 
 ## Guidelines
 
 - **Source-only** - Only write what you have been given. If anything is missing or conflicting, do not write — report the issue back to the caller.
 - **Accuracy over volume** - Write fewer, high-quality notes. Capture what's documented.
 - **Note size discipline** - If a note exceeds 100 lines, first try trimming while retaining details, then split if needed, then add table of contents only as a last resort.
-- **Hub vs leaf** - Broad areas need hub notes linking to atomic leaves. Narrow topics can be single leaf notes.
+- **Hierarchy is arbitrary depth** — Index.md has only top-level domains (AI, AWS, Kubernetes, etc.). Each domain note links to sub-topics. Sub-topics can link to further sub-topics, as deep as the topic warrants. Leaf notes are atomic concepts with no children. Never add a leaf note directly to Index.md or to a domain note if a more specific parent already exists or should exist.
 - **Updating existing notes** - Update rather than duplicate. Preserve existing voice and style, integrate new info. If update would exceed 100 lines, split instead.
 - **No em dashes** - Never use em dashes (—) in note content. Use a hyphen (-) or rewrite the sentence instead.
-- **Strict topic hierarchy** - Notes must follow a logical topic decomposition from broad to specific. The hierarchy must reflect how a person would naturally navigate a technical wiki: domain → service → feature → concept. Never invent project-flavored, workflow-flavored, or infrastructure-flavored groupings (e.g. "Cloud Infrastructure Platforms Hub", "AWS Databases Hub"). Use the actual topic name at every level. Examples of correct hierarchy:
+- **Strict topic hierarchy** - Notes must follow a logical topic decomposition from broad to specific. The hierarchy must reflect how a person would naturally navigate a technical wiki. Use the actual topic name at every level — never append suffixes like "Hub", "Overview", or "Guide" to note names. Examples of correct hierarchy:
   - \`Index → AWS → AWS Redshift → AWS Redshift Serverless → AWS Redshift Serverless Pricing\`
   - \`Index → Kubernetes → Kubernetes Networking → Kubernetes Ingress Controllers\`
-  - \`Index → OpenCode → OpenCode Plugins → OpenCode Plugin Permissions\`
-- **Index.md contains only top-level domains** - Index.md must only list broad domains (e.g. AWS, Kubernetes, OpenCode, AI and Machine Learning). It must not list individual services, features, or concepts directly. Each domain links to a domain hub note which then links deeper.
+  - \`Index → AI → Local LLM Inference → llama.cpp → llama.cpp Router Mode → llama.cpp Router Mode CLI Flags\`
+- **Index.md contains only top-level domains** - Index.md must only list broad domains (e.g. AWS, Kubernetes, AI). It must not list individual services, features, or concepts directly.
 `
 }
