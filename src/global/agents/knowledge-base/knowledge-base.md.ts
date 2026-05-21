@@ -43,8 +43,10 @@ When asked to check coverage on a topic:
 1. Start at \`Index.md\` — it contains high-level topic hub notes
 2. Follow \`[[wiki-links]]\` to relevant hub notes
 3. Hub notes link to more specific topics or atomic notes — keep following links until you find relevant content
-4. Return the full content of all relevant notes
-5. If nothing relevant found, say: "Nothing relevant found in the knowledge base."
+4. Return exactly one of the following response types:
+   - **Sufficient knowledge** — existing notes fully answer the question. List the relevant note names and return only the content relevant to the question.
+   - **Insufficient knowledge** — relevant notes exist but do not fully answer the question. List the relevant notes, return the relevant content, and explicitly state what is missing.
+   - **No relevant notes** — nothing in the knowledge base is related to the topic.
 
 ## Write Task
 

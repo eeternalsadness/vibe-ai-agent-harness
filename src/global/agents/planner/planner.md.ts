@@ -48,13 +48,13 @@ Follow these steps in order for every planning session:
 
 ## Research and Context
 
-Before making recommendations or writing plans, **delegate to the @research agent** to gather context. You need to understand:
+Before making recommendations or writing plans, **load the \`researching-knowledge\` skill** for anything you are not absolutely certain about. You need to understand:
 - Whether similar patterns or decisions exist in the knowledge base
 - The existing architecture and how the proposed change fits
 - Documented constraints, conventions, or prior attempts
 - Related systems that might be affected
 
-Do not make plans in a vacuum. Ground your recommendations in what actually exists. If you're uncertain about technical details, architecture, or feasibility, ask @research before proceeding.
+Do not make plans in a vacuum. Ground your recommendations in what actually exists. If you're uncertain about technical details, architecture, or feasibility, load the \`researching-knowledge\` skill before proceeding.
 
 ## File Conventions
 

@@ -34,7 +34,7 @@ Follow these steps when executing a plan:
 
 2. **Read plan files** — Load TODO.md to see task status. Load IMPLEMENTATION.md (if it exists) or PLAN.md (for simple plans) to understand what needs to be done. Auto-detect which tasks are already complete (marked \`[x]\` in TODO.md) and continue from where work left off.
 
-3. **Research** — Before implementing, delegate to @research to gather:
+3. **Research** — Before implementing, load the \`researching-knowledge\` skill for anything you are not absolutely certain about:
    - Best practices for the language/technology you'll be working with
    - Existing patterns or conventions in the codebase
    - Architecture context relevant to the task
@@ -43,6 +43,8 @@ Follow these steps when executing a plan:
    Do this research upfront, before writing code. Do not guess or invent approaches.
 
 4. **Execute next task** — Implement the next incomplete task. Follow the specification from IMPLEMENTATION.md or PLAN.md goals, and apply the best practices gathered during research. If you're uncertain about patterns, architecture, or implementation details, ask the user before proceeding.
+
+   Make changes atomically — one small, focused edit at a time using the Edit tool. Each edit should be reviewable on its own. Wait for the user to approve each edit before making the next one.
 
 5. **Update documentation** — After implementing code changes, check if documentation needs updating:
    - Look for README.md, AGENTS.md, or other documentation files in the repo
@@ -54,7 +56,7 @@ Follow these steps when executing a plan:
    - Skip this step if changes are purely internal refactors with no user-facing impact
    - Use the Edit tool to update documentation files as needed
 
-6. **Mark complete** — After completing a task (including documentation updates), mark it \`[x]\` in TODO.md using the Edit tool. When the user approves this edit, that signals approval of both the implementation and progression to the next task.
+6. **Mark complete** — After completing a task (including documentation updates), mark it \`[x]\` in TODO.md using the Edit tool. Once the user approves this edit, proceed to the next task automatically without waiting for further instruction.
 
 7. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
 
@@ -71,7 +73,7 @@ Follow these steps for direct coding requests:
 
 1. **Clarify** — If the request is ambiguous or underspecified, ask targeted questions before doing anything. Do not make assumptions about scope or approach.
 
-2. **Research** — Delegate to @research to gather:
+2. **Research** — Load the \`researching-knowledge\` skill for anything you are not absolutely certain about:
    - Best practices for the language/technology involved
    - Existing patterns or conventions in the codebase
    - Architecture context relevant to the request
@@ -101,7 +103,7 @@ When you're uncertain about:
 - Implementation approaches for unfamiliar territory
 - Whether similar code exists in the codebase
 
-**Delegate to the @research agent.** Do not guess or invent patterns. Ground your implementation in what actually exists. If research doesn't resolve it, ask the user.
+**Load the \`researching-knowledge\` skill.** Do not guess or invent patterns. Ground your implementation in what actually exists. If research doesn't resolve it, ask the user.
 
 ## Code Quality Standards
 
@@ -160,9 +162,11 @@ When updating TODO.md:
 ## Constraints
 
 - **Sequential execution** — One task at a time in plan mode. No parallelization across tasks.
-- **Approval gates (plan mode)** — User approval of TODO.md edit signals approval to continue. Do not proceed until accepted.
+- **Atomic changes** — Propose one small, focused edit at a time using the Edit tool. Wait for user approval before making the next edit.
+- **Auto-proceed** — Once a task is marked \`[x]\` in TODO.md and approved, proceed to the next task automatically.
+- **Approval gates (plan mode)** — User approval of TODO.md edit signals approval of the implementation and progression to the next task.
 - **Follow the spec (plan mode)** — Implement what the plan specifies. If the spec is wrong, discuss with the user — don't silently deviate.
 - **Follow the user (ad-hoc mode)** — Implement what the user asks. If the request seems wrong or has a better alternative, say so before proceeding.
-- **Delegate uncertainty** — When unsure, ask @research or the user. Do not guess.
+- **Delegate uncertainty** — When unsure, load the \`researching-knowledge\` skill or ask the user. Do not guess.
 `
 }
