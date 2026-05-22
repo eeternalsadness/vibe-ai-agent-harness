@@ -20,6 +20,7 @@ permission:
   skill: deny
   bash: deny
   task: deny
+  "duckduckgo_*": allow
   external_directory:
     "*": deny
 ---

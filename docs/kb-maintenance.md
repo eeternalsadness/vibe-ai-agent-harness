@@ -16,57 +16,57 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 These `[[wiki-links]]` appear in notes but have no corresponding `.md` file. For each: create the missing note if the topic warrants one (linked into the graph), or remove the link if it's spurious.
 
-- [ ] `[[AI Fundamentals & LLMs]]`
-- [ ] `[[Agent Engineering Glossary]]`
-- [ ] `[[Agent Skill Design Principles]]`
-- [ ] `[[Agent Tool Comparison]]`
-- [ ] `[[ArgoCD Application Resource|Applications]]`
-- [ ] `[[ArgoCD Core Concepts|AppProject]]`
-- [ ] `[[ArgoCD on AWS EKS via Akuity]]`
-- [ ] `[[CI/CD Patterns]]`
-- [ ] `[[Classifier Based Permissions]]`
-- [ ] `[[Cloud Cost Optimization]]`
-- [ ] `[[Code Review Best Practices]]`
-- [ ] `[[Data Classification]]`
-- [ ] `[[DevOps AI Guidelines Framework]]`
-- [ ] `[[DevOps Prompt Automation Script Builder]]`
-- [ ] `[[DevOps Prompt Cost Optimization Detective]]`
-- [ ] `[[DevOps Prompt Disaster Recovery Planner]]`
-- [ ] `[[DevOps Prompt Incident Response Commander]]`
-- [ ] `[[DevOps Prompt Infrastructure Audit]]`
-- [ ] `[[DevOps Prompt Kubernetes Troubleshooter]]`
-- [ ] `[[DevOps Prompt Monitoring Architect]]`
-- [ ] `[[DevOps Prompt Performance Optimizer]]`
-- [ ] `[[DevOps Prompt Production-Ready Code Generator]]`
-- [ ] `[[DevOps Prompt Security Compliance Auditor]]`
-- [ ] `[[Document Stores]]`
-- [ ] `[[EKS Auto Mode]]`
-- [ ] `[[Harness vs Framework]]`
-- [ ] `[[Incident Response Procedures]]`
-- [ ] `[[Initializer Coding Pattern]]`
-- [ ] `[[Kubernetes Operations]]`
-- [ ] `[[Loft Platform]]`
-- [ ] `[[Long Running Harness Design]]`
-- [ ] `[[MCP CI/CD Integration]]`
-- [ ] `[[Multi Agent Orchestration]]`
-- [ ] `[[Nexu Windows Packaging]]`
-- [ ] `[[OpenCode Agent Skills]]`
-- [ ] `[[OpenCode Plugin Background Agent Patterns]]`
-- [ ] `[[OpenCode Plugin Custom Tool Patterns]]`
-- [ ] `[[OpenCode Plugin Session Management Patterns]]`
-- [ ] `[[OpenCode Primary Agents — Declaration, Switching, and Per-Agent Model Configuration]]`
-- [ ] `[[OpenCode Session]]`
-- [ ] `[[Prometheus]]`
-- [ ] `[[Prompt A/B Testing]]`
-- [ ] `[[REMEMBER: ...]]`
-- [ ] `[[Sandboxing]]`
-- [ ] `[[Sub Agent]]`
-- [ ] `[[TurboQuant]]`
-- [ ] `[[What Is a Harness]]`
-- [ ] `[[Your First Harness]]`
-- [ ] `[[tmux Copy Mode and Clipboard]]`
-- [ ] `[[tmux Key Concepts]]`
-- [ ] `[[tmux Useful Commands]]`
+- [x] `[[AI Fundamentals & LLMs]]` — removed from AI Agents for DevOps Overview.md
+- [x] `[[Agent Engineering Glossary]]` — removed from Advanced Skill Patterns.md and Common Skill Patterns.md
+- [x] `[[Agent Skill Design Principles]]` — removed from Advanced Skill Patterns.md and Common Skill Patterns.md
+- [x] `[[Agent Tool Comparison]]` — removed from Advanced Skill Patterns.md
+- [x] `[[ArgoCD Application Resource|Applications]]` — rephrased in ArgoCD ApplicationSets.md
+- [x] `[[ArgoCD Core Concepts|AppProject]]` — rephrased in ArgoCD Application Resource.md
+- [x] `[[ArgoCD on AWS EKS via Akuity]]` — removed from all 5 notes; Akuity section removed from ArgoCD Deployment Options on AWS EKS.md
+- [x] `[[CI/CD Patterns]]` — removed from MCP CI-CD Integration.md
+- [x] `[[Classifier Based Permissions]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Cloud Cost Optimization]]` — removed from MCP Cloud Infrastructure Management.md
+- [x] `[[Code Review Best Practices]]` — removed from AI Security Output Verification.md
+- [x] `[[Data Classification]]` — removed from AI Security Input Validation.md
+- [x] `[[DevOps AI Guidelines Framework]]` — removed from AI Readiness Assessment Overview.md, AI Team Implementation Roadmap.md, DevOps AI Prompts Library.md
+- [x] `[[DevOps Prompt Automation Script Builder]]` — deleted hub note (10 Essential AI Prompts for DevOps.md); removed backlinks from AI.md, DevOps AI.md, Prompt Engineering.md
+- [x] `[[DevOps Prompt Cost Optimization Detective]]` — same
+- [x] `[[DevOps Prompt Disaster Recovery Planner]]` — same
+- [x] `[[DevOps Prompt Incident Response Commander]]` — same
+- [x] `[[DevOps Prompt Infrastructure Audit]]` — same
+- [x] `[[DevOps Prompt Kubernetes Troubleshooter]]` — same
+- [x] `[[DevOps Prompt Monitoring Architect]]` — same
+- [x] `[[DevOps Prompt Performance Optimizer]]` — same
+- [x] `[[DevOps Prompt Production-Ready Code Generator]]` — same
+- [x] `[[DevOps Prompt Security Compliance Auditor]]` — same
+- [x] `[[Document Stores]]` — removed from Knowledge Base Solutions for AI Agents.md
+- [x] `[[EKS Auto Mode]]` — removed from EKS Capabilities.md
+- [x] `[[Harness vs Framework]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Incident Response Procedures]]` — removed from AI Security Compliance Monitoring.md
+- [x] `[[Initializer Coding Pattern]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Kubernetes Operations]]` — removed from MCP Kubernetes Management.md
+- [x] `[[Loft Platform]]` — removed from Virtual Cluster Approach (vcluster).md
+- [x] `[[Long Running Harness Design]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[MCP CI/CD Integration]]` — fixed to [[MCP CI-CD Integration]] in MCP DevOps Use Cases.md
+- [x] `[[Multi Agent Orchestration]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Nexu Windows Packaging]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[OpenCode Agent Skills]]` — removed from Advanced Skill Patterns.md and Common Skill Patterns.md
+- [x] `[[OpenCode Plugin Background Agent Patterns]]` — removed from OpenCode Plugin Session Lifecycle Management.md
+- [x] `[[OpenCode Plugin Custom Tool Patterns]]` — removed from OpenCode Plugin SDK Tool Context.md
+- [x] `[[OpenCode Plugin Session Management Patterns]]` — removed from OpenCode Plugin Session Abort vs Delete.md
+- [x] `[[OpenCode Primary Agents — Declaration, Switching, and Per-Agent Model Configuration]]` — fixed em dash to hyphen in OpenCode Agent Types.md and OpenCode Agents.md
+- [x] `[[OpenCode Session]]` — rephrased inline in OpenCode Plugin Session Lifecycle Hooks.md
+- [x] `[[Prometheus]]` — removed from MCP Monitoring and Observability.md
+- [x] `[[Prompt A/B Testing]]` — removed from Prompt Debugging and Optimization.md and Prompt Iterative Optimization.md
+- [-] `[[REMEMBER: ...]]` — inside code block in Claude Code Hook Patterns.md, not a real link
+- [x] `[[Sandboxing]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Sub Agent]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[TurboQuant]]` — removed from KV Cache Compression Rotation Variants.md
+- [x] `[[What Is a Harness]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[Your First Harness]]` — removed from Nexu Engineering Guide.md (note deleted)
+- [x] `[[tmux Copy Mode and Clipboard]]` — removed from tmux.md
+- [x] `[[tmux Key Concepts]]` — removed from tmux.md
+- [x] `[[tmux Useful Commands]]` — removed from tmux.md
 
 ---
 
@@ -74,10 +74,10 @@ These `[[wiki-links]]` appear in notes but have no corresponding `.md` file. For
 
 These notes exist but are not reachable from `Index.md`. Find the correct parent and add a `[[wiki-link]]`.
 
-- [ ] `OpenCode Permission Troubleshooting.md`
-- [ ] `OpenCode Plugin Rate Limiting.md`
-- [ ] `OpenCode Plugin Response Caching.md`
-- [ ] `OpenCode Primary Agents - Declaration, Switching, and Per-Agent Model Configuration.md`
+- [x] `OpenCode Permission Troubleshooting.md` — linked from OpenCode Agent Permissions Quick Reference.md
+- [x] `OpenCode Plugin Rate Limiting.md` — deleted (duplicate of OpenCode Plugin Rate Limiting and Caching.md)
+- [x] `OpenCode Plugin Response Caching.md` — deleted (duplicate)
+- [x] `OpenCode Primary Agents - Declaration, Switching, and Per-Agent Model Configuration.md` — linked from OpenCode Agents Creation.md
 
 ---
 
