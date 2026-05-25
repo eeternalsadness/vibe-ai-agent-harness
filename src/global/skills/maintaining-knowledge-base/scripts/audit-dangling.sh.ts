@@ -21,7 +21,7 @@ declare -A sources   # target title -> newline-separated source files
 while IFS= read -r -d '' f; do
   title="\$(basename "$f" .md)"
   targets["$title"]=1
-done < <(find "$KB" -name "*.md" -print0)
+done < <(find "$KB" -maxdepth 1 -name "*.md" -print0)
 
 # Scan all notes for [[wiki-links]], strip fenced code blocks first
 found=0
@@ -35,7 +35,7 @@ while IFS= read -r -d '' f; do
       found=1
     fi
   done <<< "$links"
-done < <(find "$KB" -name "*.md" -print0)
+done < <(find "$KB" -maxdepth 1 -name "*.md" -print0)
 
 if [[ $found -eq 0 ]]; then
   echo "No dangling links found."

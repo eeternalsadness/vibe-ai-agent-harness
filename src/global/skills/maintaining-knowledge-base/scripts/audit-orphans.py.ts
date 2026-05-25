@@ -30,7 +30,7 @@ def extract_links(path: Path) -> list[str]:
 
 # Build title -> path map
 all_notes: dict[str, Path] = {}
-for f in kb.rglob("*.md"):
+for f in kb.glob("*.md"):
     title = f.stem
     all_notes[title] = f
 

@@ -25,12 +25,12 @@ Exit codes: \`0\` = clean, \`1\` = problems found, \`2\` = script error.
 
 1. **Run all three scripts** and collect their output.
 
-2. **Delegate fixes to \`@knowledge-base\`** — one call per category, passing the full list of findings for that category.
+2. **Delegate fixes to \`@knowledge-base\`** — one call per category, in batches of 5 items. Evaluate each item individually before acting. Wait for each batch to complete before sending the next.
 
 ### Dangling links
 
 Pass the full script output and instruct \`@knowledge-base\`:
-> The following links have no matching file. For each source note listed, remove the link and rewrite the surrounding prose so the context still makes sense.
+> The following links have no matching file. For each, delete the \`[[wiki-link]]\`. If the link appears inside prose, reword the sentence so it reads naturally without the link. If the link appears in a topic note (links-only list), remove the line entirely.
 
 ### Orphaned notes
 

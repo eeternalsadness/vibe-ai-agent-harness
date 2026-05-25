@@ -84,22 +84,44 @@ If a note MUST exceed the 100-line soft limit, add a table of contents to help r
 3. **Introductory content:** If the note has an introductory paragraph, it must go in its own \`## Overview\` section AFTER the TOC
 4. **Content:** List only main H2 sections in the TOC, not subsections
 
-**Structure example:**
+**Before and after example:**
+
+Before:
+
+\`\`\`markdown
+# Note Title
+
+Introductory paragraph.
+
+## Section 1
+
+...
+
+## Section 2
+
+...
+\`\`\`
+
+After:
 
 \`\`\`markdown
 # Note Title
 
 ## Contents
 
-- Section 1
-- Section 2
-- Section 3
+- [Overview](#overview)
+- [Section 1](#section-1)
+- [Section 2](#section-2)
 
 ## Overview
 
-Introductory paragraph explaining the note's purpose or scope goes here.
+Introductory paragraph.
 
 ## Section 1
+
+...
+
+## Section 2
 
 ...
 \`\`\`
