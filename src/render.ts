@@ -9,7 +9,7 @@ export async function findTemplates(dir: string): Promise<string[]> {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) {
       files.push(...await findTemplates(full))
-    } else if (entry.name.endsWith(".md.ts")) {
+    } else if (/\.[^.]+\.ts$/.test(entry.name)) {
       files.push(full)
     }
   }

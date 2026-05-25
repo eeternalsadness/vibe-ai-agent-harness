@@ -19,7 +19,9 @@ permission:
   glob: allow
   grep: allow
   edit: allow
-  skill: deny
+  skill:
+    "*": deny
+    "modifying-knowledge-base": allow
   bash: deny
   task: deny
   external_directory:
@@ -74,7 +76,12 @@ Execute all steps without asking for confirmation:
 
 1. **Locate** — start at Index.md, trace the link graph to find where the new note belongs. Identify the parent note that needs a new link. Create intermediate topic notes if no suitable parent exists. Never link directly to Index.md except for new top-level domains.
 
-2. **Write** — one concept per note. If a note would exceed 100 lines: trim first, split if trimming is not enough, add a table of contents only as a last resort.
+2. **Write** — one concept per note. The goal is always to retain all knowledge with the minimum number of characters possible. If a note would exceed 100 lines, use this decision order:
+   - **Leave it** if it is only slightly over the limit and splitting would break its structure or integrity.
+   - **Add a table of contents** at the top (linking to each section heading) if the note cannot be meaningfully split but would benefit from navigation aids.
+   - **Trim** unnecessary whitespace, reword wordy prose to be more concise, and remove or simplify low-value examples. All facts must be retained. Syntax examples are valuable for future reference and should be kept unless clearly redundant.
+   - **Split** using the \`modifying-knowledge-base\` skill if the note contains distinct concepts that stand alone.
+   - **If the note is a topic index that is too large:** group its child notes into logical clusters, create a new intermediate topic note for each cluster containing the relevant child links, then replace the original index entries with links to the new topic notes only.
 
 3. **Link** — add a \`[[wiki-link]]\` with a short description to the parent note.
 
