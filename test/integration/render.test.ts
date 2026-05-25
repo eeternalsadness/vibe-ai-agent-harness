@@ -35,18 +35,19 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-test("findTemplates discovers all .md.ts files", async () => {
+test("findTemplates discovers all *.<ext>.ts files", async () => {
   // Act
   const templates = await findTemplates(fixturesDir)
 
   // Assert
-  expect(templates.length).toBe(3) // static.md.ts, dynamic.md.ts, nested/deep.md.ts
+  expect(templates.length).toBe(4) // static.md.ts, dynamic.md.ts, nested/deep.md.ts, script.sh.ts
   expect(templates.some(t => t.endsWith("static.md.ts"))).toBe(true)
   expect(templates.some(t => t.endsWith("dynamic.md.ts"))).toBe(true)
   expect(templates.some(t => t.endsWith("nested/deep.md.ts"))).toBe(true)
+  expect(templates.some(t => t.endsWith("script.sh.ts"))).toBe(true)
 })
 
-test("findTemplates ignores non-.md.ts files", async () => {
+test("findTemplates ignores plain .ts files", async () => {
   // Act
   const templates = await findTemplates(fixturesDir)
 
@@ -101,10 +102,20 @@ test("renders all discovered templates", async () => {
   // Act
   await renderTemplates(fixturesDir, testOutputDir, testProfile)
 
-  // Assert - all 3 templates should be rendered
+  // Assert - all 4 templates should be rendered
   expect(await fileExists(join(testOutputDir, "static.md"))).toBe(true)
   expect(await fileExists(join(testOutputDir, "dynamic.md"))).toBe(true)
   expect(await fileExists(join(testOutputDir, "nested/deep.md"))).toBe(true)
+  expect(await fileExists(join(testOutputDir, "script.sh"))).toBe(true)
+})
+
+test("renders non-.md.ts template to correct extension", async () => {
+  // Act
+  await renderTemplates(fixturesDir, testOutputDir, testProfile)
+
+  // Assert
+  const content = await readFile(join(testOutputDir, "script.sh"), "utf-8")
+  expect(content).toContain("hello from fixture")
 })
 
 test("different profiles produce different output for dynamic templates", async () => {
