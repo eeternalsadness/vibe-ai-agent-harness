@@ -24,7 +24,7 @@ permission:
     "modifying-knowledge-base": allow
   bash:
     "*": deny
-    "rm ${config.knowledgeBasePath}/*": allow
+    "rm ${config.knowledgeBasePath}/*.md": allow
   task: deny
   external_directory:
     "*": deny
