@@ -11,7 +11,7 @@ Procedures for structural operations that affect the link graph. Follow these ex
 
 1. Grep the knowledge base for all \`[[Note Name]]\` references.
 2. For each source file: remove the link and rewrite the surrounding prose so the context still makes sense.
-3. Delete the note file.
+3. Delete the note file using \`rm\` with its absolute path. Never use relative paths or \`~\`.
 4. Verify no references remain by grepping again.
 
 ## Rename a note

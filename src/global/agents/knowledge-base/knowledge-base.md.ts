@@ -22,12 +22,14 @@ permission:
   skill:
     "*": deny
     "modifying-knowledge-base": allow
-  bash: deny
+  bash:
+    "*": deny
+    "rm ${config.knowledgeBasePath}/*": allow
   task: deny
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
-    "${config.harnessPath}/dist/**": allow
+    "${config.harnessPath}/dist/opencode/agents/knowledge-base/**": allow
 ---
 
 # Knowledge Base Agent
@@ -80,7 +82,7 @@ Execute all steps without asking for confirmation:
    - **Topic note** — a note that contains only \`[[wiki-links]]\` with short descriptions and no prose. If it exceeds 100 lines, group its links into logical clusters, create an intermediate topic note for each cluster, and replace the grouped links with a single link to the new topic note.
    - **Trim** — remove unnecessary whitespace, reword wordy prose, and remove or simplify low-value examples. All facts must be retained. Syntax examples are valuable and should only be cut if clearly redundant.
    - **Split** — use the \`modifying-knowledge-base\` skill if the note contains two or more distinct concepts that can stand alone as separate notes. Extract each into a child note and replace the extracted content with a \`[[wiki-link]]\`.
-   - **Add a table of contents** — only if the note is genuinely monolithic reference material that cannot be trimmed or split without destroying its utility. Add it immediately after the H1 using markdown anchor links: \`- [Section Title](#section-title)\` (lowercase anchor, spaces to hyphens, strip punctuation). This does not satisfy the 100-line limit — it is only a navigation aid for notes that are unavoidably long.
+   - **Add a table of contents** — only if the note is genuinely monolithic reference material that cannot be trimmed or split without destroying its utility. Add it immediately after the H1 using markdown anchor links: \`- [Section Title](#section-title)\` (lowercase anchor, spaces to hyphens, strip punctuation). A TOC is an acceptable final resolution — notes with a TOC may exceed 100 lines.
 
 3. **Link** — add a \`[[wiki-link]]\` with a short description to the parent note.
 

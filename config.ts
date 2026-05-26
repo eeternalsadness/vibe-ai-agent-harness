@@ -34,7 +34,8 @@ const models = {
   }
 }
 
-const repoPath = "~/Repo"
+import { homedir } from "os"
+const repoPath = `${homedir()}/Repo`
 
 export const config = {
   repoPath,
