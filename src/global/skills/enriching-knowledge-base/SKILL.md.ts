@@ -38,7 +38,12 @@ Proactively deepens the knowledge base with source-grounded research. Two modes:
    \`\`\`bash
    grep -o '\\[\\[[^]]*\\]\\]' ${config.knowledgeBasePath}/Index.md | shuf -n1
    \`\`\`
-   Read the resulting hub note, then run the same command on that file to pick a random subtopic. That subtopic is the enrichment target.
+   Read the resulting hub note. Based on its structure and breadth, decide how many levels deep to go:
+   - **Narrow hub** (few subtopics, tight concept, thin content) → use the hub itself as the enrichment target.
+   - **Broad hub** (many subtopics, high-level overview) → pick a random subtopic by running the same grep+shuf command on the hub file, then read that subtopic. Decide again: is it narrow enough, or go one more level?
+   - **Deep hub** (subtopics that themselves contain sub-subtopics with thin content) → optionally navigate a third level.
+   
+   The goal is to land on a note with room for meaningful deepening — a note whose content is relatively thin or high-level and would benefit from more depth.
 
 2–5. Same as Recent Topic Enrichment steps 2–5.
 `
