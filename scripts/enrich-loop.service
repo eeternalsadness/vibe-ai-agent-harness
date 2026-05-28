@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly KB enrichment daemon
+After=network.target
+
+[Service]
+ExecStart=/home/bach/Repo/vibe-coding/vibe-ai-agent-harness/scripts/enrich-loop.sh
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

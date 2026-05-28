@@ -7,7 +7,7 @@ description: Use when asked to audit the knowledge base, check for dangling link
 
 # Maintaining the Knowledge Base
 
-Use this skill to audit the knowledge base for structural problems and delegate fixes to \`@knowledge-base\`.
+Use this skill to audit the knowledge base for structural problems and delegate fixes to \`@knowledge-base\`. Execute all steps autonomously without asking for confirmation.
 
 ## Scripts
 
@@ -19,7 +19,7 @@ All scripts live in \`${config.harnessPath}/dist/opencode/skills/maintaining-kno
 | \`audit-orphans.py\` | Notes not reachable from \`Index.md\` | \`python3 <script>\` |
 | \`audit-oversized.sh\` | Notes exceeding 100 lines | \`bash <script>\` |
 
-Exit codes: \`0\` = clean, \`1\` = problems found, \`2\` = script error.
+Exit codes: \`0\` = clean, \`1\` = problems found, \`2\` = script error (skip that category and continue).
 
 ## Workflow
 
