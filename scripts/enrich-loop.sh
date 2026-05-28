@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# enrich-loop.sh — nightly KB enrichment daemon
-# Runs opencode (yapper) in a loop during the active window.
+# enrich-loop.sh — nightly knowledge base enrichment daemon
+# Runs opencode (curator) in a loop during the active window.
 # Last 2 hours of the window: one maintenance run per day, then waits.
 # Enrichment alternates 80% recent / 20% random.
 # Designed to run as a systemd user service — logs go to stdout.
@@ -58,8 +58,7 @@ while true; do
   if in_maintenance_window; then
     if ! maintenance_ran_today; then
       log "maintenance window — invoking opencode"
-      opencode run --agent yapper \
-        "Load the maintaining-knowledge-base skill and run a full audit. Execute autonomously without asking for confirmation."
+      opencode run --agent curator "Run a full knowledge base maintenance audit."
       today > "$MAINTENANCE_STATE"
       log "maintenance run complete"
     else
@@ -76,8 +75,7 @@ while true; do
   fi
 
   log "enrichment run ${run_count} (mode: ${mode}) — invoking opencode"
-  opencode run --agent yapper \
-    "Load the enriching-knowledge-base skill and run one enrichment cycle using ${mode} topic mode. Execute autonomously without asking for confirmation."
+  opencode run --agent curator "Run one enrichment cycle using ${mode} topic mode."
   log "enrichment run ${run_count} complete (mode: ${mode})"
 
   sleep "$SLEEP_BETWEEN"

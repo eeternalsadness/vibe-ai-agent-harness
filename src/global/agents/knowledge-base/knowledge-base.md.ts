@@ -25,9 +25,6 @@ permission:
   bash:
     "*": deny
     "rm ${config.knowledgeBasePath}/*.md": allow
-    "git -C ${config.knowledgeBasePath} add -A": allow
-    "git -C ${config.knowledgeBasePath} commit *": allow
-    "git -C ${config.knowledgeBasePath} push": allow
   task: deny
   external_directory:
     "*": deny

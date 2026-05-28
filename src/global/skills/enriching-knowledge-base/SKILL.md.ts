@@ -21,15 +21,24 @@ Proactively deepens the knowledge base with source-grounded research. Two modes:
 
 3. **Research related subtopics** — Identify 2–3 closely related subtopics. Load the \`researching-knowledge\` skill for each using the same comprehensive prompt style.
 
-4. **Report** — Call \`remember()\` with a short summary: *"kb-enrichment: <topic A>, <topic B>, <topic C>"*.
+4. **Report** — Call \`remember()\` with a single simple sentence naming only the primary topic. Do this **before** committing. Example: *"kb-enrichment: researched <primary topic>"*. No details, no note counts, no filler — just the topic name.
 
-5. **Commit and push** — Call \`@knowledge-base\` to commit and push all changes.
+5. **Commit and push** — After \`remember()\` returns, run these commands directly:
+   \`\`\`bash
+   git -C ${config.knowledgeBasePath} add -A
+   git -C ${config.knowledgeBasePath} commit -m "enrich: <topic name>"
+   git -C ${config.knowledgeBasePath} push
+   \`\`\`
 
 ---
 
 ## Mode: Random Topic Enrichment
 
-1. **Select topic** — Read \`${config.knowledgeBasePath}/Index.md\`. Pick a random \`[[wiki-link]]\` and follow it to a domain hub. From that hub, pick a random \`[[wiki-link]]\` to a specific subtopic (e.g., Index.md → AWS.md → AWS ALB.md). That subtopic is the enrichment target.
+1. **Select topic** — Run the following to pick a random domain hub from the index:
+   \`\`\`bash
+   grep -o '\\[\\[[^]]*\\]\\]' ${config.knowledgeBasePath}/Index.md | shuf -n1
+   \`\`\`
+   Read the resulting hub note, then run the same command on that file to pick a random subtopic. That subtopic is the enrichment target.
 
 2–5. Same as Recent Topic Enrichment steps 2–5.
 `
