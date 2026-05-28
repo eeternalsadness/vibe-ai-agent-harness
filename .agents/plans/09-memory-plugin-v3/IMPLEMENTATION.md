@@ -2,7 +2,7 @@
 
 ## Overview
 
-Refactor memory system from explicit tool-based triggering to automatic hook-based evaluation. Memory agent evaluates full conversation on each turn, extracts new items, no user intervention required.
+Refactor memory system from explicit tool-based triggering to automatic hook-based evaluation. Memory agent evaluates sanitized full conversation against existing Memory.md on each turn, extracts new tagged items, no user intervention required.
 
 ## Tasks
 
@@ -11,115 +11,103 @@ Refactor memory system from explicit tool-based triggering to automatic hook-bas
 **File:** `src/global/agents/memory/memory.md.ts`
 
 **Changes:**
-- Add instructions for receiving conversation transcript
-- Add instructions for receiving already-saved items list
-- Define output format: `SAVE:\n- item1\n- item2` or `SKIP`
-- Add judgment criteria (what to save vs skip)
+- Document input format: sanitized conversation (tool noise stripped) + existing Memory.md content
+- Define output format: `SAVE:\n- items` or `SKIP`
+- Add capture signals: decisions, preferences, completions, research runs, constraints (exact tags TBD)
+- Add semantic dedup instructions: compare against existing Memory.md content, don't re-save
 - Clarify memory agent is observing conversation, not participating
+- Increase item limit awareness (100 max)
 
 **Acceptance:**
-- Memory agent instructions clearly explain transcript + list input format
+- Memory agent instructions clearly explain sanitized transcript + Memory.md input format
 - Output format is machine-parseable
-- Judgment criteria matches existing memory guidelines
+- Judgment criteria defines specific capture signals
+- Dedup instructions are explicit about semantic comparison
 
-### 2. Remove remember() Tool from Plugin
+### 2. Rewrite Plugin: Remove remember(), Add session.idle
 
 **File:** `src/platforms/opencode/plugins/memory-manager.ts`
 
 **Changes:**
-- Remove `remember()` tool registration
-- Remove tool handler function
-- Keep only hook handlers and helper functions
+- Remove `remember()` tool registration and handler
+- Add `session.idle` hook handler
+- Implement conversation sanitization: strip tool calls and tool results, keep only user text + assistant text
+- Read Memory.md content and pass to memory agent (no temp file)
+- Invoke memory agent with sanitized conversation + Memory.md content
+- Parse response (SAVE items or SKIP)
+- Append new items to Memory.md with file locking
+- Increase MAX_ITEMS from 50 to 100
+- Keep memory agent session tracking for hook recursion prevention
 
 **Acceptance:**
 - `remember()` tool no longer exposed
-- Plugin compiles without errors
-- No references to removed tool in code
-
-### 3. Implement session.idle Hook Handler
-
-**File:** `src/platforms/opencode/plugins/memory-manager.ts`
-
-**Changes:**
-- Add `session.idle` hook handler
-- Get session ID and conversation transcript
-- Read or create temp file `/tmp/memory-session-{sessionId}.json`
-- Invoke memory agent with transcript + saved items list
-- Parse memory agent response
-- Append new items to Memory.md (with file locking)
-- Update temp file with new items
-
-**Acceptance:**
 - Hook fires after each turn
-- Temp file created on first evaluation
-- Memory agent receives correct inputs
+- Memory agent receives sanitized conversation + current Memory.md
 - New items appended to Memory.md
-- Temp file updated with new items
+- No temp file created
 - File locking prevents concurrent write conflicts
+- Plugin compiles without errors
 
-### 4. Implement session.deleted Hook for Cleanup
+### 3. Remove remember() from Agent Instructions
 
-**File:** `src/platforms/opencode/plugins/memory-manager.ts`
-
-**Changes:**
-- Add `session.deleted` hook handler
-- Delete temp file `/tmp/memory-session-{sessionId}.json`
-
-**Acceptance:**
-- Temp file deleted when session ends
-- No errors if temp file doesn't exist
-- No orphaned temp files after normal session lifecycle
-
-### 5. Update Global Instructions
-
-**File:** `src/global/AGENTS.md.ts`
+**Files:**
+- `src/global/agents/yapper/yapper.md.ts` — remove memory workflow step and Memory section
+- `src/global/agents/coder/coder.md.ts` — remove remember evaluation steps
+- `src/global/agents/curator/curator.md.ts` — remove `remember: allow` permission
+- `src/global/skills/enriching-knowledge-base/SKILL.md.ts` — remove step 4 remember() call (research signals captured automatically)
 
 **Changes:**
-- Remove memory workflow section
-- Remove instructions about when to call `remember()`
-- Remove common violations examples related to memory
+- Remove all references to `remember()` tool
+- Remove memory workflow instructions from agents
+- Yapper: replace explicit "call remember() after every response" with "memory is automatic"
+- Coder: remove "evaluate memory" decision step from both plan and ad-hoc mode
+- Curator: drop remember permission (tool will be gone)
+- Enriching skill: remove the report-and-remember step (auto-capture handles it)
 
 **Acceptance:**
-- No mention of `remember()` tool
-- No memory-related workflow instructions
-- Primary agent instructions focused only on work, not memory
+- No agent instructions reference `remember()` tool
+- Yapper no longer instructs explicit memory calls
+- Coder no longer has memory evaluation steps
+- Curator permissions don't include remember
+- Enriching-knowledge-base skill doesn't call remember()
 
-### 6. Test Multi-Turn Session
+### 4. Create evaluating-memory Skill
 
-**Manual verification:**
-- Start session, have multi-turn conversation with decisions
-- Verify Memory.md updated after each turn
-- Verify no duplicate items appear
-- Verify temp file exists during session
-- End session, verify temp file deleted
-
-**Acceptance:**
-- Items automatically appear in Memory.md
-- No duplicates within session
-- Temp file cleanup works
-
-### 7. Test Concurrent Sessions
-
-**Manual verification:**
-- Start two sessions in different directories
-- Make different decisions in each
-- Verify both write to Memory.md without conflicts
-- Verify separate temp files created
-
-**Acceptance:**
-- Both sessions' items appear in Memory.md
-- No file corruption
-- Separate temp files per session
-
-### 8. Update Documentation
-
-**Files:** `README.md`, `AGENTS.md` (repo root)
+**File:** `src/global/skills/evaluating-memory/SKILL.md.ts`
 
 **Changes:**
-- Update memory system description (automatic vs explicit)
+- Create new skill document as canonical reference for the memory workflow
+- Document: input format (sanitized conversation + Memory.md), capture signals, output format, dedup rules
+- Keep tag taxonomy high-level and extensible (exact tags TBD)
+
+**Acceptance:**
+- Skill exists at the expected path
+- Documents the complete memory evaluation workflow
+- Loadable by developers for inspection
+
+### 5. Update Documentation
+
+**File:** `README.md` (repo root)
+
+**Changes:**
+- Update memory system description from explicit to automatic
 - Remove references to `remember()` tool
-- Update workflow diagrams if needed
+- Note OpenCode-only requirement
 
 **Acceptance:**
 - Documentation reflects new automatic memory system
 - No outdated references to old workflow
+
+### 6. Manual Verification
+
+**Process:**
+- Install and run a session with multi-turn conversation involving decisions and research
+- Review Memory.md after several turns — check for correct captures, no duplicates, consistent format
+- End session, start a new one on the same topic — verify no cross-session duplicates
+- Adjust memory agent instructions based on observed output quality
+
+**Acceptance:**
+- Items appear automatically in Memory.md
+- No duplicates within or across sessions
+- Format is consistent across items
+- Capture signals fire reliably (decisions, preferences, completions, research, constraints)

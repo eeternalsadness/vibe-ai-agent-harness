@@ -6,11 +6,9 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Tasks
 
-- [ ] **Update memory agent instructions** — add transcript input, output format, judgment criteria
-- [ ] **Remove remember() tool** — delete tool registration and handler from plugin
-- [ ] **Implement session.idle hook** — evaluate conversation, invoke memory agent, append items
-- [ ] **Implement session.deleted hook** — cleanup temp file on session end
-- [ ] **Update global instructions** — remove memory workflow from AGENTS.md
-- [ ] **Test multi-turn session** — verify automatic capture, deduplication, cleanup
-- [ ] **Test concurrent sessions** — verify multi-session safety
-- [ ] **Update documentation** — README and repo AGENTS.md reflect new system
+- [ ] **Update memory agent instructions** — sanitized input, tagged format, semantic dedup, capture signals
+- [ ] **Rewrite plugin** — remove remember(), add session.idle with sanitization + Memory.md-based dedup, 100 items
+- [ ] **Remove remember() from agent instructions** — yapper, coder, curator, enriching-knowledge-base skill
+- [ ] **Create evaluating-memory skill** — canonical reference document for the workflow
+- [ ] **Update documentation** — README.md reflects new automatic system
+- [ ] **Manual verification** — review Memory.md output after a session
