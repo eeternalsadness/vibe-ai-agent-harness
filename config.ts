@@ -9,8 +9,8 @@ const models = {
   },
   opencode: {
     "big-pickle": { providerID: "opencode", modelID: "big-pickle" },
-    "minimax-m2.5": { providerID: "opencode", modelID: "minimax-m2.5-free" },
-    "gpt-5-nano": { providerID: "opencode", modelID: "gpt-5-nano" },
+    "deepseek-v4-flash": { providerID: "opencode", modelID: "deepseek-v4-flash-free" },
+    "mimo-v2.5": { providerID: "opencode", modelID: "mimo-v2.5-free" },
   },
   openrouter: {
     "gpt-oss-120b": { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
@@ -57,9 +57,9 @@ export const config = {
     },
     broke: {
       primary: models.opencode["big-pickle"],
-      memory: models.opencode["gpt-5-nano"],
+      memory: models.opencode["deepseek-v4-flash"],
       research: models.opencode["big-pickle"],
-      knowledgeBase: models.opencode["minimax-m2.5"],
+      knowledgeBase: models.opencode["deepseek-v4-flash"],
       planner: models.opencode["big-pickle"],
       coder: models.opencode["big-pickle"],
       reviewer: models.opencode["big-pickle"],
