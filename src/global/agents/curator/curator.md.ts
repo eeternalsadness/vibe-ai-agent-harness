@@ -16,6 +16,8 @@ permission:
     "*": deny
     "grep *": allow
     "shuf *": allow
+    "bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
+    "python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
     "git -C ${config.knowledgeBasePath} add -A": allow
     "git -C ${config.knowledgeBasePath} commit -m *": allow
     "git -C ${config.knowledgeBasePath} push": allow
@@ -32,6 +34,7 @@ permission:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
     "${config.memoryFilePath}": allow
+    "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/**": allow
 ---
 
 # Curator Agent

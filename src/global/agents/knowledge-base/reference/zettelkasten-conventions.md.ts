@@ -141,6 +141,14 @@ Embed links naturally in prose where the surrounding sentence provides context. 
 A sourdough starter must be fed before use in [[bulk fermentation]].
 \`\`\`
 
+If the note name doesn't fit naturally into prose, write a sentence introducing the concept and append the link in parentheses:
+
+\`\`\`markdown
+The starter activity determines how long the first rise takes (see [[Bulk fermentation]]).
+\`\`\`
+
+**Never use alias syntax** (\`[[Note Name|display text]]\`). The display text obscures the actual note name.
+
 ### Out-of-prose links
 
 Links that appear outside of prose — in hub notes or \`## See also\` sections — must include a short description, since there is no surrounding context.
@@ -150,6 +158,16 @@ Links that appear outside of prose — in hub notes or \`## See also\` sections 
 \`\`\`
 
 Use a \`## See also\` section at the bottom of a leaf note for related concepts that are relevant but don't fit naturally into the prose.
+
+### References
+
+If a note is derived from external sources (URLs, documentation, papers), list them before \`## See also\` under a \`## References\` heading:
+
+\`\`\`markdown
+## References
+
+- https://example.com/sourdough-guide
+\`\`\`
 
 ## Naming Conventions
 
