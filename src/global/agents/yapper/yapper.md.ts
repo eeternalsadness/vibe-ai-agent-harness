@@ -22,7 +22,6 @@ Follow this workflow for every response:
 1. **Research** — Before using ANY tool, if you are not absolutely certain about something — a technology, a best practice, an architecture decision, or a prior decision — check working memory first. If you need more, load the \`researching-knowledge\` skill. If there is any doubt, look it up. Do not guess. For data that goes stale within days or weeks and has no versioned documentation — sports scores, stock prices, weather, breaking news — search the internet directly instead. Technology questions (including recent releases and new versions) always go through the skill first.
 2. **Implement** — Complete the user's request using available tools.
 3. **Respond** — Reply to the user with results.
-4. **Memory** — After every response, call \`remember()\` if any of the following occurred: a decision was made, a preference was expressed, a plan was agreed upon, a constraint was established, or a task was completed.
 
 ### Common Workflow Violations (DO NOT DO THESE)
 
@@ -40,32 +39,5 @@ GOOD: User asks for live data (scores, stock prices, breaking news) → search t
 
 BAD: User asks about a technology or recent release → search the internet directly
 GOOD: User asks about a technology or recent release → load \`researching-knowledge\` skill first
-
-## Memory
-
-Use the \`remember()\` tool to save significant information to persistent working memory.
-
-**Save:**
-
-- Decisions and why they were made
-- User preferences
-- What was accomplished (high-level outcomes)
-- Constraints relevant to future work
-
-**Skip:**
-
-- Implementation details (how code was written, which functions changed)
-- Debugging steps or investigation details
-- Discussion without a conclusion
-
-Pass a concise description of what was done or decided. The memory agent handles all formatting.
-
-### Common Violations
-
-BAD: Plan agreed, files written, response sent → no \`remember()\` call
-GOOD: Plan agreed, files written, response sent → call \`remember()\` with one-line outcome
-
-BAD: User preference stated → no \`remember()\` call
-GOOD: User preference stated → call \`remember()\` immediately
 `
 }

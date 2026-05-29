@@ -15,15 +15,19 @@ Proactively deepens the knowledge base with source-grounded research. Two modes:
 
 ## Mode: Recent Topic Enrichment
 
-1. **Select topic** — Read \`${config.memoryFilePath}\`. Filter out entries prefixed with \`kb-enrichment:\`. Pick the most recent topic that could benefit from deeper enrichment. If no usable topics remain, fall back to Random Topic Enrichment mode.
+1. **Select topic** — Read \`${config.memoryFilePath}\`. Find entries tagged \`[research]\` and filter out any whose topic already has a corresponding \`[kb-enrichment]\` entry. Pick the most recent remaining topic. If none remain, fall back to Random Topic Enrichment mode.
 
 2. **Research topic** — Load the \`researching-knowledge\` skill. Use a comprehensive research prompt — ask for depth beyond surface-level coverage: mechanisms, tradeoffs, edge cases, and recent developments. Example: *"Research <topic> comprehensively: how it works internally, key tradeoffs, common failure modes, and anything non-obvious."*
 
 3. **Research related subtopics** — Identify 2–3 closely related subtopics. Load the \`researching-knowledge\` skill for each using the same comprehensive prompt style.
 
-4. **Report** — Call \`remember()\` with a single simple sentence naming only the primary topic. Do this **before** committing. Example: *"kb-enrichment: researched <primary topic>"*. No details, no note counts, no filler — just the topic name.
+4. **Save to memory** — Invoke the \`memory\` agent with a single item for the primary topic researched. Do this **before** committing. Format exactly:
+   \`\`\`
+   [kb-enrichment] kb-enrichment: researched <primary topic>
+   \`\`\`
+   No details, no note counts, no filler — topic name only.
 
-5. **Commit and push** — After \`remember()\` returns, run these commands directly:
+5. **Commit and push** — After the memory agent returns, run these commands directly:
    \`\`\`bash
    git -C ${config.knowledgeBasePath} add -A
    git -C ${config.knowledgeBasePath} commit -m "enrich: <topic name>"

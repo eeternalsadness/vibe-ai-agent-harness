@@ -60,13 +60,6 @@ Follow these steps when executing a plan:
 
 7. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
 
-8. **Evaluate memory** — After each task, consider whether to call the \`remember()\` tool. Save information if:
-   - A significant decision was made
-   - A constraint was discovered or established
-   - The task outcome affects future work
-
-   Do NOT automatically call the \`remember()\` tool after every task. Only save significant information.
-
 ## Workflow — Ad-hoc Mode
 
 Follow these steps for direct coding requests:
@@ -92,8 +85,6 @@ Follow these steps for direct coding requests:
      - Architectural changes that affect usage
    - Skip this step if changes are purely internal refactors with no user-facing impact
    - Use the Edit tool to update documentation files as needed
-
-5. **Evaluate memory** — After completing the request (including documentation updates), consider calling \`remember()\` if a significant decision was made or a constraint was discovered.
 
 ## Research and Context
 

@@ -36,7 +36,7 @@ graph TD
     User <-->|on demand| Reviewer
 
     Primary -->|delegate| Research
-    Primary -->|after response| Memory
+    Primary -->|session end| Memory
 
     Reviewer --> Research
     Research --> KnowledgeBase
@@ -55,14 +55,14 @@ graph TD
 | Coder | Primary | Executes plans or ad-hoc coding requests; writes tests, updates docs |
 | Research | Subagent | Investigates topics; checks knowledge base before going external |
 | Knowledge Base | Subagent | Reads and writes the zettelkasten knowledge base |
-| Memory | Subagent | Formats content into concise, atomic working memory items |
+| Memory | Subagent | Evaluates conversation transcripts and extracts memory items |
 | Reviewer | Subagent | Blunt code reviews focused on correctness, security, and architecture |
 
 ## Memory & Knowledge Base
 
 The harness uses two persistence layers with different purposes.
 
-**Working memory** is a short-term context store — a flat markdown file capped at 50 items. It holds recent decisions, preferences, and high-level outcomes. At the start of every session it is injected into the system prompt, giving the primary agent immediate context without any manual re-establishment. After each response, the primary agent calls `remember()` which triggers the memory agent to format the item and append it to the file. The oldest items are pruned when the cap is reached.
+**Working memory** is a short-term context store — a flat markdown file capped at 100 items. It holds recent decisions, completed work, and research runs, each tagged with `[decision]`, `[work]`, `[research]`, or `[kb-enrichment]`. At the start of every session it is injected into the system prompt, giving the primary agent immediate context. At the end of each session, the plugin automatically evaluates the conversation and passes it to the memory agent, which extracts significant items and appends them to the file. Autonomous agent sessions (enrichment, maintenance) are skipped. The oldest items are pruned when the cap is reached.
 
 **The knowledge base** is a zettelkasten — a graph of atomic markdown notes linked to each other. It is the long-term source of truth. When an agent needs to learn something new, it researches it and writes it into the knowledge base. The knowledge base agent acts as the gatekeeper — all reads and writes go through it.
 

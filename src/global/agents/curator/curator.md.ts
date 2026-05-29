@@ -11,7 +11,6 @@ permission:
   read: allow
   glob: allow
   grep: allow
-  remember: allow
   bash:
     "*": deny
     "grep *": allow
@@ -30,6 +29,7 @@ permission:
     "*": deny
     "research": allow
     "knowledge-base": allow
+    "memory": allow
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
