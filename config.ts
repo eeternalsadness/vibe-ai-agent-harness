@@ -40,6 +40,9 @@ const models = {
     "minimax-m2.5": { providerID: "amazon-bedrock", modelID: "minimax.minimax-m2.5" },
     "deepseek-v3.2": { providerID: "amazon-bedrock", modelID: "deepseek.v3.2" },
   },
+  "bedrock-mantle": {
+    "gpt-5.5": { providerID: "bedrock-mantle", modelID: "openai.gpt-5.5" },
+  },
 }
 
 import { homedir } from "os"
@@ -51,16 +54,16 @@ export const config = {
   memoryFilePath: `${repoPath}/vibe-coding/vibe-context/memory/Memory.md`,
   harnessPath: `${repoPath}/vibe-coding/vibe-ai-agent-harness`,
 
-  defaultProfile: "copilot" as const,
+  defaultProfile: "work" as const,
 
   profiles: {
     work: {
-      primary: models.bedrock["claude-sonnet-4.6"],
+      primary: models["bedrock-mantle"]["gpt-5.5"],
       memory: models.bedrock["claude-haiku-4.5"],
       research: models.bedrock["claude-sonnet-4.6"],
       knowledgeBase: models.bedrock["claude-haiku-4.5"],
       planner: models.bedrock["claude-sonnet-4.6"],
-      coder: models.bedrock["claude-sonnet-4.6"],
+      coder: models["bedrock-mantle"]["gpt-5.5"],
       reviewer: models.bedrock["claude-sonnet-4.6"],
     },
     broke: {
