@@ -1,7 +1,6 @@
 // Model registry — nested by provider
 const models = {
   copilot: {
-    "claude-sonnet-4.5": { providerID: "github-copilot", modelID: "claude-sonnet-4.5" },
     "claude-sonnet-4.6": { providerID: "github-copilot", modelID: "claude-sonnet-4.6" },
     "claude-haiku-4.5": { providerID: "github-copilot", modelID: "claude-haiku-4.5" },
     "gpt-5-mini": { providerID: "github-copilot", modelID: "gpt-5-mini" },
@@ -31,7 +30,16 @@ const models = {
     "gemini-3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
     "deepseek-v3.2": { providerID: "yescale", modelID: "deepseek-v3.2-thinking" },
     "gemini-3-flash": { providerID: "yescale", modelID: "gemini-3-flash-preview" },
-  }
+  },
+  bedrock: {
+    "claude-haiku-4.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-haiku-4-5-20251001-v1:0" },
+    "claude-sonnet-4.6": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-4-6" },
+    "claude-opus-4.8": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-opus-4-8" },
+    "glm-5": { providerID: "amazon-bedrock", modelID: "zai.glm-5" },
+    "kimi-k2.5": { providerID: "amazon-bedrock", modelID: "moonshotai.kimi-k2.5" },
+    "minimax-m2.5": { providerID: "amazon-bedrock", modelID: "minimax.minimax-m2.5" },
+    "deepseek-v3.2": { providerID: "amazon-bedrock", modelID: "deepseek.v3.2" },
+  },
 }
 
 import { homedir } from "os"
@@ -46,14 +54,14 @@ export const config = {
   defaultProfile: "copilot" as const,
 
   profiles: {
-    copilot: {
-      primary: models.copilot["claude-sonnet-4.6"],
-      memory: models.copilot["gpt-5-mini"],
-      research: models.copilot["claude-sonnet-4.6"],
-      knowledgeBase: models.copilot["claude-haiku-4.5"],
-      planner: models.copilot["claude-sonnet-4.6"],
-      coder: models.copilot["claude-sonnet-4.6"],
-      reviewer: models.copilot["claude-sonnet-4.6"],
+    work: {
+      primary: models.bedrock["claude-sonnet-4.6"],
+      memory: models.bedrock["claude-haiku-4.5"],
+      research: models.bedrock["claude-sonnet-4.6"],
+      knowledgeBase: models.bedrock["claude-haiku-4.5"],
+      planner: models.bedrock["claude-sonnet-4.6"],
+      coder: models.bedrock["claude-sonnet-4.6"],
+      reviewer: models.bedrock["claude-sonnet-4.6"],
     },
     broke: {
       primary: models.opencode["big-pickle"],
@@ -79,8 +87,8 @@ export const config = {
       research: models.yescale["gemini-3-flash"],
       knowledgeBase: models.lmstudio["qwen3.5:9b"],
       planner: models.yescale["deepseek-v3.2"],
-      coder: models.copilot["claude-sonnet-4.6"],
-      reviewer: models.copilot["claude-sonnet-4.6"],
+      coder: models.bedrock["claude-sonnet-4.6"],
+      reviewer: models.bedrock["claude-sonnet-4.6"],
     },
   },
 }
