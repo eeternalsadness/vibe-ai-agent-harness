@@ -11,4 +11,4 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Remove remember() from agent instructions** — yapper, coder, curator, enriching-knowledge-base skill
 - [x] **Create evaluating-memory skill** — canonical reference document for the workflow
 - [x] **Update documentation** — README.md reflects new automatic system
-- [ ] **Manual verification** — review Memory.md output after a session
+- [-] **Manual verification** — review Memory.md output after a session (in progress: testing with 2-turn, 15s idle timeout)

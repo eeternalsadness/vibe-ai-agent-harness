@@ -31,22 +31,24 @@ Refactor memory system from explicit tool-based triggering to automatic hook-bas
 **Changes:**
 - Remove `remember()` tool registration and handler
 - Add `session.idle` hook handler
-- Implement conversation sanitization: strip tool calls and tool results, keep only user text + assistant text
+- Implement conversation sanitization: strip tool results, keep user text + assistant text + tool call signals
 - Read Memory.md content and pass to memory agent (no temp file)
 - Invoke memory agent with sanitized conversation + Memory.md content
-- Parse response (SAVE items or SKIP)
-- Append new items to Memory.md with file locking
+- Memory agent writes directly to Memory.md (no SAVE/SKIP parsing in plugin)
+- Capture memory snapshot at session start, inject same snapshot into every LLM request within that session
 - Increase MAX_ITEMS from 50 to 100
 - Keep memory agent session tracking for hook recursion prevention
+- Dual-trigger: turn interval (10 turns) or idle timeout (5 min), whichever comes first
 
 **Acceptance:**
 - `remember()` tool no longer exposed
-- Hook fires after each turn
+- Hook fires on `session.idle` events
 - Memory agent receives sanitized conversation + current Memory.md
-- New items appended to Memory.md
+- Memory agent writes new items directly to Memory.md
 - No temp file created
-- File locking prevents concurrent write conflicts
+- Each session receives the same memory block on every request (captured at session start)
 - Plugin compiles without errors
+- Debug logs show: snapshot capture, evaluation trigger, transcript shape, memory agent result
 
 ### 3. Remove remember() from Agent Instructions
 

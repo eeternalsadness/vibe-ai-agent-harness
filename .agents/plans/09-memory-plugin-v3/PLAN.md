@@ -21,21 +21,22 @@ The root cause: the primary agent is responsible for both doing work AND remembe
 
 ## Goals
 
-1. **Automatic capture** — memory saved on every turn without requiring explicit `remember()` calls
+1. **Automatic capture** — memory is evaluated automatically without requiring explicit `remember()` calls
 2. **Separation of concerns** — memory agent handles judgment (what to save) and formatting, primary agent only does work
-3. **Sanitized context** — memory agent receives full conversation with tool noise stripped, only user messages and assistant text responses
+3. **Sanitized context** — memory agent receives conversation content without noisy tool results
 4. **Semantic dedup** — no duplicate items, evaluated against existing Memory.md content using LLM judgment, not string matching
 5. **Consistent format** — items follow a tagged taxonomy for quick scanning (specific tags TBD)
 6. **Defined signals** — certain events (research runs, decisions, preferences, completions) should always be captured
-7. **Observable workflow** — an evaluating-memory skill documents the process for inspection and debugging
-8. **Append-only writes** — Memory.md is append-only, no modifications to existing items
-9. **Multi-session safe** — concurrent sessions can write without conflicts
+7. **Append-only writes** — Memory.md is append-only, no modifications to existing items
+8. **Stable session memory** — each request in a session receives the same session-start memory block to maintain input caching efficiency
+9. **Next-session freshness** — memory written during a session becomes available to future sessions
 
 ## Design Decisions
 
-**Automatic trigger via session.idle hook**
+**Automatic evaluation via session.idle**
 - Remove `remember()` tool entirely
-- Hook fires after each turn, guarantees evaluation
+- Use idle session activity as the automatic evaluation point
+- Do not rely on `session.deleted`, which only fires on actual deletion
 - Primary agent instructions simplified — no memory workflow
 
 **Memory agent handles judgment**
@@ -50,9 +51,9 @@ The root cause: the primary agent is responsible for both doing work AND remembe
 - Survives crashes, session resume, concurrent access — no lifecycle management
 
 **Conversation sanitization before evaluation**
-- Tool call invocations and results stripped before sending to memory agent
-- Only user text messages and assistant text responses remain
-- Reduces input size significantly, eliminates noise from file reads and command output
+- Tool results and other noisy execution details are stripped before evaluation
+- User messages, assistant responses, and compact tool-use signals are retained
+- Reduces noise while preserving enough context for memory judgment
 
 **Tagged format for consistency**
 - Items prefixed with a tag indicating type (specific tags TBD)
@@ -68,14 +69,17 @@ The root cause: the primary agent is responsible for both doing work AND remembe
 - Loadable by developers for inspection and debugging
 - Not loaded by the memory agent itself — rules inlined in its instructions
 
-**Append-only writes**
-- Write to Memory.md immediately (not buffered)
-- Multi-session safe via file locking, no read-modify-write races
-- Survives crashes
+**Memory agent owns writes**
+- Memory agent decides whether anything should be saved
+- Memory agent writes useful new items to Memory.md
+- Primary agents do not trigger, judge, format, or write memory
 
-**One-shot memory agent invocation**
-- Single agent call per evaluation (not persistent session)
-- Pass sanitized conversation + current Memory.md content, get new items or SKIP
+**Session-start memory snapshot**
+- Memory is captured once at session start
+- The same memory block is injected into every request in that session
+- This keeps session memory stable for input caching
+- Memory written during a session becomes visible in the next session
+- Snapshot stored per-session; cleaned up when session is deleted
 
 **OpenCode-only**
 - Cross-platform claim dropped. Claude Code has different hook API and doesn't benefit this workflow.
@@ -84,9 +88,8 @@ The root cause: the primary agent is responsible for both doing work AND remembe
 
 1. **Automatic capture** — multi-turn session with decisions/preferences produces memory items without user intervention
 2. **Semantic dedup** — same decision mentioned across multiple turns within or across sessions appears only once
-3. **Multi-session safety** — concurrent sessions write to Memory.md without conflicts
+3. **Stable session memory** — one memory block is captured per session and reused for every request in that session
 4. **Consistent format** — all items follow the tagged format
 5. **Defined signals** — research runs, decisions, preferences, completions, and constraints are reliably captured
 6. **Clean agent instructions** — no agent references `remember()`, no agent instructs memory workflow
-7. **Observable spec** — `evaluating-memory` skill documents the complete workflow
-
+7. **Next-session freshness** — memory written during one session is available to later sessions
