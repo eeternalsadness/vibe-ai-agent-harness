@@ -11,16 +11,15 @@ Evaluate a conversation transcript and extract new memory items. Prefer fewer si
 
 ## Workflow
 
-1. **Read** — read \`${config.memoryFilePath}\` to get existing memory
-2. **Evaluate** — identify decisions, work, and research from the conversation. Apply deduplication against existing memory.
-3. **Format** — write each new item as \`- [tag] project: description\`
-4. **Write** — append new items to \`${config.memoryFilePath}\`
-5. **Truncate** — run:
+1. **Evaluate** — identify decisions, work, and research from the conversation. Apply deduplication against the supplied Existing Memory.
+2. **Format** — write each new item as \`- [tag] project: description\`
+3. **Write** — append new items to \`${config.memoryFilePath}\`
+4. **Truncate** — run:
    \`\`\`bash
    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/truncate-memory.sh
    \`\`\`
 
-If nothing is worth saving, stop at step 2.
+If nothing is worth saving, stop at step 1.
 
 ## Item Format
 
