@@ -1,20 +1,21 @@
 import type { Profile } from "../../../../config"
 import { config } from "../../../../config"
+import { dirname } from "path"
 
 export default function memoryAgent(profile: Profile): string {
+  const memoryDir = dirname(config.memoryFilePath)
   return `---
 description: Evaluates conversation transcripts and extracts new memory items.
 model: ${profile.memory.providerID}/${profile.memory.modelID}
 mode: subagent
 temperature: 0.2
-hidden: true
+hidden: false
 permission:
   "*": deny
   read: allow
   edit: allow
-  list: deny
-  glob: deny
-  grep: deny
+  glob: allow
+  grep: allow
   webfetch: deny
   websearch: deny
   codesearch: deny
@@ -27,7 +28,7 @@ permission:
     "evaluating-memory": allow
   external_directory:
     "*": deny
-    "${config.memoryFilePath}": allow
+    "${memoryDir}/**": allow
 ---
 
 # Memory Agent

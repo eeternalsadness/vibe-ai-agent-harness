@@ -1,7 +1,9 @@
 import type { Profile } from "../../../../config"
 import { config } from "../../../../config"
+import { dirname } from "path"
 
 export default function curatorAgent(profile: Profile): string {
+  const memoryDir = dirname(config.memoryFilePath)
   return `---
 description: Autonomous knowledge base curator. Runs enrichment and maintenance on the knowledge base.
 model: ${profile.knowledgeBase.providerID}/${profile.knowledgeBase.modelID}
@@ -33,7 +35,7 @@ permission:
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
-    "${config.memoryFilePath}": allow
+    "${memoryDir}/**": allow
     "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/**": allow
 ---
 
