@@ -21,8 +21,8 @@ const MEMORY_FILE_PATH = config.memoryFilePath.startsWith("~/")
 const DEBUG_ENABLED = process.env.OPENCODE_MEMORY_DEBUG === "1"
 const DEBUG_LOG_PATH = process.env.OPENCODE_MEMORY_LOG
   || join(process.env.XDG_STATE_HOME || join(homedir(), ".local/state"), "opencode", "memory-manager.log")
-const MEMORY_EVALUATION_TURN_INTERVAL = Number(process.env.OPENCODE_MEMORY_TURN_INTERVAL || 10)
-const MEMORY_EVALUATION_IDLE_TIMEOUT_MS = Number(process.env.OPENCODE_MEMORY_IDLE_TIMEOUT_MS || 5 * 60 * 1000)
+const MEMORY_EVALUATION_TURN_INTERVAL = Number(process.env.OPENCODE_MEMORY_TURN_INTERVAL || 5)
+const MEMORY_EVALUATION_IDLE_TIMEOUT_MS = Number(process.env.OPENCODE_MEMORY_IDLE_TIMEOUT_MS || 1 * 60 * 1000)
 const IDLE_DEDUP_MS = 500
 
 const PROMPTS = {
@@ -214,13 +214,13 @@ async function invokeMemoryAgent(
 
     await log("debug", "Memory agent response received", { parentSessionId, sessionId, responseLength: result.length, response: result })
 
-    await client.session.abort({ path: { id: sessionId } }).catch(() => {})
+    await client.session.abort({ path: { id: sessionId } }).catch(() => { })
     memoryAgentSessions.delete(sessionId)
 
     return result
   } catch (error) {
     if (sessionId) {
-      await client.session.abort({ path: { id: sessionId } }).catch(() => {})
+      await client.session.abort({ path: { id: sessionId } }).catch(() => { })
       memoryAgentSessions.delete(sessionId)
     }
     await log("error", "Memory agent invocation failed", { parentSessionId, sessionId, error: normalizeError(error) })
@@ -453,7 +453,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
               log("error", "Scheduled memory evaluation failed", { sessionId, error: normalizeError(error) })
             })
           }, MEMORY_EVALUATION_IDLE_TIMEOUT_MS)
-          ;(timer as any).unref?.()
+            ; (timer as any).unref?.()
           idleTimers.set(sessionId, timer)
           await log("info", "Scheduled idle-timeout evaluation", {
             sessionId,
