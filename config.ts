@@ -58,12 +58,12 @@ export const config = {
 
   profiles: {
     work: {
-      primary: models["bedrock-mantle"]["gpt-5.5"],
+      primary: models.bedrock["claude-sonnet-4.6"],
       memory: models.bedrock["claude-haiku-4.5"],
       research: models.bedrock["claude-sonnet-4.6"],
       knowledgeBase: models.bedrock["claude-haiku-4.5"],
       planner: models.bedrock["claude-sonnet-4.6"],
-      coder: models["bedrock-mantle"]["gpt-5.5"],
+      coder: models.bedrock["claude-sonnet-4.6"],
       reviewer: models.bedrock["claude-sonnet-4.6"],
     },
     broke: {
