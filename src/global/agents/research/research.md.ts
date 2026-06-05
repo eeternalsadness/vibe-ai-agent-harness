@@ -11,18 +11,7 @@ permission:
   "*": deny
   webfetch: allow
   websearch: allow
-  codesearch: deny
-  read: deny
-  glob: deny
-  grep: deny
-  list: deny
-  edit: deny
-  skill: deny
-  bash: deny
-  task: deny
   "duckduckgo_*": allow
-  external_directory:
-    "*": deny
 ---
 
 # Research Agent

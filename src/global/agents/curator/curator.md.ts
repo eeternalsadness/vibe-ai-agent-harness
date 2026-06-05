@@ -19,6 +19,7 @@ permission:
     "shuf *": allow
     "bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
     "python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
+    "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *": allow
     "git -C ${config.knowledgeBasePath} add -A": allow
     "git -C ${config.knowledgeBasePath} commit -m *": allow
     "git -C ${config.knowledgeBasePath} push": allow
@@ -31,12 +32,12 @@ permission:
     "*": deny
     "research": allow
     "knowledge-base": allow
-    "memory": allow
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow
     "${memoryDir}/**": allow
-    "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/**": allow
+    "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**": allow
+    "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/**": allow
 ---
 
 # Curator Agent

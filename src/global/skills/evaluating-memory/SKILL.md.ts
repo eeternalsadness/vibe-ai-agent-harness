@@ -9,15 +9,25 @@ description: Canonical reference for the automatic memory evaluation workflow. C
 
 Evaluate a conversation transcript and extract new memory items. Prefer fewer significant items over more noisy ones. Keep each item concise — fewest words that preserve the meaning. When in doubt, skip.
 
+## Scripts
+
+All scripts live in \`${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/\`.
+
+| Script | Purpose | Run with |
+|---|---|---|
+| \`append-memory.sh\` | Validate, append, and truncate memory items | \`bash <script> "<item>"\` |
+
+Exit codes: \`0\` = saved, \`1\` = validation or write error.
+
 ## Workflow
 
 1. **Evaluate** — identify decisions, work, and research from the conversation. Apply deduplication against the supplied Existing Memory.
 2. **Format** — write each new item as \`- [tag] project: description\`
-3. **Write** — append new items to \`${config.memoryFilePath}\`
-4. **Truncate** — run:
-   \`\`\`bash
-   bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/truncate-memory.sh
-   \`\`\`
+3. **Write** — for each item, run:
+    \`\`\`bash
+    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "<item>"
+    \`\`\`
+    If the script exits non-zero, fix the item and retry up to twice. Skip the item after two failures.
 
 If nothing is worth saving, stop at step 1.
 

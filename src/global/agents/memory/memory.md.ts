@@ -13,16 +13,11 @@ hidden: true
 permission:
   "*": deny
   read: allow
-  edit: allow
   glob: allow
   grep: allow
-  webfetch: deny
-  websearch: deny
-  codesearch: deny
   bash:
     "*": deny
-    "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/truncate-memory.sh": allow
-  task: deny
+    "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *": allow
   skill:
     "*": deny
     "evaluating-memory": allow
@@ -33,20 +28,10 @@ permission:
 
 # Memory Agent
 
-Evaluates conversations and saves significant items to persistent memory. Two modes — determine from input which applies.
+Evaluates conversations and saves significant items to persistent memory.
 
-## Mode: Evaluate Conversation
+## Workflow
 
-Input contains a conversation transcript and existing Memory.md. Load the \`evaluating-memory\` skill and follow it. If there are items to save, append them to \`${config.memoryFilePath}\` using the \`edit\` tool.
-
-## Mode: KB Enrichment
-
-Input is a topic name passed explicitly by the enriching-knowledge-base skill. Append exactly one item to \`${config.memoryFilePath}\`:
-
-\`\`\`
-- [kb-enrichment] kb-enrichment: researched <topic>
-\`\`\`
-
-No deduplication check needed — the enrichment skill already filters previously enriched topics.
+Input contains a conversation transcript and existing memory. Load the \`evaluating-memory\` skill and follow it.
 `
 }

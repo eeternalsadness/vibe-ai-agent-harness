@@ -78,8 +78,10 @@ log "Target platform: $PLATFORM"
 
 # Render templates
 if [ "$DRY_RUN" = true ]; then
+  log "[dry-run] rm -rf $SCRIPT_DIR/dist/$PLATFORM"
   log "[dry-run] bun run src/render.ts $PLATFORM $PROFILE"
 else
+  rm -rf "$SCRIPT_DIR/dist/$PLATFORM"
   bun run "$SCRIPT_DIR/src/render.ts" "$PLATFORM" "$PROFILE"
 fi
 

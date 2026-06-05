@@ -12,9 +12,6 @@ mode: subagent
 temperature: 0.3
 permission:
   "*": deny
-  webfetch: deny
-  websearch: deny
-  codesearch: deny
   read: allow
   glob: allow
   grep: allow
@@ -26,7 +23,6 @@ permission:
     "*": deny
     "rm ${config.knowledgeBasePath}/*.md": allow
     "wc *": allow
-  task: deny
   external_directory:
     "*": deny
     "${config.knowledgeBasePath}/**": allow

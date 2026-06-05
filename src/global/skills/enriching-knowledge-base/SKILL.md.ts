@@ -21,13 +21,13 @@ Proactively deepens the knowledge base with source-grounded research. Two modes:
 
 3. **Research related subtopics** — Identify 2–3 closely related subtopics. Load the \`researching-knowledge\` skill for each using the same comprehensive prompt style.
 
-4. **Save to memory** — Invoke the \`memory\` agent with a single item for the primary topic researched. Do this **before** committing. Format exactly:
-   \`\`\`
-   [kb-enrichment] kb-enrichment: researched <primary topic>
-   \`\`\`
-   No details, no note counts, no filler — topic name only.
+4. **Save to memory** — Run the append-memory script directly:
+    \`\`\`bash
+    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "- [kb-enrichment] kb-enrichment: researched <primary topic>"
+    \`\`\`
+    Do this **before** committing. Exit 0 = saved, exit 1 = validation error (skip if fails twice).
 
-5. **Commit and push** — After the memory agent returns, run these commands directly:
+5. **Commit and push** — After the append script succeeds, run these commands directly:
    \`\`\`bash
    git -C ${config.knowledgeBasePath} add -A
    git -C ${config.knowledgeBasePath} commit -m "enrich: <topic name>"
