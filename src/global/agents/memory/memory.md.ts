@@ -1,9 +1,7 @@
 import type { Profile } from "../../../../config"
 import { config } from "../../../../config"
-import { dirname } from "path"
 
 export default function memoryAgent(profile: Profile): string {
-  const memoryDir = dirname(config.memoryFilePath)
   return `---
 description: Evaluates conversation transcripts and extracts new memory items.
 model: ${profile.memory.providerID}/${profile.memory.modelID}
@@ -23,7 +21,7 @@ permission:
     "evaluating-memory": allow
   external_directory:
     "*": deny
-    "${memoryDir}/**": allow
+    "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**": allow
 ---
 
 # Memory Agent
