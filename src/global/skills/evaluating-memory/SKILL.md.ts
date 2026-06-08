@@ -15,29 +15,29 @@ All scripts live in \`${config.harnessPath}/dist/opencode/skills/evaluating-memo
 
 | Script | Purpose | Run with |
 |---|---|---|
-| \`append-memory.sh\` | Validate, append, and truncate memory items | \`bash <script> "<item>"\` |
+| \`append-memory.sh\` | Validate, append, and truncate memory items | \`bash <script> "<tag>" "<project>" "<description>"\` |
 
 Exit codes: \`0\` = saved, \`1\` = validation or write error.
 
 ## Workflow
 
 1. **Evaluate** — identify decisions, work, and research from the conversation. Apply deduplication against the supplied Existing Memory.
-2. **Format** — write each new item as \`- [tag] project: description\`
+2. **Extract** — for each new item, identify: tag, project, description.
 3. **Write** — for each item, run:
     \`\`\`bash
-    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "<item>"
+    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "<tag>" "<project>" "<description>"
     \`\`\`
-    If the script exits non-zero, fix the item and retry up to twice. Skip the item after two failures.
+    The script inserts today's date automatically. If the script exits non-zero, fix the arguments and retry up to twice. Skip the item after two failures.
 
 If nothing is worth saving, stop at step 1.
 
 ## Item Format
 
-\`- [tag] project: description\` — 150 chars max total.
+Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is inserted by the script — do not include it in the arguments.
 
 - **tag** — \`decision\` · \`work\` · \`research\` · \`kb-enrichment\`
 - **project** — project name or \`global\` for cross-project items
-- **description** — outcome only, no implementation details. Fewest words that preserve the meaning.
+- **description** — outcome only, no implementation details. Fewest words that preserve the meaning. 150 chars max.
 
 ## Tags
 
@@ -73,10 +73,15 @@ Skip any item semantically equivalent to an existing Memory entry, even if worde
 [tool: edit] filePath: package.json
 [tool: edit] filePath: vitest.config.ts
 \`\`\`
-**New items:**
+**Calls:**
+\`\`\`bash
+bash append-memory.sh "decision" "my-project" "use Vitest over Jest"
+bash append-memory.sh "work" "my-project" "migrated test suite to Vitest"
 \`\`\`
-- [decision] my-project: use Vitest over Jest
-- [work] my-project: migrated test suite to Vitest
+**Written to Memory.md:**
+\`\`\`
+- [2026-06-05] [decision] my-project: use Vitest over Jest
+- [2026-06-05] [work] my-project: migrated test suite to Vitest
 \`\`\`
 
 ---
@@ -89,10 +94,10 @@ Skip any item semantically equivalent to an existing Memory entry, even if worde
 [assistant]: Good call.
 [tool: edit] filePath: cache.ts
 \`\`\`
-**New items:**
-\`\`\`
-- [decision] my-project: use in-memory caching over Redis for now
-- [work] my-project: implemented in-memory caching
+**Calls:**
+\`\`\`bash
+bash append-memory.sh "decision" "my-project" "use in-memory caching over Redis for now"
+bash append-memory.sh "work" "my-project" "implemented in-memory caching"
 \`\`\`
 
 ---
@@ -102,5 +107,5 @@ Skip any item semantically equivalent to an existing Memory entry, even if worde
 [user]: how does the memory plugin work?
 [assistant]: The plugin injects Memory.md into the system prompt...
 \`\`\`
-**New items:** none — stop at step 2.
+**New items:** none — stop at step 1.
 `
