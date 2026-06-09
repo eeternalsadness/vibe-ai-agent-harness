@@ -14,9 +14,17 @@ import { config } from "../../../../config"
  * - Injects Memory.md into system prompt on session start
  */
 
-const MEMORY_FILE_PATH = config.memoryFilePath.startsWith("~/")
-  ? join(homedir(), config.memoryFilePath.replace("~/", ""))
-  : config.memoryFilePath
+/**
+ * Returns the resolved memory file path, checking OPENCODE_MEMORY_FILE env override first.
+ * Called at use time (not module load) so tests can override via process.env.
+ */
+function getMemoryFilePath(): string {
+  const envOverride = process.env.OPENCODE_MEMORY_FILE
+  if (envOverride) return envOverride
+  return config.memoryFilePath.startsWith("~/")
+    ? join(homedir(), config.memoryFilePath.replace("~/", ""))
+    : config.memoryFilePath
+}
 
 const DEBUG_ENABLED = process.env.OPENCODE_MEMORY_DEBUG === "1"
 const DEBUG_LOG_PATH = process.env.OPENCODE_MEMORY_LOG
@@ -46,6 +54,9 @@ const evaluatedAssistantCounts = new Map<string, number>()
 const idleTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const lastIdleEventAt = new Map<string, number>()
 const evaluatingSessions = new Set<string>()
+
+// Incremental transcript cache — avoids re-sanitizing already-processed messages
+const transcriptCache = new Map<string, { transcript: string; messageCount: number }>()
 
 function normalizeError(error: unknown): Record<string, string> {
   if (error instanceof Error) {
@@ -99,16 +110,16 @@ function clearIdleTimer(sessionId: string): void {
 
 async function ensureMemoryFile(): Promise<void> {
   try {
-    await access(MEMORY_FILE_PATH)
+    await access(getMemoryFilePath())
   } catch {
-    await mkdir(dirname(MEMORY_FILE_PATH), { recursive: true })
-    await writeFile(MEMORY_FILE_PATH, "# Memory\n\n", "utf-8")
+    await mkdir(dirname(getMemoryFilePath()), { recursive: true })
+    await writeFile(getMemoryFilePath(), "# Memory\n\n", "utf-8")
   }
 }
 
 async function readMemory(): Promise<string> {
   await ensureMemoryFile()
-  return await readFile(MEMORY_FILE_PATH, "utf-8")
+  return await readFile(getMemoryFilePath(), "utf-8")
 }
 
 /**
@@ -116,7 +127,7 @@ async function readMemory(): Promise<string> {
  * Keeps: user text, assistant text, tool call signals (name + input args).
  * Strips: tool outputs, reasoning parts, step markers, snapshots.
  */
-function sanitizeTranscript(messages: Array<{ role: string; parts: any[] }>): string {
+export function sanitizeTranscript(messages: Array<{ role: string; parts: any[] }>): string {
   const lines: string[] = []
 
   for (const message of messages) {
@@ -236,14 +247,14 @@ const SKIP_SKILLS = ["enriching-knowledge-base", "maintaining-knowledge-base"]
 /**
  * Returns true if the transcript contains a skill load that should skip evaluation
  */
-function shouldSkipEvaluation(transcript: string): boolean {
+export function shouldSkipEvaluation(transcript: string): boolean {
   return SKIP_SKILLS.some(skill => transcript.includes(`[tool: skill] name: ${skill}`))
 }
 
 /**
  * Main evaluation workflow: sanitize → build prompt → invoke memory agent (which writes Memory.md)
  */
-async function evaluateSession(
+export async function evaluateSession(
   client: PluginInput["client"],
   sessionId: string,
   log: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
@@ -264,22 +275,38 @@ async function evaluateSession(
     return 0
   }
 
-  const transcript = sanitizeTranscript(messages)
-  if (!transcript.trim()) {
+  // Incremental cache: only sanitize messages added since last evaluation
+  const cache = transcriptCache.get(sessionId)
+  const previousCount = cache?.messageCount ?? 0
+  const newMessages = messages.slice(previousCount)
+
+  if (newMessages.length === 0) {
+    await log("debug", "Skipping evaluation — no new messages since last evaluation", { sessionId, messageCount: messages.length })
+    return messages.length
+  }
+
+  const newSegment = sanitizeTranscript(newMessages)
+  const fullTranscript = cache
+    ? cache.transcript + (newSegment ? "\n" + newSegment : "")
+    : newSegment
+
+  transcriptCache.set(sessionId, { transcript: fullTranscript, messageCount: messages.length })
+
+  if (!fullTranscript.trim()) {
     await log("info", "Skipping evaluation — no meaningful content", { sessionId })
     return messages.length
   }
 
-  if (shouldSkipEvaluation(transcript)) {
+  if (shouldSkipEvaluation(fullTranscript)) {
     await log("info", "Skipping evaluation — autonomous agent session", { sessionId })
     return messages.length
   }
 
-  const transcriptSummary = summarizeTranscript(transcript)
+  const transcriptSummary = summarizeTranscript(fullTranscript)
   const memoryContentBefore = await readMemory()
   const itemsBefore = memoryContentBefore.split("\n").filter(l => l.trim().startsWith("- "))
 
-  const prompt = `## Conversation\n\n${transcript}\n\n## Existing Memory\n\n${memoryContentBefore}`
+  const prompt = `## Conversation\n\n${fullTranscript}\n\n## Existing Memory\n\n${memoryContentBefore}`
 
   await log("info", "Invoking memory agent", { sessionId, transcript: transcriptSummary })
   await invokeMemoryAgent(client, sessionId, prompt, log)
@@ -311,7 +338,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
   }
 
   await log("info", "Memory manager plugin initialized", {
-    memoryFilePath: MEMORY_FILE_PATH,
+    memoryFilePath: getMemoryFilePath(),
     debugEnabled: DEBUG_ENABLED,
     debugLogPath: DEBUG_ENABLED ? DEBUG_LOG_PATH : undefined,
     interactiveMode: isInteractiveMode(),
@@ -355,6 +382,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
         lastIdleEventAt.delete(sessionId)
         evaluatingSessions.delete(sessionId)
         sessionMemorySnapshots.delete(sessionId)
+        transcriptCache.delete(sessionId)
         clearIdleTimer(sessionId)
         await log("info", "Cleaned up deleted session state", { sessionId, parentID: event.properties?.info?.parentID })
         return
@@ -474,3 +502,6 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 }
 
 export default MemoryManagerPlugin
+
+// Test-only exports — allow unit tests to inspect and manipulate module-level state
+export { memoryAgentSessions as _memoryAgentSessions, transcriptCache as _transcriptCache }
