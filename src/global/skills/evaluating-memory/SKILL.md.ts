@@ -55,7 +55,8 @@ Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is i
 - One item per logical unit — outcome only ("fixed memory leak", not "edited cache.ts")
 
 **\`[research]\`** — Topic researched end-to-end.
-- \`researching-knowledge\` skill loaded AND \`research\` agent invoked AND \`knowledge-base\` agent wrote findings
+- \`[tool: task] subagent_type: research\` appears in the transcript — one occurrence = one \`[research]\` item
+- Topic is inferred from conversation context surrounding that line
 - Description is topic name only — no URLs or note counts
 
 **\`[kb-enrichment]\`** — Passed in explicitly by the enriching-knowledge-base skill. Never inferred from transcript.
