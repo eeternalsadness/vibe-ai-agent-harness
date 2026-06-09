@@ -17,6 +17,8 @@ Two issues with the current memory plugin evaluation loop:
 
 ## Design Decisions
 
-**Research detection is per-turn and structural** — a complete cycle requires all three tool calls (`skill: researching-knowledge`, `task: research` subagent, `task: knowledge-base` subagent) within the same assistant message. Checked against structured message data, not the flattened string. Cannot produce false positives from content.
+**Incremental caching is in-memory only** — the transcript cache resets on process restart. The next evaluation after a restart re-sanitizes from scratch, which is acceptable. No persistence needed.
 
-**Skill update, not agent update** — the fix lives in what the transcript says. The evaluating-memory skill is updated accordingly. The memory agent config is unchanged.
+**Research detection uses the existing transcript** — `[tool: task] subagent_type: research` is already emitted by `sanitizeTranscript`. No plugin changes needed for research detection. The evaluating-memory skill is updated to treat this line as a direct, unambiguous signal — one occurrence = one research cycle. Replaces the old three-step inference (skill load + research agent + kb agent). The skill-load signal (`skill: researching-knowledge`) fires only once per session due to caching and is not a reliable per-cycle indicator.
+
+**Skill update, not agent update** — the fix lives in what the transcript says and what the skill instructs. The memory agent config is unchanged.
