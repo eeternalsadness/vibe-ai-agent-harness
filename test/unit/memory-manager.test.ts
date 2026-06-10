@@ -7,8 +7,8 @@ import {
   shouldSkipEvaluation,
   evaluateSession,
   MemoryManagerPlugin,
-  _memoryAgentSessions,
-  _transcriptCache,
+  _getMemoryAgentSessions,
+  _getTranscriptCache,
 } from "../../src/platforms/opencode/plugins/memory-manager"
 
 // ─── Test scaffolding ───────────────────────────────────────────────────────
@@ -208,13 +208,13 @@ describe("system prompt injection", () => {
     const transform = (plugin as any)["experimental.chat.system.transform"]
 
     const sessionID = newSessionId()
-    _memoryAgentSessions.add(sessionID)
+    _getMemoryAgentSessions().add(sessionID)
     try {
       const output = { system: [] as string[] }
       await transform({ sessionID }, output)
       expect(output.system).toHaveLength(0)
     } finally {
-      _memoryAgentSessions.delete(sessionID)
+      _getMemoryAgentSessions().delete(sessionID)
     }
   })
 
@@ -248,7 +248,7 @@ describe("incremental transcript cache", () => {
     expect(prompts[0]).toContain("[assistant]: hi")
     expect(prompts[0]).toContain("[user]: proceed")
 
-    const cache = _transcriptCache.get(sessionId)
+    const cache = _getTranscriptCache().get(sessionId)
     expect(cache?.messageCount).toBe(3)
   })
 
@@ -278,7 +278,7 @@ describe("incremental transcript cache", () => {
     expect(prompts[1]).toContain("[user]: second message")
     expect(prompts[1]).toContain("[assistant]: second response")
 
-    const cache = _transcriptCache.get(sessionId)
+    const cache = _getTranscriptCache().get(sessionId)
     expect(cache?.messageCount).toBe(4)
   })
 
@@ -291,7 +291,7 @@ describe("incremental transcript cache", () => {
 
     // Populate cache
     await evaluateSession(createMockClient({ messages }), sessionId, noopLog)
-    expect(_transcriptCache.has(sessionId)).toBe(true)
+    expect(_getTranscriptCache().has(sessionId)).toBe(true)
 
     // Fire session.deleted via the plugin event handler
     const plugin = await MemoryManagerPlugin({ client: createMockClient() })
@@ -299,6 +299,6 @@ describe("incremental transcript cache", () => {
       event: { type: "session.deleted", properties: { sessionID: sessionId } },
     })
 
-    expect(_transcriptCache.has(sessionId)).toBe(false)
+    expect(_getTranscriptCache().has(sessionId)).toBe(false)
   })
 })

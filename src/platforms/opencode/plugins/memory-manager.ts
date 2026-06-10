@@ -504,4 +504,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 export default MemoryManagerPlugin
 
 // Test-only exports — allow unit tests to inspect and manipulate module-level state
-export { memoryAgentSessions as _memoryAgentSessions, transcriptCache as _transcriptCache }
+// Exported as getter functions (not values) so opencode's plugin loader doesn't
+// mistake them for plugin initializers when iterating named exports.
+export function _getMemoryAgentSessions() { return memoryAgentSessions }
+export function _getTranscriptCache() { return transcriptCache }
