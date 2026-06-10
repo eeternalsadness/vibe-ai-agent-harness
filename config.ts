@@ -76,13 +76,13 @@ export const config = {
       reviewer: models.opencode["big-pickle"],
     },
     framework: {
-      primary: models.opencode["big-pickle"],
+      primary: models.framework["qwen3.6:35b-a3b-moe"],
       memory: models.framework["qwen3.6:35b-a3b-moe"],
       research: models.framework["qwen3.6:35b-a3b-moe"],
       knowledgeBase: models.framework["qwen3.6:35b-a3b-moe"],
-      planner: models.opencode["big-pickle"],
-      coder: models.opencode["big-pickle"],
-      reviewer: models.opencode["big-pickle"],
+      planner: models.framework["qwen3.6:35b-a3b-moe"],
+      coder: models.framework["qwen3.6:27b"],
+      reviewer: models.framework["qwen3.6:35b-a3b-moe"],
     },
     based: {
       primary: models.yescale["gemini-3-flash"],
