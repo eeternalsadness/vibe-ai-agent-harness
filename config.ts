@@ -22,8 +22,8 @@ const models = {
   },
   framework: {
     "qwen3.6:27b": { providerID: "framework", modelID: "Qwen3.6-27B-Q4_K_M" },
-    "qwen3.6:35b-a3b-moe": { providerID: "framework", modelID: "Qwen3.6-35B-A3B-MXFP4_MOE" },
-    "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B-UD-Q4_K_M" },
+    "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B" },
+    "gemma-4-e4b": { providerID: "framework", modelID: "Gemma-4-E4B" },
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
   yescale: {
@@ -76,13 +76,13 @@ export const config = {
       reviewer: models.opencode["big-pickle"],
     },
     framework: {
-      primary: models.framework["qwen3.6:35b-a3b-moe"],
-      memory: models.framework["qwen3.6:35b-a3b-moe"],
-      research: models.framework["qwen3.6:35b-a3b-moe"],
-      knowledgeBase: models.framework["qwen3.6:35b-a3b-moe"],
-      planner: models.framework["qwen3.6:35b-a3b-moe"],
+      primary: models.framework["qwen3.6:35b-a3b"],
+      memory: models.framework["gemma-4-e4b"],
+      research: models.framework["qwen3.6:35b-a3b"],
+      knowledgeBase: models.framework["qwen3.6:35b-a3b"],
+      planner: models.framework["qwen3.6:35b-a3b"],
       coder: models.framework["qwen3.6:27b"],
-      reviewer: models.framework["qwen3.6:35b-a3b-moe"],
+      reviewer: models.framework["qwen3.6:35b-a3b"],
     },
     based: {
       primary: models.yescale["gemini-3-flash"],
