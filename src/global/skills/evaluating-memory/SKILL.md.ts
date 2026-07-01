@@ -63,7 +63,7 @@ Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is i
 
 ## Deduplication
 
-Skip any item semantically equivalent to an existing Memory entry, even if worded differently.
+Check today's entries plus the last 10 items in Existing Memory - if the session's outcome is already captured there, skip it.
 
 ## Examples
 
