@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import {
   sanitizeTranscript,
   shouldSkipEvaluation,
+  diffNewItems,
   evaluateSession,
   MemoryManagerPlugin,
   _getMemoryAgentSessions,
@@ -168,6 +169,41 @@ describe("shouldSkipEvaluation", () => {
   })
 })
 
+// ─── diffNewItems ───────────────────────────────────────────────────────────
+
+describe("diffNewItems", () => {
+  test("simple growth: appended items are detected", () => {
+    const before = ["- a", "- b"]
+    const after = ["- a", "- b", "- c", "- d"]
+    expect(diffNewItems(before, after)).toEqual(["- c", "- d"])
+  })
+
+  test("no change → empty diff", () => {
+    const before = ["- a", "- b"]
+    const after = ["- a", "- b"]
+    expect(diffNewItems(before, after)).toEqual([])
+  })
+
+  test("at capacity: oldest truncated while newest appended → truncated item still detected as new", () => {
+    // append-memory.sh keeps only the last N items — count stays constant at the cap
+    const before = ["- a", "- b", "- c"]
+    const after = ["- b", "- c", "- d"]
+    expect(diffNewItems(before, after)).toEqual(["- d"])
+  })
+
+  test("multiple items replaced at capacity", () => {
+    const before = ["- a", "- b", "- c"]
+    const after = ["- c", "- d", "- e"]
+    expect(diffNewItems(before, after)).toEqual(["- d", "- e"])
+  })
+
+  test("reordering with no real change → empty diff", () => {
+    const before = ["- a", "- b", "- c"]
+    const after = ["- b", "- c", "- a"]
+    expect(diffNewItems(before, after)).toEqual([])
+  })
+})
+
 // ─── System prompt injection ────────────────────────────────────────────────
 
 describe("system prompt injection", () => {
@@ -252,7 +288,7 @@ describe("incremental transcript cache", () => {
     expect(cache?.messageCount).toBe(3)
   })
 
-  test("second evaluateSession with M new messages: full transcript contains all N+M messages", async () => {
+  test("two-cycle end-to-end: cycle 1 is first-eval shape, cycle 2 splits old under Previously Evaluated and new under New Since Last Evaluation", async () => {
     const initial = makeMessages(
       { role: "user", text: "first message" },
       { role: "assistant", text: "first response" },
@@ -264,19 +300,29 @@ describe("incremental transcript cache", () => {
     const prompts: string[] = []
     const sessionId = newSessionId()
 
-    // First evaluation — 2 messages
+    // First evaluation — 2 messages, no prior cache → first-eval shape
     await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+    expect(prompts[0]).not.toContain("## Previously Evaluated")
+    expect(prompts[0]).toContain("[user]: first message")
+    expect(prompts[0]).toContain("[assistant]: first response")
 
     // Second evaluation — 4 messages total
     const allMessages = [...initial, ...additional]
     await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     expect(prompts).toHaveLength(2)
-    // Second prompt must contain full transcript of all 4 messages
-    expect(prompts[1]).toContain("[user]: first message")
-    expect(prompts[1]).toContain("[assistant]: first response")
-    expect(prompts[1]).toContain("[user]: second message")
-    expect(prompts[1]).toContain("[assistant]: second response")
+    const prompt2 = prompts[1]
+    const prevIdx = prompt2.indexOf("## Previously Evaluated (context only)")
+    const newIdx = prompt2.indexOf("## New Since Last Evaluation")
+
+    expect(prevIdx).toBeGreaterThanOrEqual(0)
+    // Old messages fall between Previously Evaluated and New Since Last Evaluation
+    expect(prompt2.indexOf("[user]: first message")).toBeGreaterThan(prevIdx)
+    expect(prompt2.indexOf("[user]: first message")).toBeLessThan(newIdx)
+    expect(prompt2.indexOf("[assistant]: first response")).toBeLessThan(newIdx)
+    // New messages fall after New Since Last Evaluation
+    expect(prompt2.indexOf("[user]: second message")).toBeGreaterThan(newIdx)
+    expect(prompt2.indexOf("[assistant]: second response")).toBeGreaterThan(newIdx)
 
     const cache = _getTranscriptCache().get(sessionId)
     expect(cache?.messageCount).toBe(4)
@@ -300,5 +346,125 @@ describe("incremental transcript cache", () => {
     })
 
     expect(_getTranscriptCache().has(sessionId)).toBe(false)
+  })
+})
+
+// ─── Guards operate on the cumulative transcript ────────────────────────────
+
+describe("evaluateSession guards use cumulative transcript", () => {
+  test("skip-skill signal from an earlier segment still suppresses a later evaluation cycle", async () => {
+    const initial = [
+      {
+        info: { role: "assistant" },
+        parts: [{ type: "tool", tool: "skill", state: { input: { name: "enriching-knowledge-base" } } }],
+      },
+    ]
+    const additional = makeMessages({ role: "assistant", text: "continuing work" })
+    const prompts: string[] = []
+    const sessionId = newSessionId()
+
+    await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+
+    const allMessages = [...initial, ...additional]
+    await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
+
+    // shouldSkipEvaluation checks the cumulative transcript on every cycle, not just the new segment
+    expect(prompts).toHaveLength(0)
+  })
+
+  test("empty-content guard evaluates old+new combined — a blank-only new segment still proceeds when prior content exists", async () => {
+    const initial = makeMessages({ role: "user", text: "meaningful content" })
+    const additional = [
+      { info: { role: "user" }, parts: [{ type: "text", text: "   " }] },
+    ]
+    const prompts: string[] = []
+    const sessionId = newSessionId()
+
+    await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+
+    const allMessages = [...initial, ...additional]
+    await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
+
+    // fullTranscript (old+new) still has content even though the new segment alone sanitizes to empty
+    expect(prompts).toHaveLength(2)
+  })
+})
+
+// ─── Debug logging reports the section split ────────────────────────────────
+
+describe("evaluateSession debug logging", () => {
+  test("'Invoking memory agent' log reports separate counts for Previously Evaluated and New Since Last Evaluation", async () => {
+    const initial = makeMessages(
+      { role: "user", text: "first message" },
+      { role: "assistant", text: "first response" },
+    )
+    const additional = makeMessages({ role: "user", text: "second message" })
+    const sessionId = newSessionId()
+
+    const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
+    const captureLog = async (_level: any, message: string, extra?: Record<string, any>) => {
+      logCalls.push({ message, extra })
+    }
+
+    await evaluateSession(createMockClient({ messages: initial }), sessionId, captureLog)
+    await evaluateSession(createMockClient({ messages: [...initial, ...additional] }), sessionId, captureLog)
+
+    const invocations = logCalls.filter(c => c.message === "Invoking memory agent")
+    expect(invocations).toHaveLength(2)
+
+    // Cycle 1 — nothing previously evaluated yet, all content is new
+    expect(invocations[0].extra?.previouslyEvaluated).toEqual({ userMessages: 0, assistantMessages: 0, toolCalls: [] })
+    expect(invocations[0].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
+
+    // Cycle 2 — cycle 1's content now falls under Previously Evaluated, only the new message is New Since Last Evaluation
+    expect(invocations[1].extra?.previouslyEvaluated).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
+    expect(invocations[1].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 0, toolCalls: [] })
+  })
+})
+
+// ─── evaluateSession new-items detection at memory cap ──────────────────────
+
+describe("evaluateSession new-items detection", () => {
+  test("detects newly written items even when Memory.md is at capacity (oldest truncated by append-memory.sh)", async () => {
+    await writeFile(memoryPath, "# Memory\n\n- item-a\n- item-b\n- item-c\n", "utf-8")
+
+    const messages = makeMessages({ role: "user", text: "trigger" })
+    const sessionId = newSessionId()
+    const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
+    const captureLog = async (_level: any, message: string, extra?: Record<string, any>) => {
+      logCalls.push({ message, extra })
+    }
+
+    const client = createMockClient({ messages })
+    // Simulate the memory agent appending one new item while the cap truncates the oldest —
+    // total item count stays constant (3 before, 3 after).
+    client.session.prompt = mock(async () => {
+      await writeFile(memoryPath, "# Memory\n\n- item-b\n- item-c\n- item-d\n", "utf-8")
+      return { data: { parts: [] } }
+    })
+
+    await evaluateSession(client, sessionId, captureLog)
+
+    const wroteNew = logCalls.find(c => c.message === "Memory agent wrote new items")
+    const wroteNothing = logCalls.find(c => c.message === "Memory agent wrote nothing")
+
+    expect(wroteNothing).toBeUndefined()
+    expect(wroteNew?.extra?.items).toEqual(["- item-d"])
+  })
+
+  test("logs 'wrote nothing' when Memory.md is genuinely unchanged", async () => {
+    await writeFile(memoryPath, "# Memory\n\n- item-a\n- item-b\n", "utf-8")
+
+    const messages = makeMessages({ role: "user", text: "trigger" })
+    const sessionId = newSessionId()
+    const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
+    const captureLog = async (_level: any, message: string, extra?: Record<string, any>) => {
+      logCalls.push({ message, extra })
+    }
+
+    await evaluateSession(createMockClient({ messages }), sessionId, captureLog)
+
+    expect(logCalls.find(c => c.message === "Memory agent wrote new items")).toBeUndefined()
+    expect(logCalls.find(c => c.message === "Memory agent wrote nothing")).toBeDefined()
   })
 })

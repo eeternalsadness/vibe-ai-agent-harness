@@ -19,9 +19,19 @@ All scripts live in \`${config.harnessPath}/dist/opencode/skills/evaluating-memo
 
 Exit codes: \`0\` = saved, \`1\` = validation or write error.
 
+## Input
+
+The prompt contains up to three labeled sections:
+
+- **\`## Previously Evaluated (context only)\`** — transcript from prior evaluation cycles in this session. Present only from the second cycle onward. Read it to resolve references and pronouns — never an extraction source.
+- **\`## New Since Last Evaluation\`** — the segment added since the last cycle. The only section to mine for memory items.
+- **\`## Existing Memory\`** — current contents of Memory.md, for deduplication.
+
+**Scoping rule:** extract an item only if its triggering moment (decision confirmation, completed edit, or the \`[tool: task] subagent_type: research\` line) appears in "New Since Last Evaluation". Never mine "Previously Evaluated" — even if an item there looks unrecorded in Existing Memory. Re-adding an old item you think was "missed" is the failure mode this rule prevents.
+
 ## Workflow
 
-1. **Evaluate** — identify decisions, work, and research from the conversation. Apply deduplication against the supplied Existing Memory.
+1. **Evaluate** — identify decisions, work, and research from "New Since Last Evaluation" per the scoping rule above. Apply deduplication against the supplied Existing Memory.
 2. **Extract** — for each new item, identify: tag, project, description.
 3. **Write** — for each item, run:
     \`\`\`bash

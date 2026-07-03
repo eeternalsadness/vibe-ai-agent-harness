@@ -3,6 +3,7 @@ import { access, appendFile, readFile, writeFile, mkdir } from "node:fs/promises
 import { dirname, join } from "node:path"
 import { homedir } from "node:os"
 import { config } from "../../../../config"
+import { buildEvaluationPrompt } from "./prompt-builder"
 
 /**
  * Memory Manager Plugin
@@ -252,6 +253,32 @@ export function shouldSkipEvaluation(transcript: string): boolean {
 }
 
 /**
+ * Returns items present in `after` but not accounted for in `before`, as a multiset diff.
+ *
+ * A plain `after.slice(before.length)` breaks once Memory.md is at its item cap: append-memory.sh
+ * truncates the oldest item for every new one appended, so the total count stays constant and the
+ * positional slice sees no growth even though items were genuinely added.
+ */
+export function diffNewItems(before: string[], after: string[]): string[] {
+  const remaining = new Map<string, number>()
+  for (const item of before) {
+    remaining.set(item, (remaining.get(item) ?? 0) + 1)
+  }
+
+  const added: string[] = []
+  for (const item of after) {
+    const count = remaining.get(item) ?? 0
+    if (count > 0) {
+      remaining.set(item, count - 1)
+    } else {
+      added.push(item)
+    }
+  }
+
+  return added
+}
+
+/**
  * Main evaluation workflow: sanitize → build prompt → invoke memory agent (which writes Memory.md)
  */
 export async function evaluateSession(
@@ -302,18 +329,21 @@ export async function evaluateSession(
     return messages.length
   }
 
-  const transcriptSummary = summarizeTranscript(fullTranscript)
   const memoryContentBefore = await readMemory()
   const itemsBefore = memoryContentBefore.split("\n").filter(l => l.trim().startsWith("- "))
 
-  const prompt = `## Conversation\n\n${fullTranscript}\n\n## Existing Memory\n\n${memoryContentBefore}`
+  const prompt = buildEvaluationPrompt(cache?.transcript ?? "", newSegment, memoryContentBefore)
 
-  await log("info", "Invoking memory agent", { sessionId, transcript: transcriptSummary })
+  await log("info", "Invoking memory agent", {
+    sessionId,
+    previouslyEvaluated: summarizeTranscript(cache?.transcript ?? ""),
+    newSinceLastEvaluation: summarizeTranscript(newSegment),
+  })
   await invokeMemoryAgent(client, sessionId, prompt, log)
 
   const memoryContentAfter = await readMemory()
   const itemsAfter = memoryContentAfter.split("\n").filter(l => l.trim().startsWith("- "))
-  const newItems = itemsAfter.slice(itemsBefore.length)
+  const newItems = diffNewItems(itemsBefore, itemsAfter)
 
   if (newItems.length > 0) {
     await log("info", "Memory agent wrote new items", { sessionId, count: newItems.length, items: newItems })
