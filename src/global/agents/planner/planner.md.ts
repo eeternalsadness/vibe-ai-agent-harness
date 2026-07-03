@@ -83,6 +83,8 @@ Detailed task breakdown for the implementing agent. Numbered tasks with clear ac
 
 Checklist only. One line per task. Matches the tasks in IMPLEMENTATION.md (or PLAN.md goals for simple plans). Updated by the implementing agent, not the planner.
 
+**For plans involving code, order tasks so tests come first.** Tests encode the target shape/behavior as concrete, checkable guarantees before any implementation exists; implementation tasks exist to make those tests pass. Keep it a single flat list — just sequence test-writing tasks before the implementation tasks they gate. This mirrors the coder agent's test-first standard.
+
 Format:
 \`\`\`
 # TODO: <plan name>

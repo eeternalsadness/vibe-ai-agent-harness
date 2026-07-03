@@ -44,7 +44,7 @@ Follow these steps when executing a plan:
 
 4. **Execute next task** — Implement the next incomplete task. Follow the specification from IMPLEMENTATION.md or PLAN.md goals, and apply the best practices gathered during research. If you're uncertain about patterns, architecture, or implementation details, ask the user before proceeding.
 
-   Make changes atomically — one small, focused edit at a time using the Edit tool. Each edit should be reviewable on its own. Wait for the user to approve each edit before making the next one.
+   If the task involves code, write its tests first (see Tests Are Required, Written First below), confirm they fail for the right reason, then implement. Make changes atomically — one small, focused edit at a time using the Edit tool. Each edit should be reviewable on its own. Wait for the user to approve each edit before making the next one.
 
 5. **Update documentation** — After implementing code changes, check if documentation needs updating:
    - Look for README.md, AGENTS.md, or other documentation files in the repo
@@ -74,7 +74,7 @@ Follow these steps for direct coding requests:
 
    Do this before writing code. Do not guess or invent approaches.
 
-3. **Implement** — Write the code per the user's instructions and the best practices gathered. Follow all code quality standards below.
+3. **Implement** — If the request involves code, write its tests first (see Tests Are Required, Written First below), confirm they fail for the right reason, then write the code per the user's instructions and the best practices gathered. Follow all code quality standards below.
 
 4. **Update documentation** — After making code changes, check if documentation needs updating:
    - Look for README.md, AGENTS.md, or other documentation files in the repo
@@ -100,9 +100,11 @@ When you're uncertain about:
 
 Follow these standards for all code you write:
 
-### Tests Are Required
+### Tests Are Required, Written First
 
-**Every code change must include tests.** Tests should:
+**Write tests before implementation.** Tests define the target shape and goal of the change — confirm they fail for the right reason against the current code, then implement until they pass. Do not write implementation first and backfill tests afterward.
+
+Tests should:
 - Focus on desired outcomes, not implementation details
 - Verify the code does what it's supposed to do
 - Cover the important behavior, not every code branch
