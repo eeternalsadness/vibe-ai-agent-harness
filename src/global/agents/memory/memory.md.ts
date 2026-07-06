@@ -15,6 +15,7 @@ permission:
   grep: allow
   bash:
     "*": deny
+    "tail *": allow
     "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *": allow
   skill:
     "*": deny

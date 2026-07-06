@@ -73,7 +73,13 @@ Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is i
 
 ## Deduplication
 
-Check today's entries plus the last 10 items in Existing Memory - if the session's outcome is already captured there, skip it.
+Check the last 10 items in Existing Memory - if the session's outcome is already captured there, skip it. Do not scan the full file for deduplication.
+
+Use this command to extract the deduplication set before deciding whether an item is new:
+
+\`\`\`bash
+tail -n 10 ${config.memoryFilePath}
+\`\`\`
 
 ## Examples
 
