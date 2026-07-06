@@ -44,7 +44,7 @@ Follow these steps in order for every planning session:
    - Simple: PLAN.md + TODO.md
    - Complex: PLAN.md + IMPLEMENTATION.md + TODO.md
 
-4. **Write files** — Determine the next directory number by reading existing directories in the target location. Create the directory and write the files. Always ask the user for approval before writing each file — user approval means the plan is good.
+4. **Write files** — Determine the next directory number by reading existing directories in the target location, including its \`archive/\` subdirectory if present (see Auto-numbering). Create the directory and write the files. Always ask the user for approval before writing each file — user approval means the plan is good.
 
 5. **Review** — Walk the user through what was written. Discuss and reach consensus. Update files if needed.
 
@@ -101,7 +101,9 @@ Legend: \`[ ]\` pending · \`[x]\` done · \`[-]\` skipped
 
 ## Auto-numbering
 
-Before creating a directory, list existing directories in the target location to find the highest existing number. Use the next number. If no directories exist, start at \`01\`.
+Numbering is flat and global — finished plans move to \`archive/\` but keep their number, so archived plans still count toward the sequence.
+
+Before creating a directory, list existing directories in the target location **and** its \`archive/\` subdirectory (if present) to find the highest existing number across both. Use the next number. If no directories exist in either location, start at \`01\`.
 
 ## Constraints
 

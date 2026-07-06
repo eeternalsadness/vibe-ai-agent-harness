@@ -14,16 +14,25 @@ A server-side knowledge base service that is self-maintaining and self-enriching
 
 ## Phases
 
-### Phase 1 - Reliable KB Agent *(current focus)*
+### Phase 1 - Reliable KB Agent *(mostly done)*
 
 **Prerequisite for everything else.** Autonomous enrichment on a broken KB just automates the mess. Before the KB goes anywhere near a server or background jobs, the agent must produce output that can be trusted.
 
 Two parts:
 
-1. **Repair the existing KB** - a one-time (then periodic) maintenance pass over the existing ~739 notes: split oversized notes, fix dangling references, enforce naming conventions, ensure all notes are reachable from `Index.md`.
-2. **Stronger write discipline** - improve the KB agent so new writes don't immediately drift again. Enforce conventions at write time, not just for notes created in the current session.
+1. **Repair the existing KB**
 
-### Phase 2 - Server-Side KB with MCP Interface
+   Plan: 12-kb-maintenance-skill
+
+   A one-time (then periodic) maintenance pass over the existing notes: split oversized notes, fix dangling references, enforce naming conventions, ensure all notes are reachable from `Index.md`.
+
+2. **Stronger write discipline**
+
+   Plans: 05-kb-research-split, 12-kb-maintenance-skill
+
+   Improve the KB agent so new writes don't immediately drift again. Enforce conventions at write time, not just for notes created in the current session.
+
+### Phase 2 - Server-Side KB with MCP Interface *(not started)*
 
 Move the KB to the homelab. Expose it via an MCP server. The KB agent runs server-side. Clients no longer delegate to a subagent - they call MCP tools directly.
 
@@ -47,6 +56,8 @@ Tasks:
 Maintenance and enrichment (Phase 4) modify the same files, so **locking is required** - only one job runs at a time. Enrichment can undo maintenance work and vice versa. A message queue (see Phase 2 write design) handles sequencing.
 
 ### Phase 4 - Autonomous Enrichment
+
+Plan: 13-enriching-knowledge-base
 
 An agent that proactively deepens knowledge without being asked. It picks a topic, fetches external sources, synthesizes new notes, and notifies you of what it explored.
 
