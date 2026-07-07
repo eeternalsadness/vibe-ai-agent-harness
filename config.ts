@@ -37,6 +37,8 @@ const models = {
     "claude-sonnet-5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-5" },
     "claude-opus-4.8": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-opus-4-8" },
     "glm-5": { providerID: "amazon-bedrock", modelID: "zai.glm-5" },
+    "gpt-5.5": { providerID: "amazon-bedrock", modelID: "openai.gpt-5.5" },
+    "grok-4.3": { providerID: "amazon-bedrock", modelID: "xai.grok-4.3" },
     "kimi-k2.5": { providerID: "amazon-bedrock", modelID: "moonshotai.kimi-k2.5" },
     "minimax-m2.5": { providerID: "amazon-bedrock", modelID: "minimax.minimax-m2.5" },
     "deepseek-v3.2": { providerID: "amazon-bedrock", modelID: "deepseek.v3.2" },
