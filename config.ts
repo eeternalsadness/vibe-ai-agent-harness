@@ -12,8 +12,7 @@ const models = {
     "mimo-v2.5": { providerID: "opencode", modelID: "mimo-v2.5-free" },
   },
   openrouter: {
-    "gpt-oss-120b": { providerID: "openrouter/openai", modelID: "gpt-oss-120b:free" },
-    "llama-3.2-3b-instruct": { providerID: "openrouter/meta-llama", modelID: "llama-3.2-3b-instruct:free" },
+    "glm-5.2": { providerID: "openrouter/z-ai", modelID: "glm-5.2" },
   },
   lmstudio: {
     "qwen3.5:9b": { providerID: "lmstudio", modelID: "qwen/qwen3.5-9b" },
