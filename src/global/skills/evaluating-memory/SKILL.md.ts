@@ -21,17 +21,16 @@ Exit codes: \`0\` = saved, \`1\` = validation or write error.
 
 ## Input
 
-The prompt contains up to three labeled sections:
+The prompt contains two labeled sections:
 
-- **\`## Previously Evaluated (context only)\`** — transcript from prior evaluation cycles in this session. Present only from the second cycle onward. Read it to resolve references and pronouns — never an extraction source.
 - **\`## New Since Last Evaluation\`** — the segment added since the last cycle. The only section to mine for memory items.
-- **\`## Existing Memory\`** — current contents of Memory.md, for deduplication.
+- **\`## Recent Memory Items\`** — the latest Memory.md items, for deduplication only.
 
-**Scoping rule:** extract an item only if its triggering moment (decision confirmation, completed edit, or the \`[tool: task] subagent_type: research\` line) appears in "New Since Last Evaluation". Never mine "Previously Evaluated" — even if an item there looks unrecorded in Existing Memory. Re-adding an old item you think was "missed" is the failure mode this rule prevents.
+**Scoping rule:** extract an item only if its triggering moment (decision confirmation, completed edit, or the \`[tool: task] subagent_type: research\` line) appears in "New Since Last Evaluation".
 
 ## Workflow
 
-1. **Evaluate** — identify decisions, work, and research from "New Since Last Evaluation" per the scoping rule above. Apply deduplication against the supplied Existing Memory.
+1. **Evaluate** — identify decisions, work, and research from "New Since Last Evaluation" per the scoping rule above. Apply deduplication against the supplied Recent Memory Items.
 2. **Extract** — for each new item, identify: tag, project, description.
 3. **Write** — for each item, run:
     \`\`\`bash
@@ -70,16 +69,6 @@ Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is i
 - Description is topic name only — no URLs or note counts
 
 **\`[kb-enrichment]\`** — Passed in explicitly by the enriching-knowledge-base skill. Never inferred from transcript.
-
-## Deduplication
-
-Check the last 10 items in Existing Memory - if the session's outcome is already captured there, skip it. Do not scan the full file for deduplication.
-
-Use this command to extract the deduplication set before deciding whether an item is new:
-
-\`\`\`bash
-tail -n 10 ${config.memoryFilePath}
-\`\`\`
 
 ## Examples
 

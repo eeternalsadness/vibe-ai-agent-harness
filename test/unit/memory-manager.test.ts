@@ -288,7 +288,7 @@ describe("incremental transcript cache", () => {
     expect(cache?.messageCount).toBe(3)
   })
 
-  test("two-cycle end-to-end: cycle 1 is first-eval shape, cycle 2 splits old under Previously Evaluated and new under New Since Last Evaluation", async () => {
+  test("two-cycle end-to-end: cycle 2 sends only the new segment plus recent memory", async () => {
     const initial = makeMessages(
       { role: "user", text: "first message" },
       { role: "assistant", text: "first response" },
@@ -312,17 +312,15 @@ describe("incremental transcript cache", () => {
 
     expect(prompts).toHaveLength(2)
     const prompt2 = prompts[1]
-    const prevIdx = prompt2.indexOf("## Previously Evaluated (context only)")
     const newIdx = prompt2.indexOf("## New Since Last Evaluation")
 
-    expect(prevIdx).toBeGreaterThanOrEqual(0)
-    // Old messages fall between Previously Evaluated and New Since Last Evaluation
-    expect(prompt2.indexOf("[user]: first message")).toBeGreaterThan(prevIdx)
-    expect(prompt2.indexOf("[user]: first message")).toBeLessThan(newIdx)
-    expect(prompt2.indexOf("[assistant]: first response")).toBeLessThan(newIdx)
+    expect(prompt2).not.toContain("## Previously Evaluated")
+    expect(prompt2).not.toContain("[user]: first message")
+    expect(prompt2).not.toContain("[assistant]: first response")
     // New messages fall after New Since Last Evaluation
     expect(prompt2.indexOf("[user]: second message")).toBeGreaterThan(newIdx)
     expect(prompt2.indexOf("[assistant]: second response")).toBeGreaterThan(newIdx)
+    expect(prompt2).toContain("## Recent Memory Items")
 
     const cache = _getTranscriptCache().get(sessionId)
     expect(cache?.messageCount).toBe(4)
@@ -390,10 +388,10 @@ describe("evaluateSession guards use cumulative transcript", () => {
   })
 })
 
-// ─── Debug logging reports the section split ────────────────────────────────
+// ─── Debug logging reports evaluated vs new transcript counts ───────────────
 
 describe("evaluateSession debug logging", () => {
-  test("'Invoking memory agent' log reports separate counts for Previously Evaluated and New Since Last Evaluation", async () => {
+  test("'Invoking memory agent' log reports separate counts for previously evaluated and new content", async () => {
     const initial = makeMessages(
       { role: "user", text: "first message" },
       { role: "assistant", text: "first response" },
@@ -416,7 +414,7 @@ describe("evaluateSession debug logging", () => {
     expect(invocations[0].extra?.previouslyEvaluated).toEqual({ userMessages: 0, assistantMessages: 0, toolCalls: [] })
     expect(invocations[0].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
 
-    // Cycle 2 — cycle 1's content now falls under Previously Evaluated, only the new message is New Since Last Evaluation
+    // Cycle 2 - cycle 1's content is cached, but only the new message is sent for evaluation
     expect(invocations[1].extra?.previouslyEvaluated).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
     expect(invocations[1].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 0, toolCalls: [] })
   })

@@ -1,31 +1,30 @@
 /**
  * Builds the prompt sent to the memory agent on each evaluation cycle.
  *
- * The transcript is split into two labeled sections instead of one cumulative blob:
- * - "Previously Evaluated" — prior cycles' transcript, kept for resolving references only.
- * - "New Since Last Evaluation" — the segment added since the last cycle, the only
- *   section the agent should mine for memory items.
+ * The prompt contains only the segment added since the last cycle plus a bounded recent-memory set.
  *
- * This closes a duplicate-write bug: without the split, the agent re-reads old
- * `[tool: task] subagent_type: research` (and similar) lines every cycle and re-extracts
- * the same item. See plan 16-memory-dedup-marker for the root-cause writeup.
+ * This closes a duplicate-write bug: if old transcript appears anywhere in the prompt, small
+ * models sometimes mine it despite scoping instructions and re-extract the same item.
  *
  * This function emits pure data — no extraction-scope instruction text. That rule is
  * documented canon in the `evaluating-memory` skill, not duplicated here.
  */
+function extractRecentMemoryItems(existingMemory: string, limit = 20): string {
+  const items = existingMemory
+    .split("\n")
+    .filter(line => line.trim().startsWith("- "))
+  return items.slice(-limit).join("\n")
+}
+
 export function buildEvaluationPrompt(
-  previouslyEvaluated: string,
+  _previouslyEvaluated: string,
   newSegment: string,
   existingMemory: string
 ): string {
-  const sections: string[] = []
-
-  if (previouslyEvaluated.trim()) {
-    sections.push(`## Previously Evaluated (context only)\n\n${previouslyEvaluated}`)
-  }
-
-  sections.push(`## New Since Last Evaluation\n\n${newSegment}`)
-  sections.push(`## Existing Memory\n\n${existingMemory}`)
+  const sections = [
+    `## New Since Last Evaluation\n\n${newSegment}`,
+    `## Recent Memory Items\n\n${extractRecentMemoryItems(existingMemory)}`,
+  ]
 
   return sections.join("\n\n")
 }
