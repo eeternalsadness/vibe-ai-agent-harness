@@ -8,17 +8,18 @@ The blocker to removing the human is that "done" is currently defined as *"the h
 
 ## Vision
 
-An **orchestrator** primary agent that decomposes a plan into tasks and delegates each to a subagent, autonomously, and returns verified results for the user to merge.
+An **orchestrator** primary agent that reads a plan, spawns a coder to work its TODO list to completion in an isolated sandbox, runs the change through a validation pipeline, and presents a reviewed result for the user to merge.
 
 This is only safe if "done" is redefined. Across the whole harness — orchestrated *and* normal workflows — **the gate is tests, not human approval.** A task is done when its acceptance tests pass. The human's role moves upstream (defining what success means) and to the final merge gate, not per-edit babysitting.
 
-Phases 1–3 stand on their own as workflow improvements for the existing human-in-the-loop flow — a trustworthy test gate, structured acceptance criteria, and isolated per-task branches make normal coding better even if the orchestrator never ships. The orchestrator (Phase 4) is the payoff that consumes that foundation, not a prerequisite for its value.
+Phases 1–3 stand on their own as workflow improvements for the existing human-in-the-loop flow — a trustworthy test gate, structured acceptance criteria, a validation pipeline, and isolated branches make normal coding better even if the orchestrator never ships. The orchestrator (Phase 4) is the payoff that consumes that foundation, not a prerequisite for its value.
 
-Three pillars make this safe:
+Four pillars make this safe:
 
-1. **Acceptance criteria are defined by a human during planning**, in a structured, example-driven form concrete enough that tests are derivable from them by transcription rather than interpretation.
-2. **Tests are the gate, always.** Generated from the criteria, validated independently, and run to verify every behavioral change. Refactors pin existing behavior. Docs changes need no tests.
-3. **Each delegated task runs in an isolated sandbox.** Work lands on a branch and merges back only after tests pass and the human approves. A rogue or buggy agent cannot corrupt the main working tree.
+1. **Acceptance criteria are defined by a human during planning**, as named Given/When/Then scenarios concrete enough that tests are derivable from them by transcription rather than interpretation.
+2. **Tests are the gate, always.** Written from the criteria, validated independently, and run to verify every behavioral change.
+3. **A validation pipeline runs before any human sees the work.** Programmatic gates (tests, lint, secret/leak scan, vulnerability scan) enforce objective correctness autonomously; a reviewer then analyzes for non-programmatic concerns and reports findings. The human is the only judgment gate and the loop's termination condition.
+4. **Each delegated plan runs in an isolated sandbox.** Work lands on a branch and merges back only after the pipeline is green and the human approves. A rogue or buggy agent cannot corrupt the main working tree.
 
 ---
 
@@ -26,47 +27,50 @@ Three pillars make this safe:
 
 ### Phase 1 — Goal/Test Foundation *(hard gate for everything else)*
 
+Plan: `17-acceptance-criteria-foundation`
+
 **Prerequisite for all autonomy.** An orchestrator on top of an untrustworthy test gate just automates the production of green-but-wrong results. The gate must be trustworthy before anything delegates to it.
 
 Parts:
 
-1. **Acceptance criteria as a planning artifact.** The planner produces an `ACCEPTANCE.md` per plan, separate from `PLAN.md`. Criteria are structured and example-driven — Given/When/Then scenarios with concrete inputs and expected outputs — so that test generation is transcription, not interpretation. This is a human-in-the-loop planning output.
+1. **Acceptance criteria as a planning artifact.** The planner produces an `ACCEPTANCE.md` per plan, separate from `PLAN.md`. Criteria are structured — named Given/When/Then scenarios with concrete inputs and expected outputs, each with a verification method. Verification is a repeatable, programmatic command by default; criteria that genuinely cannot be verified programmatically are marked distinctly as manual verification. This is a human-in-the-loop planning output.
 
-2. **Autonomous test generation.** A new coder skill, `generating-acceptance-tests`, turns `ACCEPTANCE.md` into runnable tests before implementation begins.
+2. **Per-task verification in TODO.** Each `TODO.md` task carries a `Verify:` line referencing an `ACCEPTANCE.md` scenario by name. The exact test file and command may not exist at plan time, so the reference resolves to a concrete check as the implementer works. This lets the implementer self-verify a task and advance without a human gate between tasks.
 
-3. **Independent test validation.** The reviewer agent validates that the generated tests actually encode the acceptance criteria, before the coder implements. This breaks the circular-gate problem where the same agent writes and passes its own test.
+3. **Implementer writes tests from criteria.** The coder reads `ACCEPTANCE.md`, turns each referenced scenario into runnable tests before implementation (test-first ordering), and treats the verification passing as the definition of done. No separate test-generation skill; this is coder-instruction behavior.
 
-4. **Redefine "done" everywhere.** The coder and planner treat passing acceptance tests as the definition of done, in both normal and delegated workflows.
+4. **Independent test validation.** The reviewer agent validates that the tests actually encode the referenced acceptance scenarios. This breaks the circular-gate problem where the same agent writes and passes its own test.
 
-### Phase 2 — Verifiable Task Contracts
+5. **Redefine "done" everywhere.** The coder and planner treat passing acceptance tests as the definition of done, in both normal and delegated workflows.
 
-Formalize the contract each task carries so it can be delegated and verified without a human reading prose.
+### Phase 2 — Validation Pipeline
 
-- Every task declares a **verification command** — how the orchestrator (or coder) checks it passed.
-- Every task declares a **class** that determines how it is verified:
-  - *Verifiable* — has acceptance tests; the test suite is the gate.
-  - *Docs-autonomous* — documentation changes; no tests required, done autonomously.
-  - *Refactor-behavior-pinned* — behavior must not change; existing tests pin behavior and must still pass.
-- Define the **harness proxy-test story** so the harness can verify itself: render output validity, required frontmatter present, `append-memory.sh` behavior, plugin unit tests.
+A gated sequence a change must pass before a human is ever contacted. Two kinds of gates, in order of trust, then a single human judgment gate.
+
+- **Programmatic gates (autonomous, deterministic).** Tests, lint, secret/leak scan, vulnerability scan, and other scripts. Ordered fail-fast, cheap checks first. Any failure routes back to the coder automatically. No human involved; these are objective.
+- **Reviewer analysis (autonomous, no gating authority).** Runs only after programmatic gates are green. Looks for what scanners cannot catch: coding conventions, architecture fit, design tradeoffs, smells. Produces structured findings (severity + reasoning), anchored to documented conventions/decisions where possible. It reports; it does not block or loop on its own authority. Stays advisory in spirit.
+- **Human-presentation artifact.** Aggregates: summary of what changed, key decisions made during implementation, reviewer findings, programmatic gate results, and anything flagged for a second look. This is what the human sees instead of a raw diff.
+- **Human gate (the only judgment gate).** The human reviews the artifact and either approves (proceed to merge) or directs specific changes, which loop back to the coder. The human is the loop's termination condition, not a heuristic iteration cap.
+
+Pipeline in one line: automated correctness → automated analysis → human judgment. The reviewer may or may not be the existing reviewer agent, reshaped or new; that is an implementation choice.
 
 ### Phase 3 — Sandboxed Execution
 
-Isolate the work environment for each task so an autonomous agent cannot damage the main working tree.
+Isolate the work environment for a delegated plan so an autonomous agent cannot damage the main working tree.
 
-- **Git worktrees** to start: each task gets its own branch and working directory. Provides file-level isolation and parallelism across independent tasks. Cheap, instant, native.
-- **Branch per task.** Work never touches main directly.
-- **Merge gate:** a task branch merges into the main working tree only after acceptance tests pass **and** the human approves the merge. Tests gate autonomy; the human gates the merge.
-- **Containers are a future hardening step** for full execution isolation (filesystem, process, network). The intended end state is a container whose workspace is a git worktree bind-mounted in — execution isolation plus a clean git-based merge path. Credential injection into the sandbox is a deferred design problem to be solved when containers land.
+- **Git worktrees.** A delegated coder run gets its own branch and working directory. Provides file-level isolation and parallelism across independent plans. Cheap, instant, native. This is the scope for now.
+- **Branch per plan.** Work never touches main directly.
+- **Merge gate:** a branch merges into the main working tree only after the validation pipeline (Phase 2) is green **and** the human approves the merge. Tests and scans gate autonomy; the human gates the merge.
+- **Containers are deferred** to a much later hardening step for full execution isolation (filesystem, process, network). Not in scope now. The eventual end state is a container whose workspace is a git worktree bind-mounted in; credential injection is a deferred design problem for when containers land.
 
 ### Phase 4 — Orchestrator Agent
 
 A new primary agent that composes everything below it.
 
-- Reads a plan and its `ACCEPTANCE.md`.
-- Decomposes it into tasks with contracts (Phase 2).
-- Spawns a coder subagent per task, each in its own worktree sandbox (Phase 3).
-- Generates and validates tests (Phase 1), implements, runs the verification command.
-- Routes failures back for retry; presents verified branches to the user for merge.
+- Reads a plan, its `TODO.md`, and its `ACCEPTANCE.md`. Tasks are already defined by planning; the orchestrator does not re-decompose them.
+- Spawns a coder subagent in its own worktree sandbox (Phase 3) to work the TODO list until every task is checked off.
+- The coder writes and validates tests (Phase 1), implements, and self-verifies each task via its `Verify:` reference before advancing.
+- Runs the validation pipeline (Phase 2), routes programmatic failures back for retry, and presents the reviewed branch and its human-presentation artifact to the user for the merge decision.
 
 Depends entirely on Phases 1–3.
 
@@ -77,7 +81,7 @@ Make delegation robust at scale.
 - Failure recovery: retry and escalation policy when a task cannot reach green.
 - Reviewer-in-the-loop on generated tests within the orchestration flow.
 - Observability: what was delegated, what passed, what merged.
-- Containers as the deeper isolation layer (from Phase 3's future note).
+- Containers as the deeper isolation layer (from Phase 3's deferred note).
 
 ---
 
@@ -88,13 +92,18 @@ Make delegation robust at scale.
 | Definition of "done" | Acceptance tests pass | Machine-checkable target; enables safe autonomy |
 | Test gate scope | Always — orchestrated and normal | Consistent safety model; autonomy only removes the human, not the gate |
 | Acceptance criteria owner | Human, during planning | Success definition is a judgment call, not an agent's |
-| Criteria format | Structured, example-driven | Makes test generation transcription, not interpretation |
+| Criteria format | Named Given/When/Then scenarios, each with a verification method | Concrete enough that tests are transcription, not interpretation |
 | Criteria location | Own file (`ACCEPTANCE.md`) | Keeps `PLAN.md` high-level; separates spec from design |
-| Test authoring | Autonomous, via coder skill | Human defines success; agent transcribes it into tests |
+| Per-task verification | `TODO.md` task carries a `Verify:` reference to an `ACCEPTANCE.md` scenario | Test file may not exist at plan time; reference resolves as implementer works; enables self-advance |
+| Verification method | Programmatic, repeatable command by default; manual marked distinctly | LLM-judged criteria are not a trustworthy gate |
+| Test authoring | Coder instruction, not a separate skill | Human defines success; agent transcribes it into tests |
 | Test validation | Reviewer agent, independently | Breaks the circular gate — writer must not be sole verifier |
-| Docs tasks | Autonomous, no tests | Low risk; not meaningfully E2E-testable |
-| Refactor tasks | Behavior pinned by tests | Correctness = unchanged behavior |
-| Isolation (initial) | Git worktrees | Cheap, native, file-level isolation + parallelism |
+| Validation pipeline | Programmatic gates → reviewer analysis → human judgment | Objective checks autonomous; subjective quality reported, not auto-gated |
+| Programmatic gates | Tests, lint, secret/leak scan, vuln scan; fail routes to coder | Deterministic, objective, no human needed |
+| Reviewer authority | Reports findings; no autonomous gate or loop | LLM judgment cannot be a trustworthy hard gate |
+| Loop termination | The human, via the presentation artifact | Approve → merge; direct changes → loop to coder |
+| Presentation artifact | Summary, key decisions, reviewer findings, gate results, flags | Human judges without re-reviewing the raw diff |
+| Isolation (initial) | Git worktrees, branch per plan | Cheap, native, file-level isolation + parallelism |
 | Isolation (future) | Containers over worktrees | Full execution sandbox; credential design deferred |
 | Merge gate | Tests pass + human approves | Tests gate autonomy; human gates the merge |
 | Phase ordering | Test foundation first, hard gate | Orchestrator on an untrusted gate automates wrong results |
