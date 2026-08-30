@@ -26,9 +26,11 @@ const models = {
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
   yescale: {
-    "gemini-3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
     "deepseek-v3.2": { providerID: "yescale", modelID: "deepseek-v3.2-thinking" },
     "gemini-3-flash": { providerID: "yescale", modelID: "gemini-3-flash-preview" },
+    "gemini-3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
+    "glm-5.3": { providerID: "yescale", modelID: "glm-5.3" },
+    "minimax-m2.7": { providerID: "yescale", modelID: "MiniMax-M2.7" },
   },
   bedrock: {
     "claude-haiku-4.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-haiku-4-5-20251001-v1:0" },
@@ -41,9 +43,6 @@ const models = {
     "kimi-k2.5": { providerID: "amazon-bedrock", modelID: "moonshotai.kimi-k2.5" },
     "minimax-m2.5": { providerID: "amazon-bedrock", modelID: "minimax.minimax-m2.5" },
     "deepseek-v3.2": { providerID: "amazon-bedrock", modelID: "deepseek.v3.2" },
-  },
-  "bedrock-mantle": {
-    "gpt-5.5": { providerID: "bedrock-mantle", modelID: "openai.gpt-5.5" },
   },
 }
 
@@ -87,13 +86,13 @@ export const config = {
       reviewer: models.framework["qwen3.6:35b-a3b"],
     },
     based: {
-      primary: models.yescale["gemini-3-flash"],
+      primary: models.yescale["glm-5.3"],
       memory: models.lmstudio["qwen3.5:9b"],
-      research: models.yescale["gemini-3-flash"],
+      research: models.yescale["glm-5.3"],
       knowledgeBase: models.lmstudio["qwen3.5:9b"],
       planner: models.yescale["deepseek-v3.2"],
-      coder: models.bedrock["claude-sonnet-4.6"],
-      reviewer: models.bedrock["claude-sonnet-4.6"],
+      coder: models.yescale["glm-5.3"],
+      reviewer: models.yescale["gemini-3-pro"],
     },
   },
 }
