@@ -26,7 +26,7 @@ const models = {
     "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
   yescale: {
-    "deepseek-v3.2": { providerID: "yescale", modelID: "deepseek-v3.2-thinking" },
+    "deepseek-v4-pro": { providerID: "yescale", modelID: "deepseek-v4-pro" },
     "gemini-3-flash": { providerID: "yescale", modelID: "gemini-3-flash-preview" },
     "gemini-3-pro": { providerID: "yescale", modelID: "gemini-3-pro-preview" },
     "glm-5.3": { providerID: "yescale", modelID: "glm-5.3" },
@@ -90,7 +90,7 @@ export const config = {
       memory: models.lmstudio["qwen3.5:9b"],
       research: models.yescale["glm-5.3"],
       knowledgeBase: models.lmstudio["qwen3.5:9b"],
-      planner: models.yescale["deepseek-v3.2"],
+      planner: models.yescale["deepseek-v4-pro"],
       coder: models.yescale["glm-5.3"],
       reviewer: models.yescale["gemini-3-pro"],
     },
