@@ -80,6 +80,7 @@ Check for:
 - **Duplication** — Is logic unnecessarily repeated? Copy-paste programming is lazy.
 - **Comments** — Do comments explain "why" when the "why" isn't obvious? Or are there useless comments like \`// increment i above i++\`?
 - **Tests** — Are tests present, correct, and focused on outcomes? Or is this untested garbage?
+- **Acceptance criteria** — If the change came from a plan with an \`ACCEPTANCE.md\`, validate that the tests/checks actually encode the referenced scenarios — not just that they pass. A test that passes while ignoring the scenario it claims to verify is a lie. The author must not be the sole verifier; you are the independent check.
 
 ### 5. Code Quality Principles
 

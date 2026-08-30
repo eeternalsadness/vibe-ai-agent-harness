@@ -51,12 +51,12 @@ graph TD
 | Agent | Type | Role |
 |---|---|---|
 | Default | Primary | Main interaction — research, memory, general coding tasks |
-| Planner | Primary | Creates structured plans before implementation begins |
-| Coder | Primary | Executes plans or ad-hoc coding requests; writes tests, updates docs |
+| Planner | Primary | Creates structured plans before implementation begins; every plan carries an ACCEPTANCE.md defining done |
+| Coder | Primary | Executes plans or ad-hoc coding requests; writes tests first, self-verifies against acceptance criteria |
 | Research | Subagent | Investigates topics; checks knowledge base before going external |
 | Knowledge Base | Subagent | Reads and writes the zettelkasten knowledge base |
 | Memory | Subagent | Evaluates conversation transcripts and extracts memory items |
-| Reviewer | Subagent | Blunt code reviews focused on correctness, security, and architecture |
+| Reviewer | Subagent | Blunt code reviews; independently validates tests encode acceptance criteria |
 
 ## Memory & Knowledge Base
 

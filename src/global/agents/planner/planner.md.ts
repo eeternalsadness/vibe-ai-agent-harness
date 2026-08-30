@@ -41,10 +41,10 @@ Follow these steps in order for every planning session:
 2. **Scope** — Ask the user: project-level plan (stored in \`.agents/plans/\`) or global plan (stored in \`${config.repoPath}/vibe-coding/vibe-context/plans/\`)?
 
 3. **Complexity** — Decide whether the task is complex enough to warrant an IMPLEMENTATION.md (detailed step-by-step breakdown). **State your recommendation with reasoning.** Be opinionated — if the task is complex, say so and why. If the user is overcomplicating something simple, push back. The user can disagree, but make your case.
-   - Simple: PLAN.md + TODO.md
-   - Complex: PLAN.md + IMPLEMENTATION.md + TODO.md
+   - Simple: PLAN.md + ACCEPTANCE.md + TODO.md
+   - Complex: PLAN.md + ACCEPTANCE.md + IMPLEMENTATION.md + TODO.md
 
-4. **Write files** — Determine the next directory number by reading existing directories in the target location, including its \`archive/\` subdirectory if present (see Auto-numbering). Create the directory and write the files. Always ask the user for approval before writing each file — user approval means the plan is good.
+4. **Write files** — Determine the next directory number by reading existing directories in the target location, including its \`archive/\` subdirectory if present (see Auto-numbering). Create the directory and write the files. **Every plan must include an \`ACCEPTANCE.md\` file alongside \`PLAN.md\` — no exceptions.** A plan means work significant enough to define done, and done is defined by acceptance criteria, not by a human eyeballing a diff. Always ask the user for approval before writing each file — user approval means the plan is good.
 
 5. **Review** — Walk the user through what was written. Discuss and reach consensus. Update files if needed.
 
@@ -75,6 +75,18 @@ High-level only. Sections:
 
 No step-by-step implementation detail. That belongs in IMPLEMENTATION.md.
 
+### ACCEPTANCE.md (required — every plan)
+
+The machine-checkable definition of done. Without it, "done" means "a human approved the diff" — which no orchestrator can trust. Content:
+
+- **Named Given/When/Then scenarios** — each scenario is a concrete, falsifiable acceptance test, not BDD prose. Give each a stable kebab-case name; TODO.md tasks reference scenarios by that name.
+- **Verification section per scenario** — a repeatable programmatic command (a test, a script, a grep over rendered output), not an LLM judgment. Verification is programmatic **by default**.
+- **Out of Scope section** — what these criteria deliberately do not cover.
+
+Vagueness test: if you cannot write a failing test from a scenario, the scenario is too vague. Rewrite it until you can.
+
+Criteria that genuinely cannot be verified programmatically are allowed only as the exception, never as an escape hatch: mark them **[MANUAL]** and state how a human confirms them. If a programmatic check exists, use it — do not mark it manual.
+
 ### IMPLEMENTATION.md (complex plans only)
 
 Detailed task breakdown for the implementing agent. Numbered tasks with clear acceptance criteria. Enough detail that an agent can execute without ambiguity.
@@ -82,6 +94,8 @@ Detailed task breakdown for the implementing agent. Numbered tasks with clear ac
 ### TODO.md
 
 Checklist only. One line per task. Matches the tasks in IMPLEMENTATION.md (or PLAN.md goals for simple plans). Updated by the implementing agent, not the planner.
+
+**Each task carries a \`Verify:\` line referencing an \`ACCEPTANCE.md\` scenario by name.** The exact test or command may not exist at plan time — the reference resolves as the implementer writes the test. This lets the implementing agent self-verify each task and advance without a human gate between tasks.
 
 **For plans involving code, order tasks so tests come first.** Tests encode the target shape/behavior as concrete, checkable guarantees before any implementation exists; implementation tasks exist to make those tests pass. Keep it a single flat list — just sequence test-writing tasks before the implementation tasks they gate. This mirrors the coder agent's test-first standard.
 
@@ -96,7 +110,9 @@ Legend: \`[ ]\` pending · \`[x]\` done · \`[-]\` skipped
 ## Tasks
 
 - [ ] **Task 1** — description
+      Verify: <ACCEPTANCE.md scenario name>
 - [ ] **Task 2** — description
+      Verify: <ACCEPTANCE.md scenario name>
 \`\`\`
 
 ## Auto-numbering
