@@ -2,6 +2,62 @@
 
 Verification is programmatic unless a scenario is marked **[MANUAL]**.
 Each scenario has a stable name that `TODO.md` tasks reference in their `Verify:` line.
+This file is the source of truth for what the tests assert.
+
+## Manifest Format
+
+The manifest is `.agents/pipeline.yaml` at the repo root. Flat top-level stage
+keys, each a mapping with a required `command` and an optional `working-dir` that
+defaults to the repo root. Only `lint`, `build`, and `test` are configurable; the
+two scans (`gitleaks`, `trivy`) are the runner's own standard commands and are not
+declared in the manifest. A stage key absent from the file means that stage is
+skipped.
+
+```yaml
+lint:
+  command: bun run lint
+build:
+  command: bun run typecheck
+test:
+  command: bun test
+  working-dir: .
+```
+
+Stage run order is fixed: lint → scans → build → test.
+
+## Test Fixtures
+
+Behavioral scenarios run the runner against fixtures — subfolder mini-repos, each
+with its own `.agents/pipeline.yaml`. Fixtures mock every stage (scans included)
+with a trivial command that records its stage name and a timestamp to a shared log
+and exits 0 or 1. The runner lets tests substitute the scan commands with mocks so
+the real `gitleaks`/`trivy` are never invoked. Tests assert on the log and on the
+runner's own summary output, not on real tools.
+
+## Runner Summary Output
+
+The runner streams each stage command's own output through unchanged; its only
+own output is the final summary:
+- success — one line per stage in run order, `<stage>: passed` or
+  `<stage>: skipped`, then a final `pipeline passed`; exit 0
+- failure — stop at the first non-zero stage, print `pipeline failed at: <stage>`;
+  exit non-zero
+
+## Scenario: runner-rejects-malformed-manifest
+
+Given a `.agents/pipeline.yaml` that is malformed
+When the pipeline runner is invoked
+Then the runner prints the defined error for that problem and exits non-zero without running any stage
+
+Each malformed case and its exact error message:
+- manifest file missing entirely → `manifest not found: .agents/pipeline.yaml`
+- file is not valid YAML → `manifest is not valid YAML: <parser detail>`
+- a stage omits the required `command` → `manifest stage '<stage>' is missing required key 'command'`
+- a top-level key is not one of `lint`/`build`/`test` → `manifest has unknown stage '<key>'; allowed: lint, build, test`
+- a stage value is not a mapping → `manifest stage '<stage>' must be a mapping`
+
+Verification:
+- For each case above, run the runner against a fixture in that state; assert non-zero exit, the error output equals the defined message (the `<...>` slot filled in), and that no stage mock left a marker in the run log
 
 ## Scenario: runner-runs-stages-fail-fast-order
 
@@ -14,30 +70,21 @@ Verification:
 
 ## Scenario: runner-fails-fast-on-first-failure
 
-Given a repo whose lint stage fails
+Given a repo whose stages are all mocked and exactly one stage fails
 When the pipeline runner is invoked
-Then it stops without running the later stages and exits non-zero
+Then it stops at the failing stage, prints `pipeline failed at: <stage>`, and exits non-zero, and no stage after the failing one runs
 
 Verification:
-- Run the runner against a fixture where lint fails; assert non-zero exit and that the later stages left no markers in the run log
-
-## Scenario: runner-emits-failure-detail
-
-Given a repo whose test stage fails and prints diagnostic output
-When the pipeline runner is invoked
-Then its output includes the failing stage's name and the failing command's output
-
-Verification:
-- Run the runner against a failing fixture; assert output contains the failing stage name and the command's emitted diagnostic string
+- Run three fixtures, failing at lint (first), build (after the scans), and test (last) respectively; for each assert non-zero exit, output contains `pipeline failed at: <that stage>`, the stages before it left their markers, and the stages after it left no markers in the run log
 
 ## Scenario: runner-emits-success-summary
 
 Given a repo whose every stage passes
 When the pipeline runner is invoked
-Then it exits zero and prints a summary of the stages that ran
+Then it exits zero and prints the success summary defined in Runner Summary Output
 
 Verification:
-- Run the runner against an all-passing fixture; assert exit code zero and that output lists each stage that ran
+- Run the runner against an all-passing fixture; assert exit code zero, one `<stage>: passed` line per configured stage in run order, and a final `pipeline passed` line
 
 ## Scenario: runner-skips-unconfigured-stage
 

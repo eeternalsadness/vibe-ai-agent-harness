@@ -1,61 +1,60 @@
 # Implementation: Plan 18 Validation Pipeline
 
-Test-first ordering. Runner assumes `python3`, `gitleaks`, `trivy` on the machine.
+## Task 1: Write the test for runner-rejects-malformed-manifest
 
-## Task 1: Define the manifest format
+Write the failing test encoding the `runner-rejects-malformed-manifest` scenario.
+Red until the runner validates the manifest.
 
-The manifest is a YAML file at `.agents/pipeline.yaml` in the repo. Flat
-top-level stage keys, each an object with a required `command` and an optional
-`working-dir` (defaults to the repo root). Only `lint`, `build`, and `test` are
-configurable; the scan stages are standard and owned by the runner. A stage key
-absent from the file means that stage is skipped.
+## Task 2: Write the test for runner-runs-stages-fail-fast-order
 
-```yaml
-# .agents/pipeline.yaml
-lint:
-  command: bun run lint
-build:
-  command: bun run typecheck
-test:
-  command: bun test
-  working-dir: .
-```
+Write the failing test encoding the `runner-runs-stages-fail-fast-order`
+scenario. Red until the runner exists.
 
-This shape is the contract the runner, the fixtures, and the tests all reference.
+## Task 3: Write the test for runner-fails-fast-on-first-failure
 
-**Verify:** this-repo-conforms
+Write the failing test encoding the `runner-fails-fast-on-first-failure`
+scenario. Red until the runner exists.
 
-## Task 2: Implement the pipeline runner and its tests
+## Task 4: Write the test for runner-emits-success-summary
 
-A Python script that reads `.agents/pipeline.yaml`, resolves each configured
-stage's command and working-dir, and runs the stages fail-fast in the order:
-lint → scans → build → test. The two scans (`gitleaks`, `trivy`) are standard
-commands the runner owns; the two may run in parallel. A stage absent from the
-manifest is skipped.
+Write the failing test encoding the `runner-emits-success-summary` scenario. Red
+until the runner exists.
 
-The runner is thin: each stage command's own output streams straight through to
-the caller. The runner's only output is the final summary:
-- success — one line per stage in run order, `<stage>: passed` or
-  `<stage>: skipped`, then `pipeline passed`; exit 0
-- failure — stop at the first non-zero stage and print `pipeline failed at:
-  <stage>`; exit non-zero. The agent reads the streamed tool output above for why.
+## Task 5: Write the test for runner-skips-unconfigured-stage
 
-Write the tests alongside, since they depend on the runner's structure. They test
-orchestration, not the real scan tools, so fixtures mock every stage (scans
-included) with trivial commands that record their stage and time to a log and
-exit 0 or 1; the runner lets tests substitute the scan commands with mocks.
-Fixtures are subfolders acting as mini-repos. Cover:
-- every stage passes → exit 0; summary lists each stage `passed` in order lint →
-  scans → build → test; ends `pipeline passed`
-- lint fails → exit non-zero; prints `pipeline failed at: lint`; the build/test/
-  scan mocks left no markers in the log
-- test fails with a diagnostic → exit non-zero; prints `pipeline failed at: test`;
-  the diagnostic appears in the streamed output
-- manifest omits lint → exit 0; summary shows `lint: skipped`
+Write the failing test encoding the `runner-skips-unconfigured-stage` scenario.
+Red until the runner exists.
 
-**Verify:** runner-runs-stages-fail-fast-order, runner-fails-fast-on-first-failure, runner-emits-failure-detail, runner-emits-success-summary, runner-skips-unconfigured-stage
+## Task 6: Write the test for this-repo-conforms
 
-## Task 3: Create the validating-work skill
+Write the failing test encoding the `this-repo-conforms` scenario. Red until the
+runner and this repo's manifest exist.
+
+## Task 7: Write the tests for pipeline-skill-defines-loop and coder-loads-pipeline-skill
+
+Write the failing tests encoding the `pipeline-skill-defines-loop` and
+`coder-loads-pipeline-skill` scenarios. Red until the skill exists and the coder
+loads it.
+
+## Task 8: Implement the pipeline runner
+
+A Python script that reads and validates `.agents/pipeline.yaml`, then runs the
+stages fail-fast in order lint → scans → build → test, per the Manifest Format,
+Runner Summary Output, and scenario specs in ACCEPTANCE.md. Design:
+- Ships inside the `validating-work` skill's `scripts/` folder and is installed
+  via the render pipeline, following the `evaluating-memory` skill+script pattern.
+- The two scans (`gitleaks`, `trivy`) are runner-owned, not declared in the
+  manifest, and run in parallel with each other.
+- Each stage command runs in its `working-dir` (repo root by default) with its
+  output streamed straight through; the runner's only own output is the summary.
+- Scan commands are injectable so tests substitute mocks and the real scanners
+  never run.
+
+Implement until Tasks 1–5 pass.
+
+**Verify:** runner-rejects-malformed-manifest, runner-runs-stages-fail-fast-order, runner-fails-fast-on-first-failure, runner-emits-success-summary, runner-skips-unconfigured-stage
+
+## Task 9: Create the validating-work skill
 
 Create a `validating-work` skill following the `evaluating-memory` pattern: a
 `SKILL.md.ts` body plus the runner in its `scripts/` folder, rendered and
@@ -67,7 +66,7 @@ signal, and that no human is in this loop.
 
 **Verify:** pipeline-skill-defines-loop
 
-## Task 4: Make the coder load the skill
+## Task 10: Make the coder load the skill
 
 Edit `src/global/agents/coder/coder.md.ts` so the coder loads `validating-work`
 to self-verify its work before advancing or handing off, in both plan and ad-hoc
@@ -76,7 +75,7 @@ the stop signal.
 
 **Verify:** coder-loads-pipeline-skill
 
-## Task 5: Add this repo's manifest
+## Task 11: Add this repo's manifest
 
 Add `.agents/pipeline.yaml` declaring this repo's real lint, build, and test
 commands. Confirm the runner exits 0 on a clean tree.
