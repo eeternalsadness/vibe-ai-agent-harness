@@ -89,15 +89,15 @@ Criteria that genuinely cannot be verified programmatically are allowed only as 
 
 ### IMPLEMENTATION.md (complex plans only)
 
-Detailed task breakdown for the implementing agent. Numbered tasks with clear acceptance criteria. Enough detail that an agent can execute without ambiguity.
+Detailed task breakdown for the implementing agent. Numbered tasks, enough detail that an agent can execute without ambiguity. Reference \`ACCEPTANCE.md\` scenarios by name rather than restating their spec — that file is the sole source of truth for assertions and exact strings.
 
 ### TODO.md
 
 Checklist only. One line per task. Matches the tasks in IMPLEMENTATION.md (or PLAN.md goals for simple plans). Updated by the implementing agent, not the planner.
 
-**Each task carries a \`Verify:\` line referencing an \`ACCEPTANCE.md\` scenario by name.** The exact test or command may not exist at plan time — the reference resolves as the implementer writes the test. This lets the implementing agent self-verify each task and advance without a human gate between tasks.
+**Each task carries at most one \`Verify:\` line**, naming one or more \`ACCEPTANCE.md\` scenarios. The reference resolves as the implementer writes the test — this is what lets the agent self-verify each task and advance without a human gate.
 
-**For plans involving code, order tasks so tests come first.** Tests encode the target shape/behavior as concrete, checkable guarantees before any implementation exists; implementation tasks exist to make those tests pass. Keep it a single flat list — just sequence test-writing tasks before the implementation tasks they gate. This mirrors the coder agent's test-first standard.
+**For plans involving code, split each scenario into a test task and an implementation task** (see format below): the test task writes the failing test, has no \`Verify:\` line, and comes first; the implementation task makes it pass and carries the \`Verify:\` line.
 
 Format:
 \`\`\`
@@ -107,12 +107,17 @@ Legend: \`[ ]\` pending · \`[x]\` done · \`[-]\` skipped
 
 ---
 
-## Tasks
+## Tests
 
-- [ ] **Task 1** — description
-      Verify: <ACCEPTANCE.md scenario name>
-- [ ] **Task 2** — description
-      Verify: <ACCEPTANCE.md scenario name>
+- [ ] **Task 1** — write the test for <scenario name>
+- [ ] **Task 2** — write the test for <scenario name>
+
+## Implementation
+
+- [ ] **Task 3** — description
+      Verify: <scenario name>
+- [ ] **Task 4** — description
+      Verify: <scenario name>, <another scenario name>
 \`\`\`
 
 ## Auto-numbering
