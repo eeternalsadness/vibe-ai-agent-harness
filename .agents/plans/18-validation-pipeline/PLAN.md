@@ -40,7 +40,7 @@ loop; the human returns only at the end, after review (a later piece).
 | Definition of "done" for a change | The pipeline is green | A deterministic, programmatic stop signal the coder can trust |
 | Human in the implementation loop | None | Autonomy is the point; human judgment moves to the end of the loop |
 | Standard vs. per-repo | Standard stages; each repo maps them to its own commands | One uniform contract across languages without prescribing tools |
-| Failure handling | Fail-fast, cheapest stage first | Fast feedback; do not wait on slow stages to surface cheap breakage |
+| Failure handling | Fail-fast, cheap correctness signals before expensive ones | Surface breakage as early and as cheaply as the stage ordering allows |
 | Missing stage | Skipped and noted, not a failure | Repos adopt stage-by-stage rather than all-or-nothing |
 | Output | Detail on failure, summary on success | Coder needs failure detail to fix; a green summary feeds later review |
 

@@ -10,8 +10,8 @@ The manifest is `.agents/pipeline.yaml` at the repo root. Flat top-level stage
 keys, each a mapping with a required `command` and an optional `working-dir` that
 defaults to the repo root. Only `lint`, `build`, and `test` are configurable; the
 two scans (`gitleaks`, `trivy`) are the runner's own standard commands and are not
-declared in the manifest. A stage key absent from the file means that stage is
-skipped.
+declared in the manifest. A configurable stage key absent from the file means that
+stage is skipped. The scans always run.
 
 ```yaml
 lint:
@@ -23,23 +23,30 @@ test:
   working-dir: .
 ```
 
-Stage run order is fixed: lint → scans → build → test.
+Stage run order is fixed and sequential: `lint → gitleaks → trivy → build → test`.
+The scans run one after another, not in parallel, so each is a single named stage
+with unambiguous fail-fast and summary semantics.
 
-## Test Fixtures
+## Runner Design (for testability)
 
-Behavioral scenarios run the runner against fixtures — subfolder mini-repos, each
-with its own `.agents/pipeline.yaml`. Fixtures mock every stage (scans included)
-with a trivial command that records its stage name and a timestamp to a shared log
-and exits 0 or 1. The runner lets tests substitute the scan commands with mocks so
-the real `gitleaks`/`trivy` are never invoked. Tests assert on the log and on the
-runner's own summary output, not on real tools.
+The runner is an importable Python module, not just a script. Each stage is a
+function (`run_lint`, `run_gitleaks`, `run_trivy`, `run_build`, `run_test`, or an
+equivalent generic `run_stage(name, ...)`). Behavioral tests import the module and
+mock those functions with `unittest.mock`, so the real `gitleaks`/`trivy` are never
+invoked in unit tests and no env-var or CLI injection mechanism is needed. Tests
+call the runner in-process against a temp directory holding a small
+`.agents/pipeline.yaml`, and assert on mock call order and on the runner's own
+summary output. The real scanners run only in the `this-repo-conforms` integration
+test.
 
 ## Runner Summary Output
 
 The runner streams each stage command's own output through unchanged; its only
-own output is the final summary:
+own output is the final summary. The summary lists every stage that ran, in run
+order — configurable stages plus the two scans:
 - success — one line per stage in run order, `<stage>: passed` or
-  `<stage>: skipped`, then a final `pipeline passed`; exit 0
+  `<stage>: skipped` (only configurable stages can be skipped; scans always run),
+  then a final `pipeline passed`; exit 0
 - failure — stop at the first non-zero stage, print `pipeline failed at: <stage>`;
   exit non-zero
 
@@ -63,10 +70,10 @@ Verification:
 
 Given a repo configured for lint, build, and test
 When the pipeline runner is invoked
-Then lint runs before the scans, the scans run before build, and build runs before test
+Then the stages run in the fixed order `lint → gitleaks → trivy → build → test`
 
 Verification:
-- Run the runner against a fixture whose stages each record their name and time to a log; assert lint precedes both scans, both scans precede build, and build precedes test
+- Import the runner and mock every stage function; run against a temp-dir fixture; assert the recorded mock call order is exactly `lint, gitleaks, trivy, build, test`
 
 ## Scenario: runner-fails-fast-on-first-failure
 
@@ -75,7 +82,7 @@ When the pipeline runner is invoked
 Then it stops at the failing stage, prints `pipeline failed at: <stage>`, and exits non-zero, and no stage after the failing one runs
 
 Verification:
-- Run three fixtures, failing at lint (first), build (after the scans), and test (last) respectively; for each assert non-zero exit, output contains `pipeline failed at: <that stage>`, the stages before it left their markers, and the stages after it left no markers in the run log
+- Run three cases, failing at lint (first), gitleaks (a scan), and build (after the scans) respectively; for each assert non-zero exit, output contains `pipeline failed at: <that stage>`, the stages before it were called, and the stages after it were not called
 
 ## Scenario: runner-emits-success-summary
 
@@ -84,7 +91,7 @@ When the pipeline runner is invoked
 Then it exits zero and prints the success summary defined in Runner Summary Output
 
 Verification:
-- Run the runner against an all-passing fixture; assert exit code zero, one `<stage>: passed` line per configured stage in run order, and a final `pipeline passed` line
+- Run the runner against an all-passing fixture with lint, build, and test configured; assert exit code zero, one `<stage>: passed` line for each of `lint, gitleaks, trivy, build, test` in run order, and a final `pipeline passed` line
 
 ## Scenario: runner-skips-unconfigured-stage
 
@@ -93,16 +100,16 @@ When the pipeline runner is invoked
 Then lint is skipped and noted, and this does not fail the run
 
 Verification:
-- Run the runner against a fixture with no lint configured; assert exit code zero and that the summary marks lint as skipped
+- Run the runner against a fixture with no lint configured; assert exit code zero, that the lint stage function was not called, and that the summary marks lint as skipped while still listing the scans as passed
 
 ## Scenario: this-repo-conforms
 
-Given this repo's committed pipeline configuration
+Given this repo's committed `.agents/pipeline.yaml` declaring its real lint, build, and test commands
 When the pipeline runner is invoked at this repo's root
-Then it runs this repo's real stages and exits zero on a clean tree
+Then it runs this repo's real stages — including the real gitleaks and trivy scans — and exits zero on a clean tree
 
 Verification:
-- Run the runner at the harness repo root; assert exit code zero
+- Run the runner at the harness repo root against the committed manifest (real scanners, no mocks); assert exit code zero. This is an end-to-end integration check: it requires gitleaks and trivy installed and validates that future changes to this repo can be verified by the runner
 
 ## Scenario: pipeline-skill-defines-loop
 

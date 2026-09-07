@@ -16,15 +16,24 @@ Specs live in ACCEPTANCE.md — each test encodes the named scenario.
 - [ ] **Task 4** — Write the test for runner-emits-success-summary
 - [ ] **Task 5** — Write the test for runner-skips-unconfigured-stage
 - [ ] **Task 6** — Write the test for this-repo-conforms
-- [ ] **Task 7** — Write the tests for pipeline-skill-defines-loop and coder-loads-pipeline-skill
+- [ ] **Task 7** — Write the test for pipeline-skill-defines-loop
+- [ ] **Task 8** — Write the test for coder-loads-pipeline-skill
 
 ## Implementation (make tests green)
 
-- [ ] **Task 8** — Implement the pipeline runner
-      Verify: runner-rejects-malformed-manifest, runner-runs-stages-fail-fast-order, runner-fails-fast-on-first-failure, runner-emits-success-summary, runner-skips-unconfigured-stage
-- [ ] **Task 9** — Create the validating-work skill
+- [ ] **Task 9** — Implement manifest validation
+      Verify: runner-rejects-malformed-manifest
+- [ ] **Task 10** — Implement stage execution in fixed order
+      Verify: runner-runs-stages-fail-fast-order
+- [ ] **Task 11** — Implement fail-fast and failure summary
+      Verify: runner-fails-fast-on-first-failure
+- [ ] **Task 12** — Implement the success summary
+      Verify: runner-emits-success-summary
+- [ ] **Task 13** — Implement skip handling
+      Verify: runner-skips-unconfigured-stage
+- [ ] **Task 14** — Create the validating-work skill
       Verify: pipeline-skill-defines-loop
-- [ ] **Task 10** — Make the coder load the skill
+- [ ] **Task 15** — Make the coder load the skill
       Verify: coder-loads-pipeline-skill
-- [ ] **Task 11** — Add this repo's manifest
+- [ ] **Task 16** — Add this repo's manifest
       Verify: this-repo-conforms
