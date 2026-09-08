@@ -14,7 +14,7 @@ afterEach(async () => {
   await rm(testOutputDir, { recursive: true, force: true })
 })
 
-const fixturesDir = join(import.meta.dir, "../fixtures")
+const fixturesDir = join(import.meta.dir, "../fixtures/render")
 
 const testProfile = {
   primary: { providerID: "test-provider", modelID: "test-model-1" },

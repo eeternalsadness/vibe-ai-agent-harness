@@ -1,7 +1,6 @@
-import { config } from "../../../../../config"
-
-export default `#!/usr/bin/env python3
+#!/usr/bin/env python3
 # audit-orphans.py — find notes not reachable from Index.md via [[wiki-links]]
+# Usage: audit-orphans.py <kb-path>
 # Exit 0 = clean, exit 1 = orphans found, exit 2 = script error
 
 import sys
@@ -10,7 +9,11 @@ import re
 from pathlib import Path
 from collections import deque
 
-kb = Path(os.path.expanduser("${config.knowledgeBasePath}"))
+if len(sys.argv) != 2:
+    print("Expected exactly one argument: kb-path", file=sys.stderr)
+    sys.exit(2)
+
+kb = Path(os.path.expanduser(sys.argv[1]))
 if not kb.is_dir():
     print(f"Error: knowledge base directory not found: {kb}", file=sys.stderr)
     sys.exit(2)
@@ -20,8 +23,8 @@ if not index.exists():
     print(f"Error: Index.md not found at {index}", file=sys.stderr)
     sys.exit(2)
 
-FENCED_BLOCK = re.compile(r"\`\`\`.*?\`\`\`", re.DOTALL)
-WIKI_LINK = re.compile(r"\\[\\[([^\\]]+)\\]\\]")
+FENCED_BLOCK = re.compile(r"```.*?```", re.DOTALL)
+WIKI_LINK = re.compile(r"\[\[([^\]]+)\]\]")
 
 def extract_links(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -62,4 +65,3 @@ for name in orphans:
     print(f"  - {name}")
 
 sys.exit(1)
-`

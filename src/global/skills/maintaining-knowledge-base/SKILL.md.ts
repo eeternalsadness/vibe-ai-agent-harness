@@ -15,15 +15,20 @@ All scripts live in \`${config.harnessPath}/dist/opencode/skills/maintaining-kno
 
 | Script | Purpose | Run with |
 |---|---|---|
-| \`audit-dangling.sh\` | \`[[wiki-links]]\` with no matching \`.md\` file | \`bash <script>\` |
-| \`audit-orphans.py\` | Notes not reachable from \`Index.md\` | \`python3 <script>\` |
-| \`audit-oversized.sh\` | Notes exceeding 100 lines | \`bash <script>\` |
+| \`audit-dangling.sh\` | \`[[wiki-links]]\` with no matching \`.md\` file | \`bash <script> "${config.knowledgeBasePath}"\` |
+| \`audit-orphans.py\` | Notes not reachable from \`Index.md\` | \`python3 <script> "${config.knowledgeBasePath}"\` |
+| \`audit-oversized.sh\` | Notes exceeding 100 lines | \`bash <script> "${config.knowledgeBasePath}"\` |
 
 Exit codes: \`0\` = clean, \`1\` = problems found, \`2\` = script error (skip that category and continue).
 
 ## Workflow
 
-1. **Run all three scripts** and collect their output.
+1. **Run all three scripts** and collect their output:
+    \`\`\`bash
+    bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-dangling.sh "${config.knowledgeBasePath}"
+    python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-orphans.py "${config.knowledgeBasePath}"
+    bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-oversized.sh "${config.knowledgeBasePath}"
+    \`\`\`
 
 2. **Delegate fixes to \`@knowledge-base\`** — one call per category, in batches of 5 items. Evaluate each item individually before acting. Wait for each batch to complete before sending the next.
 

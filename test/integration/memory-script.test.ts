@@ -1,10 +1,11 @@
 import { test, expect, beforeEach, afterEach } from "bun:test"
-import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { spawn } from "node:child_process"
 
 const scriptPath = join(import.meta.dir, "../../src/global/skills/evaluating-memory/scripts/append-memory.sh")
+const fixturesDir = join(import.meta.dir, "../fixtures/memory")
 
 let testDir: string
 let memoryPath: string
@@ -17,6 +18,13 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(testDir, { recursive: true, force: true })
 })
+
+// append-memory.sh mutates its target file, so fixtures are seeded by copying
+// them into the per-test temp dir first — the checked-in fixture itself is
+// never written to.
+async function seedMemory(fixtureName: string): Promise<void> {
+  await copyFile(join(fixturesDir, fixtureName), memoryPath)
+}
 
 async function runAppend(...args: string[]): Promise<{ code: number | null; stderr: string }> {
   return await new Promise((resolve) => {
@@ -38,6 +46,22 @@ test("append-memory validates and appends a formatted item", async () => {
   expect(lines).toHaveLength(1)
   // Format: - [YYYY-MM-DD] [decision] test-project: use script-backed memory writes
   expect(lines[0]).toMatch(/^- \[\d{4}-\d{2}-\d{2}\] \[decision\] test-project: use script-backed memory writes$/)
+})
+
+test("append-memory preserves existing items and appends the new one after them", async () => {
+  await seedMemory("seeded.md")
+
+  const result = await runAppend(memoryPath, "work", "test-project", "added a fourth item")
+
+  expect(result.code).toBe(0)
+  const memory = await readFile(memoryPath, "utf-8")
+  const items = memory.split("\n").filter(l => l.startsWith("- "))
+
+  expect(items).toHaveLength(4)
+  expect(items[0]).toContain("use script-backed memory writes")
+  expect(items[1]).toContain("implemented initial script")
+  expect(items[2]).toContain("researched bash testing patterns")
+  expect(items[3]).toContain("added a fourth item")
 })
 
 test("append-memory rejects invalid tag", async () => {
@@ -68,16 +92,17 @@ test("append-memory rejects wrong number of arguments", async () => {
   expect(result.stderr).toContain("Expected exactly four arguments")
 })
 
-test("append-memory keeps only the last 100 bullet items", async () => {
-  for (let i = 1; i <= 101; i++) {
-    const result = await runAppend(memoryPath, "work", "test-project", `completed item ${i}`)
-    expect(result.code).toBe(0)
-  }
+test("append-memory keeps only the last 100 bullet items, dropping the oldest", async () => {
+  await seedMemory("at-capacity.md")
 
+  const result = await runAppend(memoryPath, "work", "test-project", "completed item 101")
+
+  expect(result.code).toBe(0)
   const memory = await readFile(memoryPath, "utf-8")
   const items = memory.split("\n").filter(line => line.startsWith("- "))
 
   expect(items).toHaveLength(100)
-  expect(items[0]).toContain("completed item 2")
-  expect(items[99]).toContain("completed item 101")
+  expect(items[0]).toContain("completed item 002") // oldest (item 001) dropped
+  expect(items[98]).toContain("completed item 100")
+  expect(items[99]).toContain("completed item 101") // newly appended
 })
