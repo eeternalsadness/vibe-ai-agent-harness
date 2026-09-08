@@ -20,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "src/global/skills/validating-work/scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-import pipeline_runner as pr  # noqa: E402
+import pipeline_runner as pr
 
 
 class ThisRepoConformsTest(unittest.TestCase):

@@ -3,11 +3,11 @@
 # Usage: audit-orphans.py <kb-path>
 # Exit 0 = clean, exit 1 = orphans found, exit 2 = script error
 
-import sys
 import os
 import re
-from pathlib import Path
+import sys
 from collections import deque
+from pathlib import Path
 
 if len(sys.argv) != 2:
     print("Expected exactly one argument: kb-path", file=sys.stderr)

@@ -56,7 +56,7 @@ def load_manifest(repo_root: Path) -> dict:
 
 def run_stage_command(command: str, working_dir: Path) -> int:
     """Run a shell command, streaming its output straight through."""
-    result = subprocess.run(command, shell=True, cwd=working_dir)
+    result = subprocess.run(command, shell=True, cwd=working_dir, check=False)
     return result.returncode
 
 

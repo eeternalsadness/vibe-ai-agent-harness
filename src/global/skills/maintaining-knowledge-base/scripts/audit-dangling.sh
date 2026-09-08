@@ -34,7 +34,7 @@ while IFS= read -r -d '' f; do
   while IFS= read -r link; do
     [[ -z "$link" ]] && continue
     if [[ -z "${targets[$link]+x}" ]]; then
-      sources["$link"]="${sources[$link]:-}${f#$KB/}\n"
+      sources["$link"]="${sources[$link]:-}${f#"$KB"/}\n"
       found=1
     fi
   done <<< "$links"

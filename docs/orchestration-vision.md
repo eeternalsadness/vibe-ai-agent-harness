@@ -45,6 +45,8 @@ Parts:
 
 ### Phase 2 — Validation Pipeline
 
+Plan (piece 1, programmatic gates): `18-validation-pipeline`. Reviewer analysis and the human-presentation artifact are later pieces of this phase.
+
 A gated sequence a change must pass before a human is ever contacted. Two kinds of gates, in order of trust, then a single human judgment gate.
 
 - **Programmatic gates (autonomous, deterministic).** Tests, lint, secret/leak scan, vulnerability scan, and other scripts. Ordered fail-fast, cheap checks first. Any failure routes back to the coder automatically. No human involved; these are objective.

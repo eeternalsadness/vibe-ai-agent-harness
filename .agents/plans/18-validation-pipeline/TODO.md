@@ -35,5 +35,5 @@ Specs live in ACCEPTANCE.md — each test encodes the named scenario.
       Verify: pipeline-skill-defines-loop
 - [x] **Task 15** — Make the coder load the skill
       Verify: coder-loads-pipeline-skill
-- [ ] **Task 16** — Add this repo's manifest
+- [x] **Task 16** — Add this repo's manifest
       Verify: this-repo-conforms

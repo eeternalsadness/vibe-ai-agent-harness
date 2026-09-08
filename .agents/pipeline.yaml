@@ -1,0 +1,4 @@
+lint:
+  command: bun run lint
+test:
+  command: bun run test

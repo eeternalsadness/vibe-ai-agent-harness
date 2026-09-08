@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENCODE_CONFIG="${HOME}/.config/opencode"
 
 DRY_RUN=false
-FORCE=false
 PROFILE=""
 PLATFORM="opencode"
 
@@ -17,7 +16,6 @@ Renders templates and installs files to ~/.config/opencode/.
 
 Options:
   --dry-run           Print planned actions without writing anything
-  --force             Overwrite existing files without prompting
   --profile <name>    Select a profile (default: from config.ts)
   --platform <name>   Target platform (default: "opencode")
   --help              Show this help message
@@ -44,7 +42,6 @@ maybe_copy() {
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run)   DRY_RUN=true; shift ;;
-    --force)     FORCE=true; shift ;;
     --profile)   PROFILE="$2"; shift 2 ;;
     --platform)  PLATFORM="$2"; shift 2 ;;
     --help)      usage ;;

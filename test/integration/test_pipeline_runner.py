@@ -15,7 +15,7 @@ Run directly: python3 test/integration/test_pipeline_runner.py -v
 import io
 import sys
 import unittest
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -24,7 +24,7 @@ SCRIPTS_DIR = REPO_ROOT / "src/global/skills/validating-work/scripts"
 FIXTURES_DIR = REPO_ROOT / "test/fixtures/pipeline"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-import pipeline_runner as pr  # noqa: E402
+import pipeline_runner as pr
 
 
 def run_runner(fixture: str) -> tuple[int, str, str]:
