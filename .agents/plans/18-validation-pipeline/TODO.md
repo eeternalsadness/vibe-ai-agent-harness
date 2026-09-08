@@ -10,30 +10,30 @@ Specs live in ACCEPTANCE.md — each test encodes the named scenario.
 
 ## Tests (write first, all red)
 
-- [ ] **Task 1** — Write the test for runner-rejects-malformed-manifest
-- [ ] **Task 2** — Write the test for runner-runs-stages-fail-fast-order
-- [ ] **Task 3** — Write the test for runner-fails-fast-on-first-failure
-- [ ] **Task 4** — Write the test for runner-emits-success-summary
-- [ ] **Task 5** — Write the test for runner-skips-unconfigured-stage
-- [ ] **Task 6** — Write the test for this-repo-conforms
-- [ ] **Task 7** — Write the test for pipeline-skill-defines-loop
-- [ ] **Task 8** — Write the test for coder-loads-pipeline-skill
+- [x] **Task 1** — Write the test for runner-rejects-malformed-manifest
+- [x] **Task 2** — Write the test for runner-runs-stages-fail-fast-order
+- [x] **Task 3** — Write the test for runner-fails-fast-on-first-failure
+- [x] **Task 4** — Write the test for runner-emits-success-summary
+- [x] **Task 5** — Write the test for runner-skips-unconfigured-stage
+- [x] **Task 6** — Write the test for this-repo-conforms
+- [x] **Task 7** — Write the test for pipeline-skill-defines-loop
+- [x] **Task 8** — Write the test for coder-loads-pipeline-skill
 
 ## Implementation (make tests green)
 
-- [ ] **Task 9** — Implement manifest validation
+- [x] **Task 9** — Implement manifest validation
       Verify: runner-rejects-malformed-manifest
-- [ ] **Task 10** — Implement stage execution in fixed order
+- [x] **Task 10** — Implement stage execution in fixed order
       Verify: runner-runs-stages-fail-fast-order
-- [ ] **Task 11** — Implement fail-fast and failure summary
+- [x] **Task 11** — Implement fail-fast and failure summary
       Verify: runner-fails-fast-on-first-failure
-- [ ] **Task 12** — Implement the success summary
+- [x] **Task 12** — Implement the success summary
       Verify: runner-emits-success-summary
-- [ ] **Task 13** — Implement skip handling
+- [x] **Task 13** — Implement skip handling
       Verify: runner-skips-unconfigured-stage
-- [ ] **Task 14** — Create the validating-work skill
+- [x] **Task 14** — Create the validating-work skill
       Verify: pipeline-skill-defines-loop
-- [ ] **Task 15** — Make the coder load the skill
+- [x] **Task 15** — Make the coder load the skill
       Verify: coder-loads-pipeline-skill
 - [ ] **Task 16** — Add this repo's manifest
       Verify: this-repo-conforms

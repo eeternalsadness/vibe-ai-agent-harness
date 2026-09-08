@@ -16,8 +16,11 @@ export async function findTemplates(dir: string): Promise<string[]> {
   return files
 }
 
-// Non-template files (anything not ending in .ts) — e.g. plain scripts that
-// need no config interpolation. Copied verbatim, byte-for-byte.
+// Non-template static files — plain scripts that need no config
+// interpolation. Copied verbatim, byte-for-byte. Allowlisted by extension so
+// build byproducts (e.g. __pycache__/*.pyc) are never picked up.
+const STATIC_FILE_EXTENSIONS = [".sh", ".py"]
+
 export async function findStaticFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
@@ -25,7 +28,7 @@ export async function findStaticFiles(dir: string): Promise<string[]> {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) {
       files.push(...await findStaticFiles(full))
-    } else if (!entry.name.endsWith(".ts")) {
+    } else if (STATIC_FILE_EXTENSIONS.some(ext => entry.name.endsWith(ext))) {
       files.push(full)
     }
   }

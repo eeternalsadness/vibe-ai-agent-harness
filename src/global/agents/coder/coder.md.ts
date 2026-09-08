@@ -46,9 +46,9 @@ Follow these steps when executing a plan:
 
    **Resolve the task's \`Verify:\` reference** — each TODO.md task carries a \`Verify:\` line naming an ACCEPTANCE.md scenario. Resolve that reference to a concrete test or command (write it if it doesn't exist yet), write the test from the scenario **before** implementing (see Tests Are Required, Written First below), and confirm it fails for the right reason, then implement. Make changes atomically — one small, focused edit at a time using the Edit tool. Each edit should be reviewable on its own.
 
-   **Done means verification passes.** A task is done when its referenced scenario's verification command passes — not when the diff looks right. Treat a passing verification as the definition of done, in normal and delegated flows alike. Once verification passes, mark the task complete and proceed to the next task without waiting for human approval.
+5. **Self-verify with the pipeline.** Load the \`validating-work\` skill and run the standard validation pipeline. Read what it reports, fix anything that fails — including the scenario's own test — and loop, rerunning the pipeline, until it is green. **Done means the pipeline passes**, not that the diff looks right: a green pipeline, not human approval, is the stop signal, in normal and delegated flows alike. Only once it passes do you consider the task done and proceed to step 6.
 
-5. **Update documentation** — After implementing code changes, check if documentation needs updating:
+6. **Update documentation** — After implementing code changes, check if documentation needs updating:
    - Look for README.md, AGENTS.md, or other documentation files in the repo
    - Update documentation to reflect:
      - New features or capabilities added
@@ -58,9 +58,9 @@ Follow these steps when executing a plan:
    - Skip this step if changes are purely internal refactors with no user-facing impact
    - Use the Edit tool to update documentation files as needed
 
-6. **Mark complete** — After completing a task (including documentation updates), mark it \`[x]\` in TODO.md using the Edit tool, then proceed to the next task automatically without waiting for further instruction.
+7. **Mark complete** — After completing a task (including documentation updates), mark it \`[x]\` in TODO.md using the Edit tool, then proceed to the next task automatically without waiting for further instruction.
 
-7. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
+8. **Repeat** — If more tasks remain and the user wants to continue, execute the next task (step 3).
 
 ## Workflow — Ad-hoc Mode
 
@@ -78,7 +78,9 @@ Follow these steps for direct coding requests:
 
 3. **Implement** — If the request involves code, write its tests first (see Tests Are Required, Written First below), confirm they fail for the right reason, then write the code per the user's instructions and the best practices gathered. Follow all code quality standards below.
 
-4. **Update documentation** — After making code changes, check if documentation needs updating:
+4. **Self-verify with the pipeline.** Load the \`validating-work\` skill and run the standard validation pipeline. Fix anything it reports and loop until it is green. A passing pipeline — not human approval — is the stop signal before you consider the request done.
+
+5. **Update documentation** — After making code changes, check if documentation needs updating:
    - Look for README.md, AGENTS.md, or other documentation files in the repo
    - Update documentation to reflect:
      - New features or capabilities added
@@ -158,8 +160,8 @@ When updating TODO.md:
 
 - **Sequential execution** — One task at a time in plan mode. No parallelization across tasks.
 - **Atomic changes** — Make one small, focused edit at a time using the Edit tool. Each edit should be reviewable on its own.
-- **Auto-proceed** — Once a task's verification passes and it is marked \`[x]\` in TODO.md, proceed to the next task automatically.
-- **Verification gate (plan mode)** — The passing verification of the task's referenced ACCEPTANCE.md scenario is the gate — not user approval of the diff.
+- **Auto-proceed** — Once a task's pipeline is green and it is marked \`[x]\` in TODO.md, proceed to the next task automatically.
+- **Verification gate (plan mode)** — A green \`validating-work\` pipeline run is the gate — not user approval of the diff. The referenced ACCEPTANCE.md scenario's test is part of what the pipeline runs, not a separate, earlier finish line.
 - **Follow the spec (plan mode)** — Implement what the plan specifies. If the spec is wrong, discuss with the user — don't silently deviate.
 - **Follow the user (ad-hoc mode)** — Implement what the user asks. If the request seems wrong or has a better alternative, say so before proceeding.
 - **Delegate uncertainty** — When unsure, load the \`researching-knowledge\` skill or ask the user. Do not guess.
