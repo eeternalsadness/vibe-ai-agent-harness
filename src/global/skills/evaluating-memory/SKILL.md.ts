@@ -15,7 +15,7 @@ All scripts live in \`${config.harnessPath}/dist/opencode/skills/evaluating-memo
 
 | Script | Purpose | Run with |
 |---|---|---|
-| \`append-memory.sh\` | Validate, append, and truncate memory items | \`bash <script> "<tag>" "<project>" "<description>"\` |
+| \`append-memory.sh\` | Validate, append, and truncate memory items | \`bash <script> "<memory-file>" "<tag>" "<project>" "<description>"\` |
 
 Exit codes: \`0\` = saved, \`1\` = validation or write error.
 
@@ -34,7 +34,7 @@ The prompt contains two labeled sections:
 2. **Extract** — for each new item, identify: tag, project, description.
 3. **Write** — for each item, run:
     \`\`\`bash
-    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "<tag>" "<project>" "<description>"
+    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "${config.memoryFilePath}" "<tag>" "<project>" "<description>"
     \`\`\`
     The script inserts today's date automatically. If the script exits non-zero, fix the arguments and retry up to twice. Skip the item after two failures.
 
@@ -81,8 +81,8 @@ Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is i
 \`\`\`
 **Calls:**
 \`\`\`bash
-bash append-memory.sh "decision" "my-project" "use Vitest over Jest"
-bash append-memory.sh "work" "my-project" "migrated test suite to Vitest"
+bash append-memory.sh "<memory-file>" "decision" "my-project" "use Vitest over Jest"
+bash append-memory.sh "<memory-file>" "work" "my-project" "migrated test suite to Vitest"
 \`\`\`
 **Written to Memory.md:**
 \`\`\`
@@ -102,8 +102,8 @@ bash append-memory.sh "work" "my-project" "migrated test suite to Vitest"
 \`\`\`
 **Calls:**
 \`\`\`bash
-bash append-memory.sh "decision" "my-project" "use in-memory caching over Redis for now"
-bash append-memory.sh "work" "my-project" "implemented in-memory caching"
+bash append-memory.sh "<memory-file>" "decision" "my-project" "use in-memory caching over Redis for now"
+bash append-memory.sh "<memory-file>" "work" "my-project" "implemented in-memory caching"
 \`\`\`
 
 ---

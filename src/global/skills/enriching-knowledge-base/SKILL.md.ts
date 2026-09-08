@@ -23,7 +23,7 @@ Proactively deepens the knowledge base with source-grounded research. Two modes:
 
 4. **Save to memory** — Run the append-memory script directly:
     \`\`\`bash
-    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "- [kb-enrichment] kb-enrichment: researched <primary topic>"
+    bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh "${config.memoryFilePath}" "kb-enrichment" "kb-enrichment" "researched <primary topic>"
     \`\`\`
     Do this **before** committing. Exit 0 = saved, exit 1 = validation error (skip if fails twice).
 

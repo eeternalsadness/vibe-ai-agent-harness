@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readdir } from "node:fs/promises"
+import { mkdir, writeFile, readdir, copyFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { config, type Profile } from "../config"
 
@@ -10,6 +10,22 @@ export async function findTemplates(dir: string): Promise<string[]> {
     if (entry.isDirectory()) {
       files.push(...await findTemplates(full))
     } else if (/\.[^.]+\.ts$/.test(entry.name)) {
+      files.push(full)
+    }
+  }
+  return files
+}
+
+// Non-template files (anything not ending in .ts) — e.g. plain scripts that
+// need no config interpolation. Copied verbatim, byte-for-byte.
+export async function findStaticFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true })
+  const files: string[] = []
+  for (const entry of entries) {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...await findStaticFiles(full))
+    } else if (!entry.name.endsWith(".ts")) {
       files.push(full)
     }
   }
@@ -32,6 +48,15 @@ export async function renderTemplates(
     await mkdir(dirname(distPath), { recursive: true })
     await writeFile(distPath, content, "utf-8")
     console.log(`wrote ${distPath}`)
+  }
+
+  for (const srcPath of await findStaticFiles(sourceDir)) {
+    const relative = srcPath.replace(srcPrefix, "")
+    const distPath = join(outputDir, relative)
+
+    await mkdir(dirname(distPath), { recursive: true })
+    await copyFile(srcPath, distPath)
+    console.log(`copied ${distPath}`)
   }
 }
 

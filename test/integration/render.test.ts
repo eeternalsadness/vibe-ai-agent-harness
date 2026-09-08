@@ -2,7 +2,7 @@ import { test, expect, beforeEach, afterEach } from "bun:test"
 import { mkdtemp, rm, readFile, access } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { renderTemplates, findTemplates } from "../../src/render"
+import { renderTemplates, findTemplates, findStaticFiles } from "../../src/render"
 
 let testOutputDir: string
 
@@ -142,4 +142,23 @@ test("different profiles produce different output for dynamic templates", async 
     await rm(output1, { recursive: true, force: true })
     await rm(output2, { recursive: true, force: true })
   }
+})
+
+test("findStaticFiles discovers non-.ts files and ignores .ts files", async () => {
+  // Act
+  const staticFiles = await findStaticFiles(fixturesDir)
+
+  // Assert
+  expect(staticFiles.some(f => f.endsWith("static-script.sh"))).toBe(true)
+  expect(staticFiles.some(f => f.endsWith(".ts"))).toBe(false)
+})
+
+test("copies static (non-.ts) files verbatim, byte-for-byte", async () => {
+  // Act
+  await renderTemplates(fixturesDir, testOutputDir, testProfile)
+
+  // Assert
+  const original = await readFile(join(fixturesDir, "static-script.sh"), "utf-8")
+  const copied = await readFile(join(testOutputDir, "static-script.sh"), "utf-8")
+  expect(copied).toBe(original)
 })
