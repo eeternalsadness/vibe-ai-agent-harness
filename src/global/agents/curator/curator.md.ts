@@ -1,6 +1,6 @@
 import type { Profile } from "../../../../config"
 import { config } from "../../../../config"
-import { dirname } from "path"
+import { dirname } from "node:path"
 
 export default function curatorAgent(profile: Profile): string {
   const memoryDir = dirname(config.memoryFilePath)

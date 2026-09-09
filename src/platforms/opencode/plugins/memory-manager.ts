@@ -314,7 +314,7 @@ export async function evaluateSession(
 
   const newSegment = sanitizeTranscript(newMessages)
   const fullTranscript = cache
-    ? cache.transcript + (newSegment ? "\n" + newSegment : "")
+    ? cache.transcript + (newSegment ? `\n${newSegment}` : "")
     : newSegment
 
   transcriptCache.set(sessionId, { transcript: fullTranscript, messageCount: messages.length })

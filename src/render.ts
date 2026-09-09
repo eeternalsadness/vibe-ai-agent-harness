@@ -40,7 +40,7 @@ export async function renderTemplates(
   outputDir: string,
   profile: Profile
 ): Promise<void> {
-  const srcPrefix = sourceDir + "/"
+  const srcPrefix = `${sourceDir}/`
 
   for (const srcPath of await findTemplates(sourceDir)) {
     const mod = await import(srcPath) as { default: string | ((profile: Profile) => string) }

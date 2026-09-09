@@ -312,7 +312,8 @@ describe("incremental transcript cache", () => {
     await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     expect(prompts).toHaveLength(2)
-    const prompt2 = prompts[1]!
+    const prompt2 = prompts[1]
+    if (!prompt2) throw new Error("expected a second prompt")
     const newIdx = prompt2.indexOf("## New Since Last Evaluation")
 
     expect(prompt2).not.toContain("## Previously Evaluated")
@@ -410,7 +411,8 @@ describe("evaluateSession debug logging", () => {
 
     const invocations = logCalls.filter(c => c.message === "Invoking memory agent")
     expect(invocations).toHaveLength(2)
-    const [cycle1, cycle2] = [invocations[0]!, invocations[1]!]
+    const [cycle1, cycle2] = invocations
+    if (!cycle1 || !cycle2) throw new Error("expected exactly 2 invocations")
 
     // Cycle 1 — nothing previously evaluated yet, all content is new
     expect(cycle1.extra?.previouslyEvaluated).toEqual({ userMessages: 0, assistantMessages: 0, toolCalls: [] })

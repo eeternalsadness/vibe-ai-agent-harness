@@ -35,8 +35,6 @@ async function runAppend(...args: string[]): Promise<{ code: number | null; stde
   })
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-
 test("append-memory validates and appends a formatted item", async () => {
   const result = await runAppend(memoryPath, "decision", "test-project", "use script-backed memory writes")
 
