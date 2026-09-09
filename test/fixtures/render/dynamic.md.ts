@@ -1,4 +1,4 @@
-import type { Profile } from "../../config"
+import type { Profile } from "../../../config"
 
 export default function dynamicTemplate(profile: Profile): string {
   return `# Dynamic Template

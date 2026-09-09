@@ -1,4 +1,6 @@
 lint:
   command: bun run lint
+build:
+  command: bun run typecheck
 test:
   command: bun run test

@@ -2,6 +2,7 @@ import { test, expect, describe, beforeEach, afterEach, mock } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
+import type { PluginInput } from "@opencode-ai/plugin"
 import {
   sanitizeTranscript,
   shouldSkipEvaluation,
@@ -209,7 +210,7 @@ describe("diffNewItems", () => {
 describe("system prompt injection", () => {
   test("first LLM call on primary session → Memory.md content appears in system output", async () => {
     await writeFile(memoryPath, "# Memory\n\n- [2026-01-01] [decision] test: use bun\n", "utf-8")
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() })
+    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
     const transform = (plugin as any)["experimental.chat.system.transform"]
 
     const sessionID = newSessionId()
@@ -222,7 +223,7 @@ describe("system prompt injection", () => {
 
   test("second LLM call on same session uses snapshot — no re-read", async () => {
     await writeFile(memoryPath, "# Memory\n\n- [2026-01-01] [decision] test: original item\n", "utf-8")
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() })
+    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
     const transform = (plugin as any)["experimental.chat.system.transform"]
 
     const sessionID = newSessionId()
@@ -240,7 +241,7 @@ describe("system prompt injection", () => {
   })
 
   test("session in memoryAgentSessions → system output unchanged", async () => {
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() })
+    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
     const transform = (plugin as any)["experimental.chat.system.transform"]
 
     const sessionID = newSessionId()
@@ -255,7 +256,7 @@ describe("system prompt injection", () => {
   })
 
   test("session with agent field → system output unchanged", async () => {
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() })
+    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
     const transform = (plugin as any)["experimental.chat.system.transform"]
 
     const sessionID = newSessionId()
@@ -311,7 +312,7 @@ describe("incremental transcript cache", () => {
     await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     expect(prompts).toHaveLength(2)
-    const prompt2 = prompts[1]
+    const prompt2 = prompts[1]!
     const newIdx = prompt2.indexOf("## New Since Last Evaluation")
 
     expect(prompt2).not.toContain("## Previously Evaluated")
@@ -338,7 +339,7 @@ describe("incremental transcript cache", () => {
     expect(_getTranscriptCache().has(sessionId)).toBe(true)
 
     // Fire session.deleted via the plugin event handler
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() })
+    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
     await (plugin as any).event({
       event: { type: "session.deleted", properties: { sessionID: sessionId } },
     })
@@ -409,14 +410,15 @@ describe("evaluateSession debug logging", () => {
 
     const invocations = logCalls.filter(c => c.message === "Invoking memory agent")
     expect(invocations).toHaveLength(2)
+    const [cycle1, cycle2] = [invocations[0]!, invocations[1]!]
 
     // Cycle 1 — nothing previously evaluated yet, all content is new
-    expect(invocations[0].extra?.previouslyEvaluated).toEqual({ userMessages: 0, assistantMessages: 0, toolCalls: [] })
-    expect(invocations[0].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
+    expect(cycle1.extra?.previouslyEvaluated).toEqual({ userMessages: 0, assistantMessages: 0, toolCalls: [] })
+    expect(cycle1.extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
 
     // Cycle 2 - cycle 1's content is cached, but only the new message is sent for evaluation
-    expect(invocations[1].extra?.previouslyEvaluated).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
-    expect(invocations[1].extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 0, toolCalls: [] })
+    expect(cycle2.extra?.previouslyEvaluated).toEqual({ userMessages: 1, assistantMessages: 1, toolCalls: [] })
+    expect(cycle2.extra?.newSinceLastEvaluation).toEqual({ userMessages: 1, assistantMessages: 0, toolCalls: [] })
   })
 })
 

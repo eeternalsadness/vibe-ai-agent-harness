@@ -5,6 +5,7 @@
     "test": "bun test && python3 test/integration/test_pipeline_runner.py -v",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit",
     "lint": "bun run lint:biome && bun run lint:ruff && bun run lint:shell",
     "lint:biome": "biome lint .",
     "lint:ruff": "ruff check .",

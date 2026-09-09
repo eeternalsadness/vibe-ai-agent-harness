@@ -457,7 +457,7 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
           return
         }
 
-        async function runEvaluation(trigger: "turn-interval" | "idle-timeout") {
+        async function runEvaluation(sessionId: string, trigger: "turn-interval" | "idle-timeout") {
           if (evaluatingSessions.has(sessionId)) {
             await log("debug", "Skipping memory evaluation already in progress", { sessionId, trigger })
             return
@@ -501,13 +501,13 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
 
           if (turnsSinceEvaluation >= MEMORY_EVALUATION_TURN_INTERVAL) {
             await log("info", "Memory turn interval reached", { sessionId, assistantCount, previousAssistantCount, turnsSinceEvaluation })
-            await runEvaluation("turn-interval")
+            await runEvaluation(sessionId, "turn-interval")
             return
           }
 
           clearIdleTimer(sessionId)
           const timer = setTimeout(() => {
-            runEvaluation("idle-timeout").catch((error) => {
+            runEvaluation(sessionId, "idle-timeout").catch((error) => {
               log("error", "Scheduled memory evaluation failed", { sessionId, error: normalizeError(error) })
             })
           }, MEMORY_EVALUATION_IDLE_TIMEOUT_MS)
