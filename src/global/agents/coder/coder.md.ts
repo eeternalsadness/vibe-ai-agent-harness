@@ -7,6 +7,13 @@ description: Implements code — either by executing a structured plan (PLAN.md 
 model: ${profile.coder.providerID}/${profile.coder.modelID}
 mode: primary
 temperature: 0.5
+permission:
+  skill:
+    "validating-work": allow
+  bash:
+    "python3 ${config.harnessPath}/dist/opencode/skills/validating-work/scripts/pipeline_runner.py *": allow
+  external_directory:
+    "${config.harnessPath}/dist/opencode/skills/validating-work/scripts/**": allow
 ---
 
 # Coder Agent
