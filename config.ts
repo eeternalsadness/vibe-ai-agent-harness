@@ -34,9 +34,9 @@ const models = {
   },
   bedrock: {
     "claude-haiku-4.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-haiku-4-5-20251001-v1:0" },
-    "claude-sonnet-4.6": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-4-6" },
     "claude-sonnet-5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-5" },
     "claude-opus-4.8": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-opus-4-8" },
+    "claude-opus-5.5": { providerID: "amazon-bedrock", modelID: "amazon-bedrock/global.anthropic.claude-opus-5-5" },
     "glm-5": { providerID: "amazon-bedrock", modelID: "zai.glm-5" },
     "gpt-5.5": { providerID: "amazon-bedrock", modelID: "openai.gpt-5.5" },
     "grok-4.3": { providerID: "amazon-bedrock", modelID: "xai.grok-4.3" },
