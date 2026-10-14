@@ -34,9 +34,10 @@ const models = {
   },
   bedrock: {
     "claude-haiku-4.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-haiku-4-5-20251001-v1:0" },
+    "claude-haiku-5.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-haiku-5-5" },
     "claude-sonnet-5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-5" },
-    "claude-opus-4.8": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-opus-4-8" },
-    "claude-opus-5.5": { providerID: "amazon-bedrock", modelID: "amazon-bedrock/global.anthropic.claude-opus-5-5" },
+    "claude-sonnet-5.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-sonnet-5-5" },
+    "claude-opus-5.5": { providerID: "amazon-bedrock", modelID: "global.anthropic.claude-opus-5-5" },
     "glm-5": { providerID: "amazon-bedrock", modelID: "zai.glm-5" },
     "gpt-5.5": { providerID: "amazon-bedrock", modelID: "openai.gpt-5.5" },
     "grok-4.3": { providerID: "amazon-bedrock", modelID: "xai.grok-4.3" },
@@ -59,13 +60,13 @@ export const config = {
 
   profiles: {
     work: {
-      primary: models.bedrock["claude-sonnet-5"],
-      memory: models.bedrock["claude-haiku-4.5"],
-      research: models.bedrock["claude-sonnet-5"],
-      knowledgeBase: models.bedrock["claude-haiku-4.5"],
-      planner: models.bedrock["claude-opus-4.8"],
-      coder: models.bedrock["claude-sonnet-5"],
-      reviewer: models.bedrock["claude-sonnet-5"],
+      primary: models.bedrock["claude-sonnet-5.5"],
+      memory: models.bedrock["claude-haiku-5.5"],
+      research: models.bedrock["claude-haiku-5.5"],
+      knowledgeBase: models.bedrock["claude-haiku-5.5"],
+      planner: models.bedrock["claude-opus-5.5"],
+      coder: models.bedrock["claude-sonnet-5.5"],
+      reviewer: models.bedrock["claude-sonnet-5.5"],
     },
     broke: {
       primary: models.opencode["big-pickle"],
