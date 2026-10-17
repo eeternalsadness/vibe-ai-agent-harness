@@ -1,5 +1,6 @@
-import type { Plugin, PluginInput } from "@opencode-ai/plugin"
-import { access, appendFile, readFile, writeFile, mkdir } from "node:fs/promises"
+import { Plugin } from "@opencode/plugin"
+import { readFileSync } from "node:fs"
+import { access, appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { homedir } from "node:os"
 import { config } from "../../../../config"
@@ -92,10 +93,10 @@ function getEventSessionId(event: any): string | undefined {
     || event.session_id
 }
 
-async function getSessionParentId(client: PluginInput["client"], sessionId: string, event: any): Promise<string | undefined> {
+async function getSessionParentId(session: typeof ctx.session, sessionId: string, event: any): Promise<string | undefined> {
   if (event.properties?.info && "parentID" in event.properties.info) return event.properties.info.parentID
 
-  const sessionResult = await client.session.get({ path: { id: sessionId } }).catch(() => null)
+  const sessionResult = await session.get({ path: { id: sessionId } }).catch(() => null)
   return sessionResult?.data?.parentID
 }
 
@@ -121,6 +122,14 @@ async function ensureMemoryFile(): Promise<void> {
 async function readMemory(): Promise<string> {
   await ensureMemoryFile()
   return await readFile(getMemoryFilePath(), "utf-8")
+}
+
+function readMemorySync(): string {
+  try {
+    return readFileSync(getMemoryFilePath(), "utf-8")
+  } catch {
+    return "# Memory\n\n"
+  }
 }
 
 /**
@@ -181,7 +190,7 @@ function extractResponseText(response: any): string {
  * Invokes memory agent with the given prompt
  */
 async function invokeMemoryAgent(
-  client: PluginInput["client"],
+  session: typeof ctx.session,
   parentSessionId: string,
   prompt: string,
   log: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
@@ -191,14 +200,14 @@ async function invokeMemoryAgent(
   try {
     await log("debug", "Fetching parent session", { parentSessionId })
 
-    const parentSession = await client.session.get({
+    const parentSession = await session.get({
       path: { id: parentSessionId }
     }).catch(() => null)
     const directory = parentSession?.data?.directory
 
     await log("debug", "Creating memory agent session", { parentSessionId, directory })
 
-    const createResult = await client.session.create({
+    const createResult = await session.create({
       body: { parentID: parentSessionId },
       ...(directory ? { query: { directory } } : {}),
     })
@@ -214,7 +223,7 @@ async function invokeMemoryAgent(
 
     await log("debug", "Prompting memory agent", { parentSessionId, sessionId, promptLength: prompt.length })
 
-    const response = await client.session.prompt({
+    const response = await session.prompt({
       path: { id: sessionId },
       body: {
         agent: "memory",
@@ -226,13 +235,13 @@ async function invokeMemoryAgent(
 
     await log("debug", "Memory agent response received", { parentSessionId, sessionId, responseLength: result.length, response: result })
 
-    await client.session.abort({ path: { id: sessionId } }).catch(() => { })
+    await session.abort({ path: { id: sessionId } }).catch(() => { })
     memoryAgentSessions.delete(sessionId)
 
     return result
   } catch (error) {
     if (sessionId) {
-      await client.session.abort({ path: { id: sessionId } }).catch(() => { })
+      await session.abort({ path: { id: sessionId } }).catch(() => { })
       memoryAgentSessions.delete(sessionId)
     }
     await log("error", "Memory agent invocation failed", { parentSessionId, sessionId, error: normalizeError(error) })
@@ -282,11 +291,11 @@ export function diffNewItems(before: string[], after: string[]): string[] {
  * Main evaluation workflow: sanitize → build prompt → invoke memory agent (which writes Memory.md)
  */
 export async function evaluateSession(
-  client: PluginInput["client"],
+  session: typeof ctx.session,
   sessionId: string,
   log: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
 ): Promise<number> {
-  const messagesResult = await client.session.messages({ path: { id: sessionId } }).catch(() => null)
+  const messagesResult = await session.messages({ path: { id: sessionId } }).catch(() => null)
   if (!messagesResult?.data) {
     await log("warn", "Could not fetch session messages", { sessionId })
     return 0
@@ -339,7 +348,7 @@ export async function evaluateSession(
     previouslyEvaluated: summarizeTranscript(cache?.transcript ?? ""),
     newSinceLastEvaluation: summarizeTranscript(newSegment),
   })
-  await invokeMemoryAgent(client, sessionId, prompt, log)
+  await invokeMemoryAgent(session, sessionId, prompt, log)
 
   const memoryContentAfter = await readMemory()
   const itemsAfter = memoryContentAfter.split("\n").filter(l => l.trim().startsWith("- "))
@@ -357,32 +366,28 @@ export async function evaluateSession(
 /**
  * Memory Manager Plugin Entry Point
  */
-export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
-  const { client } = ctx
+export default Plugin.define({
+  id: "memory-manager",
+  async setup(ctx) {
+    async function log(level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) {
+      await debugLog({ level, message, extra })
+    }
 
-  async function log(level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) {
-    await debugLog({ level, message, extra })
-    await client.app.log({
-      body: { service: "memory-manager", level, message, extra }
-    }).catch((err) => console.error("Failed to log:", err))
-  }
+    await log("info", "Memory manager plugin initialized", {
+      memoryFilePath: getMemoryFilePath(),
+      debugEnabled: DEBUG_ENABLED,
+      debugLogPath: DEBUG_ENABLED ? DEBUG_LOG_PATH : undefined,
+      interactiveMode: isInteractiveMode(),
+      turnInterval: MEMORY_EVALUATION_TURN_INTERVAL,
+      idleTimeoutMs: MEMORY_EVALUATION_IDLE_TIMEOUT_MS,
+    })
 
-  await log("info", "Memory manager plugin initialized", {
-    memoryFilePath: getMemoryFilePath(),
-    debugEnabled: DEBUG_ENABLED,
-    debugLogPath: DEBUG_ENABLED ? DEBUG_LOG_PATH : undefined,
-    interactiveMode: isInteractiveMode(),
-    turnInterval: MEMORY_EVALUATION_TURN_INTERVAL,
-    idleTimeoutMs: MEMORY_EVALUATION_IDLE_TIMEOUT_MS,
-  })
-
-  return {
     // Inject memory into system prompt (primary agent only)
-    "experimental.chat.system.transform": async (input, output) => {
-      const sessionID = (input as any).sessionID
+    ctx.session.hook("context", (event) => {
+      const sessionID = event.sessionID
       if (memoryAgentSessions.has(sessionID)) return
 
-      const agent = (input as any).agent || (input as any).body?.agent
+      const agent = event.agent || event.body?.agent
       if (agent) return // skip all subagents
 
       try {
@@ -390,148 +395,159 @@ export const MemoryManagerPlugin: Plugin = async (ctx: PluginInput) => {
         // — same content = Anthropic prompt cache hits throughout the session
         let memoryContent = sessionMemorySnapshots.get(sessionID)
         if (!memoryContent) {
-          memoryContent = await readMemory()
+          memoryContent = readMemorySync()
           sessionMemorySnapshots.set(sessionID, memoryContent)
           const itemCount = memoryContent.split("\n").filter(l => l.trim().startsWith("- ")).length
-          await log("info", "Memory snapshot captured", { sessionID, itemCount })
+          log("info", "Memory snapshot captured", { sessionID, itemCount })
         }
-        output.system.push(PROMPTS.systemInjection(memoryContent))
+        event.system.push(PROMPTS.systemInjection(memoryContent))
       } catch (error) {
-        await log("error", "Failed to inject memory context", { error: (error as Error).message })
+        log("error", "Failed to inject memory context", { error: (error as Error).message })
       }
-    },
+    })
 
-    event: async ({ event }) => {
-      if (event.type === "session.deleted") {
-        const sessionId = getEventSessionId(event)
-        if (!sessionId) return
+    // Subscribe to server events
+    const controller = new AbortController()
 
-        memoryAgentSessions.delete(sessionId)
-        evaluatedMessageCounts.delete(sessionId)
-        evaluatedAssistantCounts.delete(sessionId)
-        lastIdleEventAt.delete(sessionId)
-        evaluatingSessions.delete(sessionId)
-        sessionMemorySnapshots.delete(sessionId)
-        transcriptCache.delete(sessionId)
-        clearIdleTimer(sessionId)
-        await log("info", "Cleaned up deleted session state", { sessionId, parentID: event.properties?.info?.parentID })
-        return
-      }
+    void (async () => {
+      for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+        if (event.type === "session.deleted") {
+          const sessionId = getEventSessionId(event)
+          if (!sessionId) continue
 
-      if (event.type === "session.idle") {
-        if (!isInteractiveMode()) {
-          await log("debug", "Skipping idle memory evaluation outside interactive mode", { argv: process.argv })
-          return
+          memoryAgentSessions.delete(sessionId)
+          evaluatedMessageCounts.delete(sessionId)
+          evaluatedAssistantCounts.delete(sessionId)
+          lastIdleEventAt.delete(sessionId)
+          evaluatingSessions.delete(sessionId)
+          sessionMemorySnapshots.delete(sessionId)
+          transcriptCache.delete(sessionId)
+          clearIdleTimer(sessionId)
+          log("info", "Cleaned up deleted session state", { sessionId, parentID: event.properties?.info?.parentID })
+          continue
         }
 
-        const sessionId = getEventSessionId(event)
-        if (!sessionId) {
-          await log("warn", "session.idle event missing session id", { eventType: event.type })
-          return
-        }
-
-        const now = Date.now()
-        const previousIdleAt = lastIdleEventAt.get(sessionId) || 0
-        lastIdleEventAt.set(sessionId, now)
-
-        if (now - previousIdleAt < IDLE_DEDUP_MS) {
-          await log("debug", "Skipping duplicate idle event", { sessionId, elapsedMs: now - previousIdleAt })
-          return
-        }
-
-        // Skip memory agent child sessions
-        if (memoryAgentSessions.has(sessionId)) {
-          await log("debug", "Skipping idle event for memory agent session", { sessionId })
-          return
-        }
-
-        if (evaluatingSessions.has(sessionId)) {
-          await log("debug", "Skipping re-entrant idle evaluation", { sessionId })
-          return
-        }
-
-        // Skip subagent sessions (any session with a parentID)
-        const parentID = await getSessionParentId(client, sessionId, event)
-        if (parentID) {
-          await log("debug", "Skipping memory evaluation for subagent idle event", { sessionId, parentID })
-          return
-        }
-
-        async function runEvaluation(sessionId: string, trigger: "turn-interval" | "idle-timeout") {
-          if (evaluatingSessions.has(sessionId)) {
-            await log("debug", "Skipping memory evaluation already in progress", { sessionId, trigger })
-            return
+        if (event.type === "session.idle") {
+          if (!isInteractiveMode()) {
+            log("debug", "Skipping idle memory evaluation outside interactive mode", { argv: process.argv })
+            continue
           }
 
-          evaluatingSessions.add(sessionId)
-          clearIdleTimer(sessionId)
+          const sessionId = getEventSessionId(event)
+          if (!sessionId) {
+            log("warn", "session.idle event missing session id", { eventType: event.type })
+            continue
+          }
 
-          try {
-            const messagesResult = await client.session.messages({ path: { id: sessionId } }).catch(() => null)
-            const messages = messagesResult?.data || []
-            const messageCount = messages.length
-            const assistantCount = countAssistantMessages(messages)
-            const previousMessageCount = evaluatedMessageCounts.get(sessionId) || 0
+          const now = Date.now()
+          const previousIdleAt = lastIdleEventAt.get(sessionId) || 0
+          lastIdleEventAt.set(sessionId, now)
 
-            if (messageCount <= previousMessageCount) {
-              await log("debug", "Skipping duplicate idle evaluation", { sessionId, trigger, messageCount, previousMessageCount })
+          if (now - previousIdleAt < IDLE_DEDUP_MS) {
+            log("debug", "Skipping duplicate idle event", { sessionId, elapsedMs: now - previousIdleAt })
+            continue
+          }
+
+          // Skip memory agent child sessions
+          if (memoryAgentSessions.has(sessionId)) {
+            log("debug", "Skipping idle event for memory agent session", { sessionId })
+            continue
+          }
+
+          if (evaluatingSessions.has(sessionId)) {
+            log("debug", "Skipping re-entrant idle evaluation", { sessionId })
+            continue
+          }
+
+          // Skip subagent sessions (any session with a parentID)
+          const parentID = await getSessionParentId(ctx.session, sessionId, event)
+          if (parentID) {
+            log("debug", "Skipping memory evaluation for subagent idle event", { sessionId, parentID })
+            continue
+          }
+
+          async function runEvaluation(sessionId: string, trigger: "turn-interval" | "idle-timeout") {
+            if (evaluatingSessions.has(sessionId)) {
+              log("debug", "Skipping memory evaluation already in progress", { sessionId, trigger })
               return
             }
 
-            const evaluatedCount = await evaluateSession(client, sessionId, log)
-            evaluatedMessageCounts.set(sessionId, Math.max(messageCount, evaluatedCount))
-            evaluatedAssistantCounts.set(sessionId, assistantCount)
-          } catch (error) {
-            await log("error", "Memory evaluation failed", {
+            evaluatingSessions.add(sessionId)
+            clearIdleTimer(sessionId)
+
+            try {
+              const messagesResult = await ctx.session.messages({ path: { id: sessionId } }).catch(() => null)
+              const messages = messagesResult?.data || []
+              const messageCount = messages.length
+              const assistantCount = countAssistantMessages(messages)
+              const previousMessageCount = evaluatedMessageCounts.get(sessionId) || 0
+
+              if (messageCount <= previousMessageCount) {
+                log("debug", "Skipping duplicate idle evaluation", { sessionId, trigger, messageCount, previousMessageCount })
+                return
+              }
+
+              const evaluatedCount = await evaluateSession(ctx.session, sessionId, log)
+              evaluatedMessageCounts.set(sessionId, Math.max(messageCount, evaluatedCount))
+              evaluatedAssistantCounts.set(sessionId, assistantCount)
+            } catch (error) {
+              log("error", "Memory evaluation failed", {
+                sessionId,
+                trigger,
+                error: normalizeError(error)
+              })
+            } finally {
+              evaluatingSessions.delete(sessionId)
+            }
+          }
+
+          try {
+            const messagesResult = await ctx.session.messages({ path: { id: sessionId } }).catch(() => null)
+            const messages = messagesResult?.data || []
+            const assistantCount = countAssistantMessages(messages)
+            const previousAssistantCount = evaluatedAssistantCounts.get(sessionId) || 0
+            const turnsSinceEvaluation = assistantCount - previousAssistantCount
+
+            if (turnsSinceEvaluation >= MEMORY_EVALUATION_TURN_INTERVAL) {
+              log("info", "Memory turn interval reached", { sessionId, assistantCount, previousAssistantCount, turnsSinceEvaluation })
+              runEvaluation(sessionId, "turn-interval")
+              continue
+            }
+
+            clearIdleTimer(sessionId)
+            const timer = setTimeout(() => {
+              runEvaluation(sessionId, "idle-timeout").catch((error) => {
+                log("error", "Scheduled memory evaluation failed", { sessionId, error: normalizeError(error) })
+              })
+            }, MEMORY_EVALUATION_IDLE_TIMEOUT_MS)
+            ; (timer as any).unref?.()
+            idleTimers.set(sessionId, timer)
+            log("info", "Scheduled idle-timeout evaluation", {
               sessionId,
-              trigger,
+              idleTimeoutMs: MEMORY_EVALUATION_IDLE_TIMEOUT_MS,
+              assistantCount,
+              previousAssistantCount,
+              turnsSinceEvaluation,
+            })
+          } catch (error) {
+            log("error", "Memory evaluation failed", {
+              sessionId,
               error: normalizeError(error)
             })
-          } finally {
-            evaluatingSessions.delete(sessionId)
           }
-        }
-
-        try {
-          const messagesResult = await client.session.messages({ path: { id: sessionId } }).catch(() => null)
-          const messages = messagesResult?.data || []
-          const assistantCount = countAssistantMessages(messages)
-          const previousAssistantCount = evaluatedAssistantCounts.get(sessionId) || 0
-          const turnsSinceEvaluation = assistantCount - previousAssistantCount
-
-          if (turnsSinceEvaluation >= MEMORY_EVALUATION_TURN_INTERVAL) {
-            await log("info", "Memory turn interval reached", { sessionId, assistantCount, previousAssistantCount, turnsSinceEvaluation })
-            await runEvaluation(sessionId, "turn-interval")
-            return
-          }
-
-          clearIdleTimer(sessionId)
-          const timer = setTimeout(() => {
-            runEvaluation(sessionId, "idle-timeout").catch((error) => {
-              log("error", "Scheduled memory evaluation failed", { sessionId, error: normalizeError(error) })
-            })
-          }, MEMORY_EVALUATION_IDLE_TIMEOUT_MS)
-            ; (timer as any).unref?.()
-          idleTimers.set(sessionId, timer)
-          await log("info", "Scheduled idle-timeout evaluation", {
-            sessionId,
-            idleTimeoutMs: MEMORY_EVALUATION_IDLE_TIMEOUT_MS,
-            assistantCount,
-            previousAssistantCount,
-            turnsSinceEvaluation,
-          })
-        } catch (error) {
-          await log("error", "Memory evaluation failed", {
-            sessionId,
-            error: normalizeError(error)
-          })
         }
       }
-    }
-  }
-}
+    })()
 
-export default MemoryManagerPlugin
+    // Cleanup: abort event subscription and clear timers
+    return () => {
+      controller.abort()
+      for (const timer of idleTimers.values()) {
+        clearTimeout(timer)
+      }
+    }
+  },
+})
 
 // Test-only exports — allow unit tests to inspect and manipulate module-level state
 // Exported as getter functions (not values) so opencode's plugin loader doesn't

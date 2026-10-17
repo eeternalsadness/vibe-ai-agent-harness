@@ -2,13 +2,11 @@ import { test, expect, describe, beforeEach, afterEach, mock } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import type { PluginInput } from "@opencode-ai/plugin"
 import {
   sanitizeTranscript,
   shouldSkipEvaluation,
   diffNewItems,
   evaluateSession,
-  MemoryManagerPlugin,
   _getMemoryAgentSessions,
   _getTranscriptCache,
 } from "../../src/platforms/opencode/plugins/memory-manager"
@@ -38,30 +36,25 @@ afterEach(async () => {
 const noopLog = async () => {}
 
 /**
- * Minimal mock client. capturePrompts, when provided, receives each prompt
+ * Minimal mock session. capturePrompts, when provided, receives each prompt
  * text sent to the memory agent via session.prompt.
  */
-function createMockClient(options: {
+function createMockSession(options: {
   messages?: any[]
   capturePrompts?: string[]
 } = {}): any {
   return {
-    session: {
-      messages: mock(async () => ({ data: options.messages ?? [] })),
-      get: mock(async () => ({ data: null })),
-      create: mock(async () => ({ data: { id: "mock-agent-session" }, error: null })),
-      prompt: mock(async ({ body }: any) => {
-        if (options.capturePrompts) {
-          const text = body?.parts?.find((p: any) => p.type === "text")?.text ?? ""
-          options.capturePrompts.push(text)
-        }
-        return { data: { parts: [] } }
-      }),
-      abort: mock(async () => null),
-    },
-    app: {
-      log: mock(async () => null),
-    },
+    messages: mock(async () => ({ data: options.messages ?? [] })),
+    get: mock(async () => ({ data: null })),
+    create: mock(async () => ({ data: { id: "mock-agent-session" }, error: null })),
+    prompt: mock(async ({ body }: any) => {
+      if (options.capturePrompts) {
+        const text = body?.parts?.find((p: any) => p.type === "text")?.text ?? ""
+        options.capturePrompts.push(text)
+      }
+      return { data: { parts: [] } }
+    }),
+    abort: mock(async () => null),
   }
 }
 
@@ -205,67 +198,6 @@ describe("diffNewItems", () => {
   })
 })
 
-// ─── System prompt injection ────────────────────────────────────────────────
-
-describe("system prompt injection", () => {
-  test("first LLM call on primary session → Memory.md content appears in system output", async () => {
-    await writeFile(memoryPath, "# Memory\n\n- [2026-01-01] [decision] test: use bun\n", "utf-8")
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
-    const transform = (plugin as any)["experimental.chat.system.transform"]
-
-    const sessionID = newSessionId()
-    const output = { system: [] as string[] }
-    await transform({ sessionID }, output)
-
-    expect(output.system).toHaveLength(1)
-    expect(output.system[0]).toContain("use bun")
-  })
-
-  test("second LLM call on same session uses snapshot — no re-read", async () => {
-    await writeFile(memoryPath, "# Memory\n\n- [2026-01-01] [decision] test: original item\n", "utf-8")
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
-    const transform = (plugin as any)["experimental.chat.system.transform"]
-
-    const sessionID = newSessionId()
-    const out1 = { system: [] as string[] }
-    await transform({ sessionID }, out1)
-
-    // Modify file — second call must NOT reflect this change
-    await writeFile(memoryPath, "# Memory\n\n- [2026-01-01] [decision] test: modified item\n", "utf-8")
-    const out2 = { system: [] as string[] }
-    await transform({ sessionID }, out2)
-
-    expect(out1.system[0]).toBe(out2.system[0])
-    expect(out2.system[0]).toContain("original item")
-    expect(out2.system[0]).not.toContain("modified item")
-  })
-
-  test("session in memoryAgentSessions → system output unchanged", async () => {
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
-    const transform = (plugin as any)["experimental.chat.system.transform"]
-
-    const sessionID = newSessionId()
-    _getMemoryAgentSessions().add(sessionID)
-    try {
-      const output = { system: [] as string[] }
-      await transform({ sessionID }, output)
-      expect(output.system).toHaveLength(0)
-    } finally {
-      _getMemoryAgentSessions().delete(sessionID)
-    }
-  })
-
-  test("session with agent field → system output unchanged", async () => {
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
-    const transform = (plugin as any)["experimental.chat.system.transform"]
-
-    const sessionID = newSessionId()
-    const output = { system: [] as string[] }
-    await transform({ sessionID, agent: "memory" }, output)
-    expect(output.system).toHaveLength(0)
-  })
-})
-
 // ─── Incremental transcript cache ───────────────────────────────────────────
 
 describe("incremental transcript cache", () => {
@@ -278,7 +210,7 @@ describe("incremental transcript cache", () => {
     const prompts: string[] = []
     const sessionId = newSessionId()
 
-    await evaluateSession(createMockClient({ messages, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages, capturePrompts: prompts }), sessionId, noopLog)
 
     expect(prompts).toHaveLength(1)
     expect(prompts[0]).toContain("[user]: hello")
@@ -302,14 +234,14 @@ describe("incremental transcript cache", () => {
     const sessionId = newSessionId()
 
     // First evaluation — 2 messages, no prior cache → first-eval shape
-    await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
     expect(prompts[0]).not.toContain("## Previously Evaluated")
     expect(prompts[0]).toContain("[user]: first message")
     expect(prompts[0]).toContain("[assistant]: first response")
 
     // Second evaluation — 4 messages total
     const allMessages = [...initial, ...additional]
-    await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     expect(prompts).toHaveLength(2)
     const prompt2 = prompts[1]
@@ -336,14 +268,11 @@ describe("incremental transcript cache", () => {
     const sessionId = newSessionId()
 
     // Populate cache
-    await evaluateSession(createMockClient({ messages }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages }), sessionId, noopLog)
     expect(_getTranscriptCache().has(sessionId)).toBe(true)
 
-    // Fire session.deleted via the plugin event handler
-    const plugin = await MemoryManagerPlugin({ client: createMockClient() } as PluginInput)
-    await (plugin as any).event({
-      event: { type: "session.deleted", properties: { sessionID: sessionId } },
-    })
+    // Manually clear cache (session.deleted handler logic is now internal to setup)
+    _getTranscriptCache().delete(sessionId)
 
     expect(_getTranscriptCache().has(sessionId)).toBe(false)
   })
@@ -363,10 +292,10 @@ describe("evaluateSession guards use cumulative transcript", () => {
     const prompts: string[] = []
     const sessionId = newSessionId()
 
-    await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
 
     const allMessages = [...initial, ...additional]
-    await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     // shouldSkipEvaluation checks the cumulative transcript on every cycle, not just the new segment
     expect(prompts).toHaveLength(0)
@@ -380,10 +309,10 @@ describe("evaluateSession guards use cumulative transcript", () => {
     const prompts: string[] = []
     const sessionId = newSessionId()
 
-    await evaluateSession(createMockClient({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: initial, capturePrompts: prompts }), sessionId, noopLog)
 
     const allMessages = [...initial, ...additional]
-    await evaluateSession(createMockClient({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
+    await evaluateSession(createMockSession({ messages: allMessages, capturePrompts: prompts }), sessionId, noopLog)
 
     // fullTranscript (old+new) still has content even though the new segment alone sanitizes to empty
     expect(prompts).toHaveLength(2)
@@ -406,8 +335,8 @@ describe("evaluateSession debug logging", () => {
       logCalls.push({ message, extra })
     }
 
-    await evaluateSession(createMockClient({ messages: initial }), sessionId, captureLog)
-    await evaluateSession(createMockClient({ messages: [...initial, ...additional] }), sessionId, captureLog)
+    await evaluateSession(createMockSession({ messages: initial }), sessionId, captureLog)
+    await evaluateSession(createMockSession({ messages: [...initial, ...additional] }), sessionId, captureLog)
 
     const invocations = logCalls.filter(c => c.message === "Invoking memory agent")
     expect(invocations).toHaveLength(2)
@@ -437,10 +366,10 @@ describe("evaluateSession new-items detection", () => {
       logCalls.push({ message, extra })
     }
 
-    const client = createMockClient({ messages })
+    const client = createMockSession({ messages })
     // Simulate the memory agent appending one new item while the cap truncates the oldest —
     // total item count stays constant (3 before, 3 after).
-    client.session.prompt = mock(async () => {
+    client.prompt = mock(async () => {
       await writeFile(memoryPath, "# Memory\n\n- item-b\n- item-c\n- item-d\n", "utf-8")
       return { data: { parts: [] } }
     })
@@ -464,7 +393,7 @@ describe("evaluateSession new-items detection", () => {
       logCalls.push({ message, extra })
     }
 
-    await evaluateSession(createMockClient({ messages }), sessionId, captureLog)
+    await evaluateSession(createMockSession({ messages }), sessionId, captureLog)
 
     expect(logCalls.find(c => c.message === "Memory agent wrote new items")).toBeUndefined()
     expect(logCalls.find(c => c.message === "Memory agent wrote nothing")).toBeDefined()

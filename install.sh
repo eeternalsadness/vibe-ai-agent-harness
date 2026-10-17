@@ -88,7 +88,7 @@ if [ "$DRY_RUN" = true ]; then
 else
   bun build "$SCRIPT_DIR/src/platforms/$PLATFORM/plugins/memory-manager.ts" \
     --target=bun \
-    --external=@opencode-ai/plugin \
+    --external=@opencode/plugin \
     --outfile="$SCRIPT_DIR/dist/$PLATFORM/plugins/memory-manager.js"
   log "bundled dist/$PLATFORM/plugins/memory-manager.js"
 fi
