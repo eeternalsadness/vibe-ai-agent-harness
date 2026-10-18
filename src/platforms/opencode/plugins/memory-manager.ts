@@ -1,4 +1,5 @@
 import { Plugin } from "@opencode/plugin"
+import type { SessionMessageInfo } from "@opencode/client/promise"
 import { readFileSync } from "node:fs"
 import { access, appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
@@ -84,24 +85,27 @@ function isInteractiveMode(): boolean {
   return !process.argv.includes("run")
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: V2 event types not available
 function getEventSessionId(event: any): string | undefined {
-  return event.properties?.sessionID
-    || event.properties?.sessionId
-    || event.properties?.info?.id
-    || event.sessionID
-    || event.sessionId
-    || event.session_id
+  return event.sessionID
 }
 
-async function getSessionParentId(session: typeof ctx.session, sessionId: string, event: any): Promise<string | undefined> {
+async function getSessionParentId(
+  // biome-ignore lint/suspicious/noExplicitAny: V2 session API types not exported from @opencode/plugin
+  session: any,
+  sessionId: string,
+  // biome-ignore lint/suspicious/noExplicitAny: V2 event types not available
+  event: any
+): Promise<string | undefined> {
   if (event.properties?.info && "parentID" in event.properties.info) return event.properties.info.parentID
 
-  const sessionResult = await session.get({ path: { id: sessionId } }).catch(() => null)
-  return sessionResult?.data?.parentID
+  // V2: get() returns SessionInfo directly (no { data } envelope)
+  const sessionInfo = await session.get({ sessionID: sessionId }).catch(() => null)
+  return sessionInfo?.parentID
 }
 
-function countAssistantMessages(messages: any[]): number {
-  return messages.filter((m: any) => m.info?.role === "assistant").length
+function countAssistantMessages(messages: SessionMessageInfo[]): number {
+  return messages.filter((m) => m.type === "assistant").length
 }
 
 function clearIdleTimer(sessionId: string): void {
@@ -134,32 +138,39 @@ function readMemorySync(): string {
 
 /**
  * Sanitizes a session's messages into a transcript string.
+ * V2 format: each message has `type` discriminator, user has `text`,
+ * assistant has `content` array, tool has `result`.
  * Keeps: user text, assistant text, tool call signals (name + input args).
  * Strips: tool outputs, reasoning parts, step markers, snapshots.
  */
-export function sanitizeTranscript(messages: Array<{ role: string; parts: any[] }>): string {
+export function sanitizeTranscript(messages: SessionMessageInfo[]): string {
   const lines: string[] = []
 
-  for (const message of messages) {
-    const role = message.role === "user" ? "user" : "assistant"
+  for (const msg of messages) {
+    if (msg.type === "user" && msg.text?.trim()) {
+      lines.push(`[user]: ${msg.text.trim()}`)
+    } else if (msg.type === "assistant") {
+      const content = msg.content
+      if (!content) continue
+      for (const part of content) {
+        if (part.type === "text" && part.text?.trim()) {
+          lines.push(`[assistant]: ${part.text.trim()}`)
+        } else if (part.type === "tool" && part.tool) {
+          const tool = part.tool as string
+          const input = part.state?.input as Record<string, unknown> | undefined
+          if (!input) continue
 
-    for (const part of message.parts) {
-      if (part.type === "text" && part.text?.trim()) {
-        lines.push(`[${role}]: ${part.text.trim()}`)
-      } else if (part.type === "tool" && role === "assistant") {
-        const tool = part.tool as string
-        const input = part.state?.input as Record<string, unknown> | undefined
-        if (!input) continue
+          // Format key args as compact signals — omit large or complex values
+          const args = Object.entries(input)
+            .filter(([, v]) => (typeof v === "string" && (v as string).length < 200) || typeof v === "number" || typeof v === "boolean")
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(", ")
 
-        // Format key args as compact signals — omit large or complex values
-        const args = Object.entries(input)
-          .filter(([, v]) => (typeof v === "string" && (v as string).length < 200) || typeof v === "number" || typeof v === "boolean")
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")
-
-        lines.push(`[tool: ${tool}]${args ? ` ${args}` : ""}`)
+          lines.push(`[tool: ${tool}]${args ? ` ${args}` : ""}`)
+        }
       }
     }
+    // Skip system, shell (tool output), compaction, idle, etc.
   }
 
   return lines.join("\n")
@@ -179,69 +190,114 @@ function summarizeTranscript(transcript: string): { userMessages: number; assist
 }
 
 /**
- * Extracts text content from session.prompt() response
+ * Extracts text content from the last assistant message in session context.
+ * V2 session.context() returns SessionMessageInfo[] with discriminated union types.
+ * Assistant messages have `content` array with { type: "text", text: string } entries.
  */
-function extractResponseText(response: any): string {
-  const textPart = response.data?.parts?.find((p: any) => p.type === "text")
-  return textPart?.text || ""
+function extractResponseText(messages: SessionMessageInfo[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]
+    if (msg?.type === "assistant") {
+      const textEntry = msg.content?.find((c) => c.type === "text")
+      if (textEntry?.text) return textEntry.text
+    }
+  }
+  return ""
+}
+
+const MEMORY_AGENT_TIMEOUT_MS = Number(process.env.OPENCODE_MEMORY_AGENT_TIMEOUT_MS || 5 * 60 * 1000)
+
+/**
+ * Waits for the memory agent session to go idle, with a hard timeout so a stuck
+ * agent cannot block evaluation of the parent session forever.
+ */
+async function waitForMemoryAgent(
+  // biome-ignore lint/suspicious/noExplicitAny: V2 session API types not exported from @opencode/plugin
+  session: any,
+  sessionId: string
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      session.wait({ sessionID: sessionId }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Memory agent timed out after ${MEMORY_AGENT_TIMEOUT_MS}ms`)),
+          MEMORY_AGENT_TIMEOUT_MS
+        )
+        timer.unref?.()
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
 }
 
 /**
- * Invokes memory agent with the given prompt
+ * Invokes memory agent with the given prompt.
+ *
+ * V2 flow: create child session bound to the memory agent → prompt → wait for idle
+ * → read response from context → cleanup.
+ * V2's session.prompt() is fire-and-forget (returns admission result only), so we
+ * block on session.wait() until the agent goes idle before reading its reply.
+ * V2 APIs return values directly and reject on failure — no { data, error } envelope.
  */
 async function invokeMemoryAgent(
-  session: typeof ctx.session,
+  // biome-ignore lint/suspicious/noExplicitAny: V2 session API types not exported from @opencode/plugin
+  session: any,
   parentSessionId: string,
   prompt: string,
-  log: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
+  log: (
+    level: "debug" | "info" | "warn" | "error",
+    message: string,
+    extra?: Record<string, unknown>
+  ) => Promise<void>
 ): Promise<string> {
   let sessionId: string | null = null
 
   try {
     await log("debug", "Fetching parent session", { parentSessionId })
 
-    const parentSession = await session.get({
-      path: { id: parentSessionId }
-    }).catch(() => null)
-    const directory = parentSession?.data?.directory
+    const parentSession = await session.get({ sessionID: parentSessionId }).catch(() => null)
+    const directory = parentSession?.location?.directory
 
     await log("debug", "Creating memory agent session", { parentSessionId, directory })
 
-    const createResult = await session.create({
-      body: { parentID: parentSessionId },
-      ...(directory ? { query: { directory } } : {}),
+    const newSession = await session.create({
+      parentID: parentSessionId,
+      agent: "memory",
+      ...(directory ? { location: { directory } } : {}),
     })
 
-    if (createResult.error) {
-      throw new Error(`Failed to create memory agent session: ${createResult.error}`)
+    sessionId = newSession.id
+    if (!sessionId) {
+      throw new Error("Memory agent session created without an ID")
     }
-
-    sessionId = createResult.data.id
     memoryAgentSessions.add(sessionId)
 
     await log("info", "Memory agent session created", { parentSessionId, sessionId })
 
     await log("debug", "Prompting memory agent", { parentSessionId, sessionId, promptLength: prompt.length })
 
-    const response = await session.prompt({
-      path: { id: sessionId },
-      body: {
-        agent: "memory",
-        parts: [{ type: "text", text: prompt }]
-      }
-    })
+    // V2 prompt() is fire-and-forget — wait() resolves once the agent goes idle
+    await session.prompt({ sessionID: sessionId, text: prompt })
+    await waitForMemoryAgent(session, sessionId)
 
-    const result = extractResponseText(response)
+    const messages = await session.context({ sessionID: sessionId }).catch(() => [])
+    const result = extractResponseText(messages)
 
     await log("debug", "Memory agent response received", { parentSessionId, sessionId, responseLength: result.length, response: result })
 
-    await session.abort({ path: { id: sessionId } }).catch(() => { })
+    // Cleanup: interrupt defensively (in case of timeout) and remove the session
+    await session.interrupt({ sessionID: sessionId }).catch(() => { })
+    await session.remove({ sessionID: sessionId }).catch(() => { })
     memoryAgentSessions.delete(sessionId)
 
     return result
   } catch (error) {
     if (sessionId) {
-      await session.abort({ path: { id: sessionId } }).catch(() => { })
+      await session.interrupt({ sessionID: sessionId }).catch(() => { })
+      await session.remove({ sessionID: sessionId }).catch(() => { })
       memoryAgentSessions.delete(sessionId)
     }
     await log("error", "Memory agent invocation failed", { parentSessionId, sessionId, error: normalizeError(error) })
@@ -291,20 +347,21 @@ export function diffNewItems(before: string[], after: string[]): string[] {
  * Main evaluation workflow: sanitize → build prompt → invoke memory agent (which writes Memory.md)
  */
 export async function evaluateSession(
-  session: typeof ctx.session,
+  // biome-ignore lint/suspicious/noExplicitAny: V2 session API types not exported from @opencode/plugin
+  session: any,
   sessionId: string,
-  log: (level: "debug" | "info" | "warn" | "error", message: string, extra?: Record<string, any>) => Promise<void>
+  log: (
+    level: "debug" | "info" | "warn" | "error",
+    message: string,
+    extra?: Record<string, unknown>
+  ) => Promise<void>
 ): Promise<number> {
-  const messagesResult = await session.messages({ path: { id: sessionId } }).catch(() => null)
-  if (!messagesResult?.data) {
+  // V2: session.context() returns SessionMessageInfo[] directly (not wrapped in { data })
+  const messages = await session.context({ sessionID: sessionId }).catch(() => null)
+  if (!messages) {
     await log("warn", "Could not fetch session messages", { sessionId })
     return 0
   }
-
-  const messages = messagesResult.data.map((m: any) => ({
-    role: m.info.role,
-    parts: m.parts,
-  }))
 
   if (messages.length === 0) {
     await log("info", "Skipping evaluation — empty session", { sessionId })
@@ -383,11 +440,11 @@ export default Plugin.define({
     })
 
     // Inject memory into system prompt (primary agent only)
-    ctx.session.hook("context", (event) => {
+    await ctx.session.hook("context", (event) => {
       const sessionID = event.sessionID
       if (memoryAgentSessions.has(sessionID)) return
 
-      const agent = event.agent || event.body?.agent
+      const agent = event.agent
       if (agent) return // skip all subagents
 
       try {
@@ -400,7 +457,7 @@ export default Plugin.define({
           const itemCount = memoryContent.split("\n").filter(l => l.trim().startsWith("- ")).length
           log("info", "Memory snapshot captured", { sessionID, itemCount })
         }
-        event.system.push(PROMPTS.systemInjection(memoryContent))
+        event.system.push({ type: "text" as const, text: PROMPTS.systemInjection(memoryContent) })
       } catch (error) {
         log("error", "Failed to inject memory context", { error: (error as Error).message })
       }
@@ -423,7 +480,8 @@ export default Plugin.define({
           sessionMemorySnapshots.delete(sessionId)
           transcriptCache.delete(sessionId)
           clearIdleTimer(sessionId)
-          log("info", "Cleaned up deleted session state", { sessionId, parentID: event.properties?.info?.parentID })
+          // biome-ignore lint/suspicious/noExplicitAny: SessionDeleted uses metadata, not properties
+          log("info", "Cleaned up deleted session state", { sessionId, parentID: (event as any).metadata?.parentID })
           continue
         }
 
@@ -476,8 +534,8 @@ export default Plugin.define({
             clearIdleTimer(sessionId)
 
             try {
-              const messagesResult = await ctx.session.messages({ path: { id: sessionId } }).catch(() => null)
-              const messages = messagesResult?.data || []
+              // V2: session.context() returns SessionMessageInfo[] directly
+              const messages = await ctx.session.context({ sessionID: sessionId }).catch(() => [])
               const messageCount = messages.length
               const assistantCount = countAssistantMessages(messages)
               const previousMessageCount = evaluatedMessageCounts.get(sessionId) || 0
@@ -502,8 +560,8 @@ export default Plugin.define({
           }
 
           try {
-            const messagesResult = await ctx.session.messages({ path: { id: sessionId } }).catch(() => null)
-            const messages = messagesResult?.data || []
+            // V2: session.context() returns SessionMessageInfo[] directly
+            const messages = await ctx.session.context({ sessionID: sessionId }).catch(() => [])
             const assistantCount = countAssistantMessages(messages)
             const previousAssistantCount = evaluatedAssistantCounts.get(sessionId) || 0
             const turnsSinceEvaluation = assistantCount - previousAssistantCount

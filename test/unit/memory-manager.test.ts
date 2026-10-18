@@ -2,12 +2,12 @@ import { test, expect, describe, beforeEach, afterEach, mock } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
+import type { SessionMessageInfo } from "@opencode/client/promise"
 import {
   sanitizeTranscript,
   shouldSkipEvaluation,
   diffNewItems,
   evaluateSession,
-  _getMemoryAgentSessions,
   _getTranscriptCache,
 } from "../../src/platforms/opencode/plugins/memory-manager"
 
@@ -40,97 +40,108 @@ const noopLog = async () => {}
  * text sent to the memory agent via session.prompt.
  */
 function createMockSession(options: {
-  messages?: any[]
+  messages?: SessionMessageInfo[]
   capturePrompts?: string[]
 } = {}): any {
   return {
-    messages: mock(async () => ({ data: options.messages ?? [] })),
-    get: mock(async () => ({ data: null })),
-    create: mock(async () => ({ data: { id: "mock-agent-session" }, error: null })),
-    prompt: mock(async ({ body }: any) => {
-      if (options.capturePrompts) {
-        const text = body?.parts?.find((p: any) => p.type === "text")?.text ?? ""
-        options.capturePrompts.push(text)
-      }
-      return { data: { parts: [] } }
+    context: mock(async () => options.messages ?? []),
+    get: mock(async () => null),
+    create: mock(async () => ({ id: "mock-agent-session" })),
+    prompt: mock(async ({ text }: any) => {
+      if (options.capturePrompts) options.capturePrompts.push(text ?? "")
+      return {}
     }),
-    abort: mock(async () => null),
+    wait: mock(async () => {}),
+    interrupt: mock(async () => {}),
+    remove: mock(async () => {}),
   }
 }
 
-/** Build messages in the shape evaluateSession expects from client.session.messages */
+/** Build V2 messages for evaluateSession (session.context() returns SessionMessageInfo[]) */
 function makeMessages(
-  ...pairs: Array<{ role: "user" | "assistant"; text: string }>
-): any[] {
-  return pairs.map(({ role, text }) => ({
-    info: { role },
-    parts: [{ type: "text", text }],
+  ...entries: Array<{ type: "user" | "assistant"; text: string }>
+): SessionMessageInfo[] {
+  return entries.map(({ type, text }) => ({
+    id: `msg-${Math.random().toString(36).slice(2)}`,
+    type,
+    time: { created: Date.now() },
+    ...(type === "user"
+      ? { text }
+      : { content: [{ type: "text" as const, text }] }),
   }))
 }
 
 // ─── sanitizeTranscript ─────────────────────────────────────────────────────
 
 describe("sanitizeTranscript", () => {
-  test("user text part → [user]: text", () => {
+  test("user text → [user]: text", () => {
     const result = sanitizeTranscript([
-      { role: "user", parts: [{ type: "text", text: "hello world" }] },
-    ])
+      { id: "m1", type: "user", time: { created: 0 }, text: "hello world" },
+    ] as SessionMessageInfo[])
     expect(result).toBe("[user]: hello world")
   })
 
-  test("assistant text part → [assistant]: text", () => {
+  test("assistant text → [assistant]: text", () => {
     const result = sanitizeTranscript([
-      { role: "assistant", parts: [{ type: "text", text: "hi there" }] },
-    ])
+      { id: "m1", type: "assistant", time: { created: 0 }, content: [{ type: "text", text: "hi there" }] },
+    ] as SessionMessageInfo[])
     expect(result).toBe("[assistant]: hi there")
   })
 
   test("tool call with args → [tool: name] key: value", () => {
     const result = sanitizeTranscript([
       {
-        role: "assistant",
-        parts: [{ type: "tool", tool: "edit", state: { input: { filePath: "src/foo.ts" } } }],
+        id: "m1",
+        type: "assistant",
+        time: { created: 0 },
+        content: [{ type: "tool", tool: "edit", state: { input: { filePath: "src/foo.ts" } } }],
       },
-    ])
+    ] as SessionMessageInfo[])
     expect(result).toBe("[tool: edit] filePath: src/foo.ts")
   })
 
-  test("tool part on user role (tool output) not present in output", () => {
-    // user-role tool parts represent tool outputs — they must be stripped
+  test("tool output (shell result) not present in output", () => {
+    // shell messages represent tool outputs — they must be stripped
     const result = sanitizeTranscript([
       {
-        role: "user",
-        parts: [{ type: "tool", tool: "edit", state: { output: "done" } }],
-      },
+        id: "m1",
+        type: "shell",
+        time: { created: 0 },
+        result: "done",
+      } as SessionMessageInfo,
     ])
     expect(result).toBe("")
   })
 
   test("blank/whitespace text part not present in output", () => {
     const result = sanitizeTranscript([
-      { role: "user", parts: [{ type: "text", text: "   " }] },
-    ])
+      { id: "m1", type: "user", time: { created: 0 }, text: "   " },
+    ] as SessionMessageInfo[])
     expect(result).toBe("")
   })
 
   test("mixed assistant message: text line appears before tool call line", () => {
     const result = sanitizeTranscript([
       {
-        role: "assistant",
-        parts: [
+        id: "m1",
+        type: "assistant",
+        time: { created: 0 },
+        content: [
           { type: "text", text: "I'll edit the file" },
           { type: "tool", tool: "edit", state: { input: { filePath: "foo.ts" } } },
         ],
       },
-    ])
+    ] as SessionMessageInfo[])
     expect(result).toBe("[assistant]: I'll edit the file\n[tool: edit] filePath: foo.ts")
   })
 
   test("[tool: task] subagent_type: research survives sanitization", () => {
     const result = sanitizeTranscript([
       {
-        role: "assistant",
-        parts: [
+        id: "m1",
+        type: "assistant",
+        time: { created: 0 },
+        content: [
           {
             type: "tool",
             tool: "task",
@@ -138,7 +149,7 @@ describe("sanitizeTranscript", () => {
           },
         ],
       },
-    ])
+    ] as SessionMessageInfo[])
     // Research signal must be present verbatim so the memory agent can detect it
     expect(result).toContain("[tool: task] subagent_type: research")
   })
@@ -203,9 +214,9 @@ describe("diffNewItems", () => {
 describe("incremental transcript cache", () => {
   test("first evaluateSession call: all N messages in prompt, cache set to messageCount=N", async () => {
     const messages = makeMessages(
-      { role: "user", text: "hello" },
-      { role: "assistant", text: "hi" },
-      { role: "user", text: "proceed" },
+      { type: "user", text: "hello" },
+      { type: "assistant", text: "hi" },
+      { type: "user", text: "proceed" },
     )
     const prompts: string[] = []
     const sessionId = newSessionId()
@@ -223,12 +234,12 @@ describe("incremental transcript cache", () => {
 
   test("two-cycle end-to-end: cycle 2 sends only the new segment plus recent memory", async () => {
     const initial = makeMessages(
-      { role: "user", text: "first message" },
-      { role: "assistant", text: "first response" },
+      { type: "user", text: "first message" },
+      { type: "assistant", text: "first response" },
     )
     const additional = makeMessages(
-      { role: "user", text: "second message" },
-      { role: "assistant", text: "second response" },
+      { type: "user", text: "second message" },
+      { type: "assistant", text: "second response" },
     )
     const prompts: string[] = []
     const sessionId = newSessionId()
@@ -262,8 +273,8 @@ describe("incremental transcript cache", () => {
 
   test("session.deleted event clears transcript cache entry", async () => {
     const messages = makeMessages(
-      { role: "user", text: "hello" },
-      { role: "assistant", text: "hi" },
+      { type: "user", text: "hello" },
+      { type: "assistant", text: "hi" },
     )
     const sessionId = newSessionId()
 
@@ -284,11 +295,13 @@ describe("evaluateSession guards use cumulative transcript", () => {
   test("skip-skill signal from an earlier segment still suppresses a later evaluation cycle", async () => {
     const initial = [
       {
-        info: { role: "assistant" },
-        parts: [{ type: "tool", tool: "skill", state: { input: { name: "enriching-knowledge-base" } } }],
+        id: "m1",
+        type: "assistant",
+        time: { created: 0 },
+        content: [{ type: "tool", tool: "skill", state: { input: { name: "enriching-knowledge-base" } } }],
       },
-    ]
-    const additional = makeMessages({ role: "assistant", text: "continuing work" })
+    ] as SessionMessageInfo[]
+    const additional = makeMessages({ type: "assistant", text: "continuing work" })
     const prompts: string[] = []
     const sessionId = newSessionId()
 
@@ -302,10 +315,10 @@ describe("evaluateSession guards use cumulative transcript", () => {
   })
 
   test("empty-content guard evaluates old+new combined — a blank-only new segment still proceeds when prior content exists", async () => {
-    const initial = makeMessages({ role: "user", text: "meaningful content" })
+    const initial = makeMessages({ type: "user", text: "meaningful content" })
     const additional = [
-      { info: { role: "user" }, parts: [{ type: "text", text: "   " }] },
-    ]
+      { id: "m2", type: "user", time: { created: 0 }, text: "   " },
+    ] as SessionMessageInfo[]
     const prompts: string[] = []
     const sessionId = newSessionId()
 
@@ -324,10 +337,10 @@ describe("evaluateSession guards use cumulative transcript", () => {
 describe("evaluateSession debug logging", () => {
   test("'Invoking memory agent' log reports separate counts for previously evaluated and new content", async () => {
     const initial = makeMessages(
-      { role: "user", text: "first message" },
-      { role: "assistant", text: "first response" },
+      { type: "user", text: "first message" },
+      { type: "assistant", text: "first response" },
     )
-    const additional = makeMessages({ role: "user", text: "second message" })
+    const additional = makeMessages({ type: "user", text: "second message" })
     const sessionId = newSessionId()
 
     const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
@@ -359,7 +372,7 @@ describe("evaluateSession new-items detection", () => {
   test("detects newly written items even when Memory.md is at capacity (oldest truncated by append-memory.sh)", async () => {
     await writeFile(memoryPath, "# Memory\n\n- item-a\n- item-b\n- item-c\n", "utf-8")
 
-    const messages = makeMessages({ role: "user", text: "trigger" })
+    const messages = makeMessages({ type: "user", text: "trigger" })
     const sessionId = newSessionId()
     const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
     const captureLog = async (_level: any, message: string, extra?: Record<string, any>) => {
@@ -371,7 +384,7 @@ describe("evaluateSession new-items detection", () => {
     // total item count stays constant (3 before, 3 after).
     client.prompt = mock(async () => {
       await writeFile(memoryPath, "# Memory\n\n- item-b\n- item-c\n- item-d\n", "utf-8")
-      return { data: { parts: [] } }
+      return {}
     })
 
     await evaluateSession(client, sessionId, captureLog)
@@ -386,7 +399,7 @@ describe("evaluateSession new-items detection", () => {
   test("logs 'wrote nothing' when Memory.md is genuinely unchanged", async () => {
     await writeFile(memoryPath, "# Memory\n\n- item-a\n- item-b\n", "utf-8")
 
-    const messages = makeMessages({ role: "user", text: "trigger" })
+    const messages = makeMessages({ type: "user", text: "trigger" })
     const sessionId = newSessionId()
     const logCalls: Array<{ message: string; extra?: Record<string, any> }> = []
     const captureLog = async (_level: any, message: string, extra?: Record<string, any>) => {
