@@ -20,10 +20,9 @@ const models = {
     "gpt-oss:20b": { providerID: "lmstudio", modelID: "openai/gpt-oss-20b" },
   },
   framework: {
-    "qwen3.6:27b": { providerID: "framework", modelID: "Qwen3.6-27B-Q4_K_M" },
+    "qwen3.8-flash-next": { providerID: "framework", modelID: "Qwen3.8-Flash-Next" },
     "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B" },
     "gemma-4-e4b": { providerID: "framework", modelID: "Gemma-4-E4B" },
-    "gpt-oss:120b": { providerID: "framework", modelID: "gpt-oss-120b-F16" },
   },
   yescale: {
     "deepseek-v4-pro": { providerID: "yescale", modelID: "deepseek-v4-pro" },
@@ -83,7 +82,7 @@ export const config = {
       research: models.framework["qwen3.6:35b-a3b"],
       knowledgeBase: models.framework["qwen3.6:35b-a3b"],
       planner: models.framework["qwen3.6:35b-a3b"],
-      coder: models.framework["qwen3.6:27b"],
+      coder: models.framework["qwen3.8-flash-next"],
       reviewer: models.framework["qwen3.6:35b-a3b"],
     },
     based: {
