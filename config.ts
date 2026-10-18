@@ -21,8 +21,12 @@ const models = {
   },
   framework: {
     "qwen3.8-flash-next": { providerID: "framework", modelID: "Qwen3.8-Flash-Next" },
+    "qwen3.8-27b": { providerID: "framework", modelID: "Qwen3.8-27B" },
     "qwen3.6:35b-a3b": { providerID: "framework", modelID: "Qwen3.6-35B-A3B" },
     "gemma-4-e4b": { providerID: "framework", modelID: "Gemma-4-E4B" },
+  },
+  halogen: {
+    "qwen3.8-flash-next": { providerID: "halogen-flash-server", modelID: "halogen-qwen3.8-flash-next" },
   },
   yescale: {
     "deepseek-v4-pro": { providerID: "yescale", modelID: "deepseek-v4-pro" },
@@ -81,9 +85,9 @@ export const config = {
       memory: models.framework["gemma-4-e4b"],
       research: models.framework["qwen3.6:35b-a3b"],
       knowledgeBase: models.framework["qwen3.6:35b-a3b"],
-      planner: models.framework["qwen3.6:35b-a3b"],
-      coder: models.framework["qwen3.8-flash-next"],
-      reviewer: models.framework["qwen3.6:35b-a3b"],
+      planner: models.halogen["qwen3.8-flash-next"],
+      coder: models.halogen["qwen3.8-flash-next"],
+      reviewer: models.halogen["qwen3.8-flash-next"],
     },
     based: {
       primary: models.yescale["glm-5.3"],
