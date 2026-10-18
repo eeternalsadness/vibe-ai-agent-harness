@@ -19,12 +19,22 @@ function extractRecentMemoryItems(existingMemory: string, limit = 20): string {
 export function buildEvaluationPrompt(
   _previouslyEvaluated: string,
   newSegment: string,
-  existingMemory: string
+  existingMemory: string,
+  sessionDirectory?: string
 ): string {
-  const sections = [
+  const sections = []
+
+  if (sessionDirectory) {
+    const projectName = sessionDirectory.replace(/\/+$/, "").split("/").pop() || sessionDirectory
+    sections.push(
+      `## Source Session\n\n- Project name: ${projectName}\n- Project directory: ${sessionDirectory}`
+    )
+  }
+
+  sections.push(
     `## New Since Last Evaluation\n\n${newSegment}`,
     `## Recent Memory Items\n\n${extractRecentMemoryItems(existingMemory)}`,
-  ]
+  )
 
   return sections.join("\n\n")
 }

@@ -55,3 +55,22 @@ describe("buildEvaluationPrompt", () => {
     expect(recentSection).toContain("- item-25")
   })
 })
+
+describe("buildEvaluationPrompt project context", () => {
+  test("Source Session section carries project name and directory", () => {
+    const prompt = buildEvaluationPrompt("", "[user]: hello", "# Memory\n\n", "/home/dev/Repo/vibe-ai-agent-harness")
+
+    const sourceIdx = prompt.indexOf("## Source Session")
+    const newIdx = prompt.indexOf("## New Since Last Evaluation")
+
+    expect(sourceIdx).toBeGreaterThanOrEqual(0)
+    expect(sourceIdx).toBeLessThan(newIdx)
+    expect(prompt).toContain("- Project name: vibe-ai-agent-harness")
+    expect(prompt).toContain("- Project directory: /home/dev/Repo/vibe-ai-agent-harness")
+  })
+
+  test("Source Session section omitted when directory is unknown", () => {
+    const prompt = buildEvaluationPrompt("", "[user]: hello", "# Memory\n\n")
+    expect(prompt).not.toContain("## Source Session")
+  })
+})

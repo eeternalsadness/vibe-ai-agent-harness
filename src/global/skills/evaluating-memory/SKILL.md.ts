@@ -45,7 +45,7 @@ If nothing is worth saving, stop at step 1.
 Items are stored as \`- [YYYY-MM-DD] [tag] project: description\`. The date is inserted by the script — do not include it in the arguments.
 
 - **tag** — \`decision\` · \`work\` · \`research\` · \`kb-enrichment\`
-- **project** — project name or \`global\` for cross-project items
+- **project** — the project name from the **Source Session** section of the evaluation prompt; use \`global\` only for items explicitly about cross-project concerns
 - **description** — outcome only, no implementation details. Fewest words that preserve the meaning. 150 chars max.
 
 ## Tags

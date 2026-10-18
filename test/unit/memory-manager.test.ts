@@ -412,3 +412,230 @@ describe("evaluateSession new-items detection", () => {
     expect(logCalls.find(c => c.message === "Memory agent wrote nothing")).toBeDefined()
   })
 })
+
+// ─── Setup / V2 wiring regression tests ─────────────────────────────────────
+
+import memoryManagerPlugin from "../../src/platforms/opencode/plugins/memory-manager"
+
+/**
+ * Minimal V2 plugin context. Records registered hooks and lets the test drive
+ * a push-based event stream. `parents` maps sessionID -> parentID for subagent
+ * simulation; sessions absent from the map are primary.
+ */
+function createMockPluginContext(options: {
+  parents?: Record<string, string>
+  messages?: SessionMessageInfo[]
+} = {}): any {
+  const hooks: Record<string, (event: any) => Promise<void> | void> = {}
+  const queue: any[] = []
+  let notify: (() => void) | null = null
+  let closed = false
+
+  const stream = {
+    push(event: any) {
+      queue.push(event)
+      notify?.()
+    },
+    close() {
+      closed = true
+      notify?.()
+    },
+    [Symbol.asyncIterator]() {
+      return {
+        async next(): Promise<IteratorResult<any>> {
+          while (queue.length === 0 && !closed) {
+            await new Promise<void>((resolve) => {
+              notify = resolve
+            })
+          }
+          if (queue.length > 0) return { value: queue.shift(), done: false }
+          return { value: undefined, done: true }
+        },
+      }
+    },
+  }
+
+  return {
+    hooks,
+    stream,
+    location: { directory: "/mock/project" },
+    session: {
+      hook: async (name: string, callback: any) => {
+        hooks[name] = callback
+        return { dispose: async () => {} }
+      },
+      get: async ({ sessionID }: any) => ({
+        id: sessionID,
+        ...(options.parents?.[sessionID] ? { parentID: options.parents[sessionID] } : {}),
+      }),
+      context: async () => options.messages ?? [],
+      create: async () => ({ id: "mock-agent-session" }),
+      prompt: async () => ({}),
+      wait: async () => {},
+      interrupt: async () => {},
+      remove: async () => {},
+    },
+    event: {
+      subscribe: () => stream,
+    },
+  }
+}
+
+async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
+  const start = Date.now()
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) throw new Error("waitFor timed out")
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+}
+
+describe("plugin setup V2 wiring", () => {
+  test("context hook injects memory for primary sessions despite event.agent always being set", async () => {
+    const ctx = createMockPluginContext()
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    // V2 contract: event.agent is the active agent id and is set for primary sessions too.
+    const event = { sessionID: newSessionId(), agent: "yapper", system: [] as any[] }
+    await ctx.hooks.context(event)
+
+    expect(event.system.length).toBe(1)
+    expect(event.system[0].text).toContain("# Working Memory Context")
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+
+  test("context hook skips subagent sessions (parentID present)", async () => {
+    const childId = newSessionId()
+    const ctx = createMockPluginContext({ parents: { [childId]: "parent-session" } })
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    const event = { sessionID: childId, agent: "research", system: [] as any[] }
+    await ctx.hooks.context(event)
+
+    expect(event.system.length).toBe(0)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+
+  test("session.idle events resolve sessionID from nested data payload", async () => {
+    const sessionId = newSessionId()
+    let contextFetchedFor: string | undefined
+    const ctx = createMockPluginContext()
+    ctx.session.context = async ({ sessionID }: any) => {
+      contextFetchedFor = sessionID
+      return []
+    }
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    // V2 event shape: { type, data: { sessionID } } — no top-level sessionID.
+    ctx.stream.push({ type: "session.idle", data: { sessionID: sessionId } })
+    await waitFor(() => contextFetchedFor !== undefined)
+    expect(contextFetchedFor).toBe(sessionId)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+
+  test("events from other locations are ignored (dedupe across plugin instances)", async () => {
+    const sessionId = newSessionId()
+    let contextFetched = false
+    const ctx = createMockPluginContext()
+    ctx.session.context = async () => {
+      contextFetched = true
+      return []
+    }
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    ctx.stream.push({
+      type: "session.idle",
+      location: { directory: "/somewhere/else" },
+      data: { sessionID: sessionId },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(contextFetched).toBe(false)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+})
+
+describe("idle signal variants", () => {
+  test("session.status with status.type idle triggers idle handling", async () => {
+    const sessionId = newSessionId()
+    let fetchedFor: string | undefined
+    const ctx = createMockPluginContext()
+    ctx.session.context = async ({ sessionID }: any) => {
+      fetchedFor = sessionID
+      return []
+    }
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    ctx.stream.push({
+      type: "session.status",
+      data: { sessionID: sessionId, status: { type: "idle" } },
+    })
+    await waitFor(() => fetchedFor !== undefined)
+    expect(fetchedFor).toBe(sessionId)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+
+  test("session.status busy does not trigger idle handling", async () => {
+    const sessionId = newSessionId()
+    let fetched = false
+    const ctx = createMockPluginContext()
+    ctx.session.context = async () => {
+      fetched = true
+      return []
+    }
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    ctx.stream.push({
+      type: "session.status",
+      data: { sessionID: sessionId, status: { type: "busy" } },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(fetched).toBe(false)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+})
+
+describe("execution lifecycle idle signal", () => {
+  test("session.execution.succeeded triggers idle handling", async () => {
+    const sessionId = newSessionId()
+    let fetchedFor: string | undefined
+    const ctx = createMockPluginContext()
+    ctx.session.context = async ({ sessionID }: any) => {
+      fetchedFor = sessionID
+      return []
+    }
+    const cleanup = await memoryManagerPlugin.setup(ctx)
+
+    ctx.stream.push({ type: "session.execution.succeeded", data: { sessionID: sessionId } })
+    await waitFor(() => fetchedFor !== undefined)
+    expect(fetchedFor).toBe(sessionId)
+
+    ctx.stream.close()
+    await cleanup?.()
+  })
+})
+
+describe("project context wiring", () => {
+  test("evaluation prompt carries the session's project from session.get", async () => {
+    await writeFile(memoryPath, "# Memory\n\n- item-a\n", "utf-8")
+    const prompts: string[] = []
+    const messages = makeMessages({ type: "user", text: "we decided to use postgres" })
+    const session = createMockSession({ messages, capturePrompts: prompts })
+    session.get = async () => ({ id: "s", location: { directory: "/home/dev/Repo/vibe-ai-agent-harness" } })
+
+    await evaluateSession(session, newSessionId(), noopLog)
+
+    expect(prompts[0]).toContain("## Source Session")
+    expect(prompts[0]).toContain("- Project name: vibe-ai-agent-harness")
+  })
+})

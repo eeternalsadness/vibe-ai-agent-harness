@@ -87,7 +87,9 @@ function isInteractiveMode(): boolean {
 
 // biome-ignore lint/suspicious/noExplicitAny: V2 event types not available
 function getEventSessionId(event: any): string | undefined {
-  return event.sessionID
+  // V2 events nest the payload under `data`: { type: "session.idle", data: { sessionID } }.
+  // Flat fallbacks kept for older event shapes.
+  return event?.data?.sessionID ?? event?.sessionID ?? event?.properties?.sessionID
 }
 
 async function getSessionParentId(
@@ -97,7 +99,7 @@ async function getSessionParentId(
   // biome-ignore lint/suspicious/noExplicitAny: V2 event types not available
   event: any
 ): Promise<string | undefined> {
-  if (event.properties?.info && "parentID" in event.properties.info) return event.properties.info.parentID
+  if (event?.data?.info && "parentID" in event.data.info) return event.data.info.parentID
 
   // V2: get() returns SessionInfo directly (no { data } envelope)
   const sessionInfo = await session.get({ sessionID: sessionId }).catch(() => null)
@@ -398,7 +400,12 @@ export async function evaluateSession(
   const memoryContentBefore = await readMemory()
   const itemsBefore = memoryContentBefore.split("\n").filter(l => l.trim().startsWith("- "))
 
-  const prompt = buildEvaluationPrompt(cache?.transcript ?? "", newSegment, memoryContentBefore)
+  // Give the memory agent the source session's project so items get tagged with the
+  // project name instead of defaulting to "global".
+  const sessionInfo = await session.get({ sessionID: sessionId }).catch(() => null)
+  const sessionDirectory = sessionInfo?.location?.directory as string | undefined
+
+  const prompt = buildEvaluationPrompt(cache?.transcript ?? "", newSegment, memoryContentBefore, sessionDirectory)
 
   await log("info", "Invoking memory agent", {
     sessionId,
@@ -439,13 +446,24 @@ export default Plugin.define({
       idleTimeoutMs: MEMORY_EVALUATION_IDLE_TIMEOUT_MS,
     })
 
-    // Inject memory into system prompt (primary agent only)
-    await ctx.session.hook("context", (event) => {
+    // Inject memory into system prompt (primary agent only).
+    // NOTE: in V2 `event.agent` is ALWAYS set (it is the session's active agent id), so it
+    // cannot distinguish primary from subagent. We gate on the session's parentID instead:
+    // primary sessions have no parent; subagent/child sessions do.
+    const primarySessions = new Map<string, boolean>()
+    await ctx.session.hook("context", async (event) => {
       const sessionID = event.sessionID
       if (memoryAgentSessions.has(sessionID)) return
 
-      const agent = event.agent
-      if (agent) return // skip all subagents
+      let isPrimary = primarySessions.get(sessionID)
+      if (isPrimary === undefined) {
+        const sessionInfo = await ctx.session.get({ sessionID }).catch(() => null)
+        isPrimary = !(sessionInfo?.parentID ?? null)
+        primarySessions.set(sessionID, isPrimary)
+      }
+      if (!isPrimary) return // skip all subagents / child sessions
+
+      // event.system is the mutable system-prompt parts for this model call.
 
       try {
         // Use session snapshot to ensure identical system prompt prefix on every LLM call within the session
@@ -467,8 +485,28 @@ export default Plugin.define({
     const controller = new AbortController()
 
     void (async () => {
-      for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
-        if (event.type === "session.deleted") {
+      try {
+        let sampledEvents = 0
+        for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+          // Session-scoped event sampling — makes the debug log self-explanatory about
+          // which lifecycle events this build emits (registry noise like provider.updated
+          // would otherwise exhaust the cap at startup).
+          if (DEBUG_ENABLED && sampledEvents < 100 && String(event.type).startsWith("session") && !String(event.type).endsWith(".delta")) {
+            sampledEvents++
+            await log("debug", "Session event received", {
+              type: event.type,
+              status: (event as any).data?.status?.type,
+              eventLocation: (event as any).location?.directory,
+              pluginLocation: ctx.location.directory,
+            })
+          }
+
+          // Global plugins load once per location and see the server-wide stream. Only handle
+          // events from this instance's location so multiple instances don't evaluate twice.
+          const eventLocation = (event as any).location?.directory as string | undefined
+          if (eventLocation && eventLocation !== ctx.location.directory) continue
+
+          if (event.type === "session.deleted") {
           const sessionId = getEventSessionId(event)
           if (!sessionId) continue
 
@@ -479,13 +517,22 @@ export default Plugin.define({
           evaluatingSessions.delete(sessionId)
           sessionMemorySnapshots.delete(sessionId)
           transcriptCache.delete(sessionId)
+          primarySessions.delete(sessionId)
           clearIdleTimer(sessionId)
-          // biome-ignore lint/suspicious/noExplicitAny: SessionDeleted uses metadata, not properties
-          log("info", "Cleaned up deleted session state", { sessionId, parentID: (event as any).metadata?.parentID })
+          // biome-ignore lint/suspicious/noExplicitAny: V2 event payload nests info under data
+          log("info", "Cleaned up deleted session state", { sessionId, parentID: (event as any).data?.info?.parentID })
           continue
         }
 
-        if (event.type === "session.idle") {
+        // Idle trigger: observed V2.0.31 behavior — the stream emits neither session.idle
+        // nor session.status(idle); the assistant-finished signal is session.execution.succeeded.
+        // session.idle / session.status(idle) are kept in case other builds emit them.
+        // Dedup + evaluated-message-count gates prevent double evaluation.
+        const isIdleSignal =
+          event.type === "session.idle" ||
+          event.type === "session.execution.succeeded" ||
+          (event.type === "session.status" && (event as any).data?.status?.type === "idle")
+        if (isIdleSignal) {
           if (!isInteractiveMode()) {
             log("debug", "Skipping idle memory evaluation outside interactive mode", { argv: process.argv })
             continue
@@ -493,7 +540,7 @@ export default Plugin.define({
 
           const sessionId = getEventSessionId(event)
           if (!sessionId) {
-            log("warn", "session.idle event missing session id", { eventType: event.type })
+            log("warn", "idle event missing session id", { eventType: event.type })
             continue
           }
 
@@ -594,6 +641,11 @@ export default Plugin.define({
             })
           }
         }
+        }
+        await log("info", "Event subscription stream ended")
+      } catch (error) {
+        // Surface subscription/loop failures instead of swallowing them in the void IIFE.
+        await log("error", "Event subscription loop failed", { error: normalizeError(error) })
       }
     })()
 
