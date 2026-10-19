@@ -85,9 +85,9 @@ export const config = {
       memory: models.framework["gemma-4-e4b"],
       research: models.framework["qwen3.6:35b-a3b"],
       knowledgeBase: models.framework["qwen3.6:35b-a3b"],
-      planner: models.halogen["qwen3.8-flash-next"],
-      coder: models.halogen["qwen3.8-flash-next"],
-      reviewer: models.halogen["qwen3.8-flash-next"],
+      planner: models.framework["qwen3.8-27b"],
+      coder: models.framework["qwen3.8-27b"],
+      reviewer: models.framework["qwen3.8-27b"],
     },
     based: {
       primary: models.yescale["glm-5.3"],
