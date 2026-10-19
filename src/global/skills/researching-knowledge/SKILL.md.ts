@@ -1,6 +1,6 @@
 export default `---
 name: researching-knowledge
-description: Looks up knowledge on a topic — best practices, architecture decisions, technology details, or prior decisions. Use when you are not absolutely certain about something. If there is any doubt, use this skill. Also use when the user explicitly provides an external source (such as a URL) to research. Does not apply to file or codebase exploration.
+description: The required path for any research. Use this INSTEAD of calling websearch, webfetch, or DuckDuckGo directly whenever you need information beyond your own knowledge - current events, versions, releases, pricing, APIs, deprecated features, best practices, architecture decisions, or verifying a claim. If there is any doubt, load this skill before answering - do not guess and do not search directly. Also use when the user explicitly provides an external source (such as a URL) to research. Does not apply to file or codebase exploration.
 ---
 
 # Researching Knowledge
