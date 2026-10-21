@@ -201,5 +201,18 @@ class RunnerSkipsUnconfiguredStageTest(unittest.TestCase):
         )
 
 
+class PipelineCoversBoyTest(unittest.TestCase):
+    """Plan 19 scenario: pipeline-covers-boy"""
+
+    def test_each_stage_runs_its_go_check_against_boy(self):
+        manifest = pr.load_manifest(REPO_ROOT)
+
+        for stage, go_subcommand in (("lint", "vet"), ("build", "build"), ("test", "test")):
+            with self.subTest(stage=stage):
+                command = manifest[stage]["command"]
+                self.assertRegex(command, rf"\bgo\b.*\b{go_subcommand}\b")
+                self.assertIn("boy", command)
+
+
 if __name__ == "__main__":
     unittest.main()

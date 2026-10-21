@@ -27,12 +27,12 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 16** - write the test for remove-refuses-unsafe
 - [x] **Task 17** - write the test for remove-force
 - [x] **Task 18** - write the test for coder-never-asks
-- [ ] **Task 19** - write the test for coder-instructions
-- [ ] **Task 20** - write the test for worktrees-gitignored
-- [ ] **Task 21** - write the test for main-pipeline-ignores-worktrees
-- [ ] **Task 22** - write the test for runner-skips-worktrees
-- [ ] **Task 23** - write the test for gitleaks-scans-current-branch
-- [ ] **Task 24** - write the test for pipeline-covers-boy
+- [x] **Task 19** - write the test for coder-instructions
+- [x] **Task 20** - write the test for worktrees-gitignored
+- [x] **Task 21** - write the test for main-pipeline-ignores-worktrees
+- [x] **Task 22** - write the test for runner-skips-worktrees
+- [x] **Task 23** - write the test for gitleaks-scans-current-branch
+- [x] **Task 24** - write the test for pipeline-covers-boy
 
 ## Implementation
 
