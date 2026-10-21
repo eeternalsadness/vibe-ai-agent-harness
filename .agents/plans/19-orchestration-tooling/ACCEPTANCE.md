@@ -224,8 +224,9 @@ Then it sends the request below with HTTP Basic auth (`opencode:<password>`), an
 | create session | `POST /api/session`, body `{"title", "agent": "coder", "location": {"directory": <worktree>}, "permissions": <rule set>}` |
 | send prompt | `POST /api/session/<id>/prompt`, body `{"text": <prompt>}` |
 | list sessions | `GET /api/session?parentID=null`, plus `directory=<worktree>` when looking up one worktree's session |
+| get session | `GET /api/session/<id>`; a 404 reply returns a not-found error |
 | get active sessions | `GET /api/session/active` |
-| get messages | `GET /api/session/<id>/message` |
+| get latest prompt | `GET /api/session/<id>/message?type=user&order=desc&limit=1`; returns the newest user message, or none |
 | interrupt | `POST /api/session/<id>/interrupt` |
 | delete session | `DELETE /api/session/<id>` |
 | refresh worktrees | `POST /api/worktree/refresh`, body `{"projectID"}` |

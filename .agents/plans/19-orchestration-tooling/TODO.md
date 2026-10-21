@@ -6,17 +6,17 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Setup
 
-- [ ] **Task 1** - scaffold `boy/` (module, cobra commands, Client interface, fake, test helpers)
+- [x] **Task 1** - scaffold `boy/` (module, cobra commands, Client interface, fake, test helpers)
 
 ## Tests
 
-- [ ] **Task 2** - write the test for client-sends-opencode-requests
-- [ ] **Task 3** - write the test for config-resolves-server
-- [ ] **Task 4** - write the test for start-creates-worktree
-- [ ] **Task 5** - write the test for start-launches-coder
-- [ ] **Task 6** - write the test for start-from-other-dir
-- [ ] **Task 7** - write the test for start-rejects-invalid-request
-- [ ] **Task 8** - write the test for start-is-idempotent
+- [x] **Task 2** - write the test for client-sends-opencode-requests
+- [x] **Task 3** - write the test for config-resolves-server
+- [x] **Task 4** - write the test for start-creates-worktree
+- [x] **Task 5** - write the test for start-launches-coder
+- [x] **Task 6** - write the test for start-from-other-dir
+- [x] **Task 7** - write the test for start-rejects-invalid-request
+- [x] **Task 8** - write the test for start-is-idempotent
 - [ ] **Task 9** - write the test for status-lists-repo
 - [ ] **Task 10** - write the test for status-lists-all
 - [ ] **Task 11** - write the test for status-scoped-to-session

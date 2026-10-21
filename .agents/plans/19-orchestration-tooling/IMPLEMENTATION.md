@@ -17,7 +17,8 @@ Test-first. Within each group, write the tests and confirm each fails for the ri
 - A session's directory is at `location.directory`. A session in a worktree gets the same `projectID` as the main checkout.
 - `start` order: create the git worktree, create the session in it (its reply gives the `projectID`), refresh worktrees for that project, then send the prompt.
 - `GET /api/session` filters: `directory` matches exactly, `parentID=null` returns top-level sessions only, `limit` pages.
-- `GET /api/session/active` lists only running sessions; idle ones are absent. Idle sessions carry `time.idle` and `outcome`.
+- `GET /api/session/active` lists only running sessions; idle ones are absent. Its `data` is an object keyed by session id (`{"ses_...": {"type": "running"}}`), not an array. Idle sessions carry `time.idle` and `outcome`.
+- Session lists and message lists are cursor-paged: the reply has `cursor.next`, an opaque string, or null on the last page. Messages take a `type` filter (`user`) plus `order` and `limit`.
 - Unauthenticated requests get 401; Bearer tokens get 401. HTTP Basic `opencode:<password>` works.
 
 ## Task 1: Scaffold `boy/`
@@ -92,7 +93,7 @@ Make client-sends-opencode-requests pass.
 - Use `net/http` with HTTP Basic auth (`opencode:<password>`) on every request.
 - Unwrap `{"data": ...}` on session routes; worktree routes reply with bare JSON.
 - Map connection errors and 401s to distinct error values; the commands turn them into the scenario's messages.
-- `GET /api/session` returns 50 sessions by default. Follow the reply's `cursor.next` (sent back as the `cursor` query param) until it is empty. Confirm the cursor field names against the live spec before relying on them.
+- `GET /api/session` returns 50 sessions by default. Follow the reply's `cursor.next` (sent back as the `cursor` query param) until it is null. Field names confirmed against the live spec.
 
 ## Task 26: Implement server discovery and login
 

@@ -24,7 +24,8 @@ type Fake struct {
 
 	Sessions map[string]*Session
 	Active   map[string]bool
-	Msgs     map[string][]Message
+	// Prompts holds each session's user-message times in creation order.
+	Prompts map[string][]time.Time
 	// Now stamps new sessions and messages.
 	Now func() time.Time
 	// ProjectID is given to created sessions.
@@ -42,7 +43,7 @@ func NewFake(now func() time.Time) *Fake {
 	return &Fake{
 		Sessions:  map[string]*Session{},
 		Active:    map[string]bool{},
-		Msgs:      map[string][]Message{},
+		Prompts:   map[string][]time.Time{},
 		Failures:  map[string]error{},
 		Now:       now,
 		ProjectID: "prj_fake",
@@ -102,7 +103,7 @@ func (f *Fake) SendPrompt(_ context.Context, sessionID, text string) error {
 	if !ok {
 		return ErrNotFound
 	}
-	f.Msgs[sessionID] = append(f.Msgs[sessionID], Message{Role: "user", Created: f.Now()})
+	f.Prompts[sessionID] = append(f.Prompts[sessionID], f.Now())
 	f.Active[sessionID] = true
 	s.Idle = time.Time{}
 	s.Outcome = ""
@@ -155,13 +156,17 @@ func (f *Fake) ActiveSessionIDs(_ context.Context) ([]string, error) {
 	return ids, nil
 }
 
-func (f *Fake) Messages(_ context.Context, sessionID string) ([]Message, error) {
+func (f *Fake) LatestPrompt(_ context.Context, sessionID string) (time.Time, bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if err := f.record("Messages", map[string]any{"session": sessionID}); err != nil {
-		return nil, err
+	if err := f.record("LatestPrompt", map[string]any{"session": sessionID}); err != nil {
+		return time.Time{}, false, err
 	}
-	return append([]Message(nil), f.Msgs[sessionID]...), nil
+	times := f.Prompts[sessionID]
+	if len(times) == 0 {
+		return time.Time{}, false, nil
+	}
+	return times[len(times)-1], true, nil
 }
 
 // Interrupt marks the session idle with outcome "interrupted".
@@ -192,7 +197,7 @@ func (f *Fake) DeleteSession(_ context.Context, sessionID string) error {
 	}
 	delete(f.Sessions, sessionID)
 	delete(f.Active, sessionID)
-	delete(f.Msgs, sessionID)
+	delete(f.Prompts, sessionID)
 	return nil
 }
 

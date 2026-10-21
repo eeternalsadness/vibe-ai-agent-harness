@@ -37,12 +37,6 @@ type Session struct {
 	Outcome   string    // empty before the first turn ends
 }
 
-// Message is the part of a session message boy needs.
-type Message struct {
-	Role    string // "user", "assistant", ...
-	Created time.Time
-}
-
 // CreateSessionRequest describes a new session.
 type CreateSessionRequest struct {
 	Title       string
@@ -64,8 +58,9 @@ type Client interface {
 	GetSession(ctx context.Context, sessionID string) (Session, error)
 	// ActiveSessionIDs returns the ids of running sessions.
 	ActiveSessionIDs(ctx context.Context) ([]string, error)
-	// Messages returns the session's messages in creation order.
-	Messages(ctx context.Context, sessionID string) ([]Message, error)
+	// LatestPrompt returns when the newest user message was created; ok is
+	// false when the session has none.
+	LatestPrompt(ctx context.Context, sessionID string) (created time.Time, ok bool, err error)
 	// Interrupt stops a running session.
 	Interrupt(ctx context.Context, sessionID string) error
 	// DeleteSession deletes a session.
