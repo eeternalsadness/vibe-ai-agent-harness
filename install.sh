@@ -93,6 +93,20 @@ else
   log "bundled dist/$PLATFORM/plugins/memory-manager.js"
 fi
 
+# Build and install boy
+BOY_BIN="${HOME}/.local/bin/boy"
+if ! command -v go &>/dev/null; then
+  echo "Error: go not found in PATH (needed to build boy)" >&2
+  exit 1
+fi
+if [ "$DRY_RUN" = true ]; then
+  log "[dry-run] go -C $SCRIPT_DIR/boy build -o $BOY_BIN ."
+else
+  mkdir -p "$(dirname "$BOY_BIN")"
+  go -C "$SCRIPT_DIR/boy" build -o "$BOY_BIN" .
+  log "installed $BOY_BIN"
+fi
+
 # Install AGENTS.md
 maybe_copy \
   "$SCRIPT_DIR/dist/$PLATFORM/AGENTS.md" \

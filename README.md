@@ -66,6 +66,21 @@ The harness uses two persistence layers with different purposes.
 
 **The knowledge base** is a zettelkasten — a graph of atomic markdown notes linked to each other. It is the long-term source of truth. When an agent needs to learn something new, it researches it and writes it into the knowledge base. The knowledge base agent acts as the gatekeeper — all reads and writes go through it.
 
+## Orchestration CLI (`boy`)
+
+`boy` runs a coder on a finished plan in the background, in its own git worktree, through the opencode server you already have running. It is installed to `~/.local/bin/boy` by `./install.sh` (which needs `go` on your PATH).
+
+```bash
+boy start [--dir <repo>] <plan>          # worktree + branch <plan> under .agents/worktrees/, then start a coder
+boy status [--dir <repo> | --all | -A] [<session-id>]   # JSON array: tasks done, running or idle, outcome, timing
+boy remove [--force] <session-id>        # remove the worktree and session once the branch is merged
+```
+
+- A plan must be committed and live directly under `.agents/plans/` (archived plans are not started).
+- `start` is safe to repeat: it reports a running coder, resumes an idle one that has tasks left, and does nothing for a finished one.
+- The coder commits after each task and never pushes. You merge the branch; `remove` refuses to delete an unmerged or dirty worktree without `--force`, and keeps the branch.
+- `boy` only attaches to a server, it never starts one. It finds the server in opencode's `~/.local/state/opencode/service.json`. `server_url` and `server_password` in `~/.config/boy/config.yaml` override that, and `BOY_SERVER_URL` / `BOY_SERVER_PASSWORD` override both.
+
 ## Getting Started
 
 1. Edit `config.ts` to set your paths and preferred model profile

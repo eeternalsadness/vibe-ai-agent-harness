@@ -46,16 +46,16 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
       Verify: status-lists-repo, status-lists-all, status-scoped-to-session, status-reports-fields, status-ignores-non-coder-sessions, status-rejects-invalid-request
 - [x] **Task 29** - implement remove
       Verify: remove-merged-coder, remove-refuses-unsafe, remove-force
-- [ ] **Task 30** - add the unattended rules to the coder agent
+- [x] **Task 30** - add the unattended rules to the coder agent
       Verify: coder-instructions
-- [ ] **Task 31** - keep this repo's checks out of worktrees
+- [x] **Task 31** - keep this repo's checks out of worktrees
       Verify: worktrees-gitignored, main-pipeline-ignores-worktrees
-- [ ] **Task 32** - make the runner's trivy stage skip worktrees
+- [x] **Task 32** - make the runner's trivy stage skip worktrees
       Verify: runner-skips-worktrees
-- [ ] **Task 33** - make the runner's gitleaks stage scan only the current branch
+- [x] **Task 33** - make the runner's gitleaks stage scan only the current branch
       Verify: gitleaks-scans-current-branch
-- [ ] **Task 34** - add the Go checks to this repo's pipeline
+- [x] **Task 34** - add the Go checks to this repo's pipeline
       Verify: pipeline-covers-boy
-- [ ] **Task 35** - build and install boy from install.sh
+- [x] **Task 35** - build and install boy from install.sh
       Verify: live-coder-end-to-end
-- [ ] **Task 36** - update the docs
+- [x] **Task 36** - update the docs

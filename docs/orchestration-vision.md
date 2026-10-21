@@ -58,6 +58,8 @@ Pipeline in one line: automated correctness → automated analysis → human jud
 
 ### Phase 3 — Sandboxed Execution
 
+Plan: `19-orchestration-tooling` (the `boy` CLI: start, status and remove a coder per plan in its own worktree; the coder runs unattended). The merge gate and the reviewer artifact are a later plan.
+
 Isolate the work environment for a delegated plan so an autonomous agent cannot damage the main working tree.
 
 - **Git worktrees.** A delegated coder run gets its own branch and working directory. Provides file-level isolation and parallelism across independent plans. Cheap, instant, native. This is the scope for now.

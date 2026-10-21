@@ -23,6 +23,9 @@ src/global/                  # Platform-agnostic: instructions, agents, skills (
 src/platforms/opencode/      # OpenCode-specific runtime code (non-portable)
   plugins/memory-manager.ts  # Plugin: injects memory into system prompt, exposes remember() tool
 
+boy/                         # Go CLI (own module, cobra/viper) that runs plan coders in background git worktrees
+                             # start / status / remove; attaches to the running opencode server, never starts one
+
 dist/                        # .gitignored — generated output written by render.ts, installed by install.sh
 .agents/plans/               # Planning docs for ongoing and completed work
 ```
@@ -40,4 +43,5 @@ dist/                        # .gitignored — generated output written by rende
 - Edit `.md.ts` files in `src/global/` to change agent instructions, skill definitions, or agent prompts.
 - Edit `src/platforms/opencode/plugins/memory-manager.ts` to change plugin behavior.
 - Edit `config.ts` to change paths or model IDs.
+- Edit `boy/` (Go) to change the orchestration CLI; its tests run with `go -C boy test ./...` and are part of the validation pipeline.
 - `dist/` is generated — never edit it directly.
