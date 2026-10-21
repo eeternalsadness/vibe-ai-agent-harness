@@ -8,36 +8,70 @@ export default function curatorAgent(profile: Profile): string {
 description: Autonomous knowledge base curator. Runs enrichment and maintenance on the knowledge base.
 model: ${profile.knowledgeBase.providerID}/${profile.knowledgeBase.modelID}
 mode: primary
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  bash:
-    "*": deny
-    "grep *": allow
-    "shuf *": allow
-    "bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
-    "python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*": allow
-    "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *": allow
-    "git -C ${config.knowledgeBasePath} add -A": allow
-    "git -C ${config.knowledgeBasePath} commit -m *": allow
-    "git -C ${config.knowledgeBasePath} push": allow
-  skill:
-    "*": deny
-    "enriching-knowledge-base": allow
-    "maintaining-knowledge-base": allow
-    "researching-knowledge": allow
-  task:
-    "*": deny
-    "research": allow
-    "knowledge-base": allow
-  external_directory:
-    "*": deny
-    "${config.knowledgeBasePath}/**": allow
-    "${memoryDir}/**": allow
-    "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**": allow
-    "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/**": allow
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "grep *"
+    effect: allow
+  - action: shell
+    resource: "shuf *"
+    effect: allow
+  - action: shell
+    resource: "bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*"
+    effect: allow
+  - action: shell
+    resource: "python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*"
+    effect: allow
+  - action: shell
+    resource: "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *"
+    effect: allow
+  - action: shell
+    resource: "git -C ${config.knowledgeBasePath} add -A"
+    effect: allow
+  - action: shell
+    resource: "git -C ${config.knowledgeBasePath} commit -m *"
+    effect: allow
+  - action: shell
+    resource: "git -C ${config.knowledgeBasePath} push"
+    effect: allow
+  - action: skill
+    resource: "enriching-knowledge-base"
+    effect: allow
+  - action: skill
+    resource: "maintaining-knowledge-base"
+    effect: allow
+  - action: skill
+    resource: "researching-knowledge"
+    effect: allow
+  - action: subagent
+    resource: "research"
+    effect: allow
+  - action: subagent
+    resource: "knowledge-base"
+    effect: allow
+  - action: external_directory
+    resource: "${config.knowledgeBasePath}/**"
+    effect: allow
+  - action: external_directory
+    resource: "${memoryDir}/**"
+    effect: allow
+  - action: external_directory
+    resource: "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**"
+    effect: allow
+  - action: external_directory
+    resource: "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/**"
+    effect: allow
 ---
 
 # Curator Agent

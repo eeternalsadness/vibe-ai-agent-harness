@@ -68,7 +68,7 @@ export const config = {
       research: models.bedrock["claude-haiku-5.5"],
       knowledgeBase: models.bedrock["claude-haiku-5.5"],
       planner: models.bedrock["claude-opus-5.5"],
-      coder: models.bedrock["claude-opus-5.5"],
+      coder: models.bedrock["claude-sonnet-5.5"],
       reviewer: models.bedrock["claude-opus-5.5"],
     },
     broke: {

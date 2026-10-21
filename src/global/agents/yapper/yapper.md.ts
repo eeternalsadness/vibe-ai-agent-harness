@@ -5,6 +5,10 @@ export default function yapperAgent(profile: Profile): string {
 description: General-purpose primary agent for interactive sessions. Handles any task — coding, research, planning, debugging, Q&A.
 model: ${profile.primary.providerID}/${profile.primary.modelID}
 mode: primary
+permissions:
+  - action: question
+    resource: "*"
+    effect: allow
 ---
 
 ## Personality

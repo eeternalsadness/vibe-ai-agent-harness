@@ -7,11 +7,19 @@ model: ${profile.research.providerID}/${profile.research.modelID}
 mode: subagent
 steps: 20
 temperature: 0.3
-permission:
-  "*": deny
-  webfetch: allow
-  websearch: allow
-  "duckduckgo_*": allow
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: webfetch
+    resource: "*"
+    effect: allow
+  - action: websearch
+    resource: "*"
+    effect: allow
+  - action: "duckduckgo_*"
+    resource: "*"
+    effect: allow
 ---
 
 # Research Agent

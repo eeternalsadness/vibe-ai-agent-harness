@@ -10,23 +10,37 @@ description: Handles all interactions with the knowledge base. Knows zettelkaste
 model: ${profile.knowledgeBase.providerID}/${profile.knowledgeBase.modelID}
 mode: subagent
 temperature: 0.3
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  edit: allow
-  skill:
-    "*": deny
-    "modifying-knowledge-base": allow
-  bash:
-    "*": deny
-    "rm ${config.knowledgeBasePath}/*.md": allow
-    "wc *": allow
-  external_directory:
-    "*": deny
-    "${config.knowledgeBasePath}/**": allow
-    "${config.harnessPath}/dist/opencode/agents/knowledge-base/**": allow
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: skill
+    resource: "modifying-knowledge-base"
+    effect: allow
+  - action: shell
+    resource: "rm ${config.knowledgeBasePath}/*.md"
+    effect: allow
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: external_directory
+    resource: "${config.knowledgeBasePath}/**"
+    effect: allow
+  - action: external_directory
+    resource: "${config.harnessPath}/dist/opencode/agents/knowledge-base/**"
+    effect: allow
 ---
 
 # Knowledge Base Agent

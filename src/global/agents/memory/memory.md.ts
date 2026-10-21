@@ -8,21 +8,31 @@ model: ${profile.memory.providerID}/${profile.memory.modelID}
 mode: subagent
 temperature: 0.2
 hidden: true
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  bash:
-    "*": deny
-    "tail *": allow
-    "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *": allow
-  skill:
-    "*": deny
-    "evaluating-memory": allow
-  external_directory:
-    "*": deny
-    "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**": allow
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *"
+    effect: allow
+  - action: skill
+    resource: "evaluating-memory"
+    effect: allow
+  - action: external_directory
+    resource: "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**"
+    effect: allow
 ---
 
 # Memory Agent

@@ -7,6 +7,10 @@ description: Creates structured plans for tasks and projects. Gathers requiremen
 model: ${profile.planner.providerID}/${profile.planner.modelID}
 mode: primary
 temperature: 0.5
+permissions:
+  - action: question
+    resource: "*"
+    effect: allow
 ---
 
 # Planner Agent
