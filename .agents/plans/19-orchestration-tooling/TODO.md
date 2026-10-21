@@ -36,15 +36,15 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Implementation
 
-- [ ] **Task 25** - implement the HTTP client
+- [x] **Task 25** - implement the HTTP client
       Verify: client-sends-opencode-requests
-- [ ] **Task 26** - implement server discovery and login
+- [x] **Task 26** - implement server discovery and login
       Verify: config-resolves-server
-- [ ] **Task 27** - implement start
+- [x] **Task 27** - implement start
       Verify: start-creates-worktree, start-launches-coder, start-from-other-dir, start-rejects-invalid-request, start-is-idempotent, coder-never-asks
-- [ ] **Task 28** - implement status
+- [x] **Task 28** - implement status
       Verify: status-lists-repo, status-lists-all, status-scoped-to-session, status-reports-fields, status-ignores-non-coder-sessions, status-rejects-invalid-request
-- [ ] **Task 29** - implement remove
+- [x] **Task 29** - implement remove
       Verify: remove-merged-coder, remove-refuses-unsafe, remove-force
 - [ ] **Task 30** - add the unattended rules to the coder agent
       Verify: coder-instructions

@@ -5,10 +5,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"boy/internal/app"
+	"boy/internal/client"
+	"boy/internal/config"
 )
 
 func main() {
@@ -18,16 +21,24 @@ func main() {
 	}
 }
 
-// newDeps builds the dependencies shared by every command.
+// newDeps builds the dependencies shared by every command. The server is
+// resolved on every run: its port and password change when it restarts.
 func newDeps(cmd *cobra.Command) (app.Deps, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return app.Deps{}, err
 	}
+	server, err := config.Resolve()
+	if err != nil {
+		return app.Deps{}, err
+	}
 	return app.Deps{
-		Stdout:  cmd.OutOrStdout(),
-		Stderr:  cmd.ErrOrStderr(),
-		WorkDir: wd,
+		Client:    client.NewHTTP(server.URL, server.Password),
+		Now:       time.Now,
+		Stdout:    cmd.OutOrStdout(),
+		Stderr:    cmd.ErrOrStderr(),
+		WorkDir:   wd,
+		ServerURL: server.URL,
 	}, nil
 }
 
