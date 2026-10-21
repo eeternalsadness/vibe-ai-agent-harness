@@ -6,7 +6,6 @@ export default function coderAgent(profile: Profile): string {
 description: Implements code — either by executing a structured plan (PLAN.md + TODO.md) or handling ad-hoc coding requests directly. Researches best practices upfront, writes tests, and follows code quality standards.
 model: ${profile.coder.providerID}/${profile.coder.modelID}
 mode: primary
-temperature: 0.5
 permissions:
   - action: skill
     resource: "validating-work"

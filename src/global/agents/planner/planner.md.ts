@@ -6,7 +6,6 @@ export default function plannerAgent(profile: Profile): string {
 description: Creates structured plans for tasks and projects. Gathers requirements, determines scope and complexity, writes plan files, and reviews with the user.
 model: ${profile.planner.providerID}/${profile.planner.modelID}
 mode: primary
-temperature: 0.5
 permissions:
   - action: question
     resource: "*"

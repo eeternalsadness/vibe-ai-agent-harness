@@ -6,7 +6,6 @@ description: Fetches information from external sources on a given topic or quest
 model: ${profile.research.providerID}/${profile.research.modelID}
 mode: subagent
 steps: 20
-temperature: 0.3
 permissions:
   - action: "*"
     resource: "*"

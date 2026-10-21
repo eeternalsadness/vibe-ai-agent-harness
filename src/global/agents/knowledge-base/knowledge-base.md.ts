@@ -9,7 +9,6 @@ export default function knowledgeBaseAgent(profile: Profile): string {
 description: Handles all interactions with the knowledge base. Knows zettelkasten conventions, structure, and format. Use for reading or writing knowledge base notes.
 model: ${profile.knowledgeBase.providerID}/${profile.knowledgeBase.modelID}
 mode: subagent
-temperature: 0.3
 permissions:
   - action: "*"
     resource: "*"

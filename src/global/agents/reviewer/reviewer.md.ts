@@ -6,7 +6,6 @@ description: Reviews code with brutal honesty. Calls out bad code, lazy patterns
 model: ${profile.reviewer.providerID}/${profile.reviewer.modelID}
 mode: all
 hidden: true
-temperature: 0.3
 ---
 
 # Code Reviewer Agent
