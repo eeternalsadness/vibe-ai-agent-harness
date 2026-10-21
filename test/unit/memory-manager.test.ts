@@ -68,7 +68,7 @@ function makeMessages(
     ...(type === "user"
       ? { text }
       : { content: [{ type: "text" as const, text }] }),
-  }))
+  })) as unknown as unknown as SessionMessageInfo[]
 }
 
 // ─── sanitizeTranscript ─────────────────────────────────────────────────────
@@ -77,14 +77,14 @@ describe("sanitizeTranscript", () => {
   test("user text → [user]: text", () => {
     const result = sanitizeTranscript([
       { id: "m1", type: "user", time: { created: 0 }, text: "hello world" },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     expect(result).toBe("[user]: hello world")
   })
 
   test("assistant text → [assistant]: text", () => {
     const result = sanitizeTranscript([
       { id: "m1", type: "assistant", time: { created: 0 }, content: [{ type: "text", text: "hi there" }] },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     expect(result).toBe("[assistant]: hi there")
   })
 
@@ -94,9 +94,9 @@ describe("sanitizeTranscript", () => {
         id: "m1",
         type: "assistant",
         time: { created: 0 },
-        content: [{ type: "tool", tool: "edit", state: { input: { filePath: "src/foo.ts" } } }],
+        content: [{ type: "tool", id: "t1", name: "edit", state: { input: { filePath: "src/foo.ts" } } }],
       },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     expect(result).toBe("[tool: edit] filePath: src/foo.ts")
   })
 
@@ -108,7 +108,7 @@ describe("sanitizeTranscript", () => {
         type: "shell",
         time: { created: 0 },
         result: "done",
-      } as SessionMessageInfo,
+      } as unknown as SessionMessageInfo,
     ])
     expect(result).toBe("")
   })
@@ -116,7 +116,7 @@ describe("sanitizeTranscript", () => {
   test("blank/whitespace text part not present in output", () => {
     const result = sanitizeTranscript([
       { id: "m1", type: "user", time: { created: 0 }, text: "   " },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     expect(result).toBe("")
   })
 
@@ -128,10 +128,10 @@ describe("sanitizeTranscript", () => {
         time: { created: 0 },
         content: [
           { type: "text", text: "I'll edit the file" },
-          { type: "tool", tool: "edit", state: { input: { filePath: "foo.ts" } } },
+          { type: "tool", id: "t1", name: "edit", state: { input: { filePath: "foo.ts" } } },
         ],
       },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     expect(result).toBe("[assistant]: I'll edit the file\n[tool: edit] filePath: foo.ts")
   })
 
@@ -144,12 +144,13 @@ describe("sanitizeTranscript", () => {
         content: [
           {
             type: "tool",
-            tool: "task",
+            id: "t1",
+            name: "task",
             state: { input: { subagent_type: "research", description: "Kubernetes Informer" } },
           },
         ],
       },
-    ] as SessionMessageInfo[])
+    ] as unknown as SessionMessageInfo[])
     // Research signal must be present verbatim so the memory agent can detect it
     expect(result).toContain("[tool: task] subagent_type: research")
   })
@@ -298,9 +299,9 @@ describe("evaluateSession guards use cumulative transcript", () => {
         id: "m1",
         type: "assistant",
         time: { created: 0 },
-        content: [{ type: "tool", tool: "skill", state: { input: { name: "enriching-knowledge-base" } } }],
+        content: [{ type: "tool", id: "t1", name: "skill", state: { input: { name: "enriching-knowledge-base" } } }],
       },
-    ] as SessionMessageInfo[]
+    ] as unknown as SessionMessageInfo[]
     const additional = makeMessages({ type: "assistant", text: "continuing work" })
     const prompts: string[] = []
     const sessionId = newSessionId()
@@ -318,7 +319,7 @@ describe("evaluateSession guards use cumulative transcript", () => {
     const initial = makeMessages({ type: "user", text: "meaningful content" })
     const additional = [
       { id: "m2", type: "user", time: { created: 0 }, text: "   " },
-    ] as SessionMessageInfo[]
+    ] as unknown as SessionMessageInfo[]
     const prompts: string[] = []
     const sessionId = newSessionId()
 

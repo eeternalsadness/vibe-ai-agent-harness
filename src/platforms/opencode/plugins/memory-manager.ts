@@ -157,8 +157,8 @@ export function sanitizeTranscript(messages: SessionMessageInfo[]): string {
       for (const part of content) {
         if (part.type === "text" && part.text?.trim()) {
           lines.push(`[assistant]: ${part.text.trim()}`)
-        } else if (part.type === "tool" && part.tool) {
-          const tool = part.tool as string
+        } else if (part.type === "tool" && part.name) {
+          const tool = part.name
           const input = part.state?.input as Record<string, unknown> | undefined
           if (!input) continue
 
