@@ -17,16 +17,16 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 6** - write the test for start-from-other-dir
 - [x] **Task 7** - write the test for start-rejects-invalid-request
 - [x] **Task 8** - write the test for start-is-idempotent
-- [ ] **Task 9** - write the test for status-lists-repo
-- [ ] **Task 10** - write the test for status-lists-all
-- [ ] **Task 11** - write the test for status-scoped-to-session
-- [ ] **Task 12** - write the test for status-reports-fields
-- [ ] **Task 13** - write the test for status-ignores-non-coder-sessions
-- [ ] **Task 14** - write the test for status-rejects-invalid-request
-- [ ] **Task 15** - write the test for remove-merged-coder
-- [ ] **Task 16** - write the test for remove-refuses-unsafe
-- [ ] **Task 17** - write the test for remove-force
-- [ ] **Task 18** - write the test for coder-never-asks
+- [x] **Task 9** - write the test for status-lists-repo
+- [x] **Task 10** - write the test for status-lists-all
+- [x] **Task 11** - write the test for status-scoped-to-session
+- [x] **Task 12** - write the test for status-reports-fields
+- [x] **Task 13** - write the test for status-ignores-non-coder-sessions
+- [x] **Task 14** - write the test for status-rejects-invalid-request
+- [x] **Task 15** - write the test for remove-merged-coder
+- [x] **Task 16** - write the test for remove-refuses-unsafe
+- [x] **Task 17** - write the test for remove-force
+- [x] **Task 18** - write the test for coder-never-asks
 - [ ] **Task 19** - write the test for coder-instructions
 - [ ] **Task 20** - write the test for worktrees-gitignored
 - [ ] **Task 21** - write the test for main-pipeline-ignores-worktrees
