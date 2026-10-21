@@ -73,12 +73,16 @@ def run_test(command: str, working_dir: Path) -> int:
 
 
 def run_gitleaks(repo_root: Path) -> int:
-    return run_stage_command("gitleaks detect --source . --no-banner", repo_root)
+    return run_stage_command(
+        "gitleaks detect --source . --no-banner --log-opts=HEAD", repo_root
+    )
 
 
 def run_trivy(repo_root: Path) -> int:
     return run_stage_command(
-        "trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .", repo_root
+        "trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL"
+        " --skip-dirs .agents/worktrees .",
+        repo_root,
     )
 
 

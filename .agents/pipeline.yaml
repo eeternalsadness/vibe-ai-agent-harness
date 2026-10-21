@@ -1,6 +1,6 @@
 lint:
-  command: bun run lint
+  command: bun run lint && go -C boy vet ./...
 build:
-  command: bun run typecheck
+  command: bun run typecheck && go -C boy build ./...
 test:
-  command: bun run test
+  command: bun run test && go -C boy test ./...

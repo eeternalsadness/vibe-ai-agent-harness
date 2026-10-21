@@ -15,5 +15,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "types": ["bun-types"]
-  }
+  },
+  "exclude": ["node_modules", "dist", ".agents/worktrees"]
 }

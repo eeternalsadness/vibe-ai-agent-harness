@@ -270,10 +270,10 @@ Given the rendered coder agent
 When its instructions are read
 Then they tell it to commit after each task whose pipeline is green
 And to install dependencies in its working directory when it needs them
-And, where it would otherwise ask the user, to stop and explain why in its final message
+And, where it would otherwise ask the user, to resolve the ambiguity itself, continue, and record the decision in `DECISIONS.md` in the plan directory
 
 Verification:
-- Render src/global and confirm the rendered coder agent file contains each instruction
+- Render src/global and confirm the rendered coder agent file contains each instruction, names `DECISIONS.md`, and no longer tells the coder to ask the user or to stop and wait
 
 ## Scenario: worktrees-gitignored
 

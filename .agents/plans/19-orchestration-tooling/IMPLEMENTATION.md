@@ -146,7 +146,7 @@ Make coder-instructions pass. Edit `src/global/agents/coder/coder.md.ts`; no sep
 
 - After a task's pipeline is green and it is marked `[x]` in TODO.md, commit the task's changes, TODO.md included, with a message naming the task. Never push.
 - Install dependencies in the working directory when a command needs them.
-- Replace every "ask the user" instruction with: stop, and explain in the final message what is unclear and what is needed. These are in plan-mode steps 3 and 4, ad-hoc step 1, Research and Context, and the Constraints list ("Follow the spec", "Follow the user", "Delegate uncertainty").
+- Replace every "ask the user" instruction with: resolve it yourself and keep going, and record the decision in `DECISIONS.md` in the plan directory (what was unclear, what you chose, why), committed with the task. The coder never stops for ambiguity. These are in plan-mode steps 3 and 4, ad-hoc step 1, Research and Context, and the Constraints list ("Follow the spec", "Follow the user", "Delegate uncertainty"), plus "skipped (with user approval)" in the Task Status Format.
 - Leave the frontmatter permissions alone. opencode v2 translates them, and `boy` sets the session's own rule set.
 
 ## Task 31: Keep this repo's checks out of worktrees

@@ -9,7 +9,7 @@
     "lint": "bun run lint:biome && bun run lint:ruff && bun run lint:shell",
     "lint:biome": "biome lint .",
     "lint:ruff": "ruff check .",
-    "lint:shell": "find . -name '*.sh' -not -path './dist/*' -not -path './node_modules/*' -not -path './test/fixtures/*' -print0 | xargs -0 shellcheck"
+    "lint:shell": "find . -name '*.sh' -not -path './dist/*' -not -path './node_modules/*' -not -path './test/fixtures/*' -not -path './.agents/worktrees/*' -print0 | xargs -0 shellcheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",

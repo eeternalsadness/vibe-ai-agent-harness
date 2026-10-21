@@ -46,10 +46,11 @@ test("coder-instructions: installs dependencies in its working directory when ne
   expect(has(coder, "install dependencies")).toBe(true)
 })
 
-test("coder-instructions: stops and explains in its final message instead of asking the user", () => {
-  expect(has(coder, "final message")).toBe(true)
+test("coder-instructions: resolves ambiguity itself and records the decision in DECISIONS.md", () => {
+  expect(has(coder, "DECISIONS.md")).toBe(true)
 
-  // Every place that used to ask a human must be gone.
+  // Every place that used to ask a human, or stop and wait, must be gone.
   const asking = /\bask (the user|rather than guess|targeted questions|for clarification)/i
   expect(coder).not.toMatch(asking)
+  expect(coder).not.toMatch(/stop and explain/i)
 })
