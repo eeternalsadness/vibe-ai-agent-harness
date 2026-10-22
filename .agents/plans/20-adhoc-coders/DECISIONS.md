@@ -76,3 +76,12 @@ introduces, so the full test (Task 10) cannot be green in the prompt unit.
 - Why: keeps each committed unit green while following the task order, and
   puts the "every command" rejection where the renderer already touches every
   command.
+
+## Task 20: remove needed no code change
+
+The plan 19 implementation already met all three remove scenarios: the merge
+check takes the branch from the worktree directory name, which is the ad-hoc
+name for ad-hoc coders, and the message is already `branch not merged:
+<branch>`. An ignored `.agents/DECISIONS.md` never appears in `git status
+--porcelain`. The new tests (ad-hoc unmerged case, ad-hoc removal, decisions
+file) pass against the unchanged code, as the task anticipated.

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"boy/internal/app"
 	"boy/internal/client"
 	"boy/internal/testutil"
 )
@@ -80,6 +81,27 @@ func TestRemoveMergedCoder(t *testing.T) {
 	assertRemoved(t, e, "p", id, []string{"RemoveWorktree", "DeleteSession"}, false)
 }
 
+// TestRemoveAdhocCoder is the ad-hoc version of TestRemoveMergedCoder.
+func TestRemoveAdhocCoder(t *testing.T) {
+	e := newEnv(t, "p")
+	const adhocPrompt = "fix the login typo"
+	if err := e.startPrompt(adhocPrompt); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	id := e.startEntry().Session
+	name := app.AdhocName(adhocPrompt, t0)
+	makeIdle(e, id)
+	commitInWorktree(t, e, name)
+	e.git("merge", "-q", "--ff-only", name)
+	e.workDir = t.TempDir() // from any directory
+	e.fake.Calls = nil
+
+	if err := e.remove(id, false); err != nil {
+		t.Fatalf("remove: %v", err)
+	}
+	assertRemoved(t, e, name, id, []string{"RemoveWorktree", "DeleteSession"}, false)
+}
+
 // unsafeStates are the coder states remove refuses without --force.
 type unsafeState struct {
 	name string
@@ -142,6 +164,34 @@ func TestRemoveRefusesUnsafe(t *testing.T) {
 		})
 	}
 
+	t.Run("ad-hoc coder with an unmerged branch", func(t *testing.T) {
+		e := newEnv(t, "p")
+		const adhocPrompt = "fix the login typo"
+		if err := e.startPrompt(adhocPrompt); err != nil {
+			t.Fatalf("start: %v", err)
+		}
+		id := e.startEntry().Session
+		name := app.AdhocName(adhocPrompt, t0)
+		makeIdle(e, id)
+		commitInWorktree(t, e, name)
+		e.fake.Calls = nil
+
+		err := e.remove(id, false)
+
+		if err == nil || err.Error() != "branch not merged: "+name {
+			t.Fatalf("error = %v, want %q", err, "branch not merged: "+name)
+		}
+		if e.stdout.Len() != 0 {
+			t.Errorf("stdout = %q, want empty", e.stdout.String())
+		}
+		if _, ok := e.fake.Sessions[id]; !ok {
+			t.Error("session was deleted")
+		}
+		if got := removalCalls(e.fake); len(got) != 0 {
+			t.Errorf("calls = %v, want none", got)
+		}
+	})
+
 	t.Run("session not on the server", func(t *testing.T) {
 		e := newEnv(t, "p")
 		err := e.remove("ses_nope", false)
@@ -161,6 +211,28 @@ func TestRemoveRefusesUnsafe(t *testing.T) {
 			t.Errorf("calls = %v, want none", got)
 		}
 	})
+}
+
+// TestRemoveIgnoresDecisionsFile: the repo's .gitignore covers the
+// decisions file, so an untracked .agents/DECISIONS.md in the worktree does
+// not block remove.
+func TestRemoveIgnoresDecisionsFile(t *testing.T) {
+	e := newEnv(t, "p")
+	testutil.WriteFile(t, filepath.Join(e.repo, ".gitignore"), ".agents/worktrees/\n.agents/DECISIONS.md\n")
+	e.git("add", ".gitignore")
+	e.git("commit", "-q", "-m", "ignore decisions")
+
+	id := startCoder(t, e, "p")
+	makeIdle(e, id)
+	testutil.WriteFile(t, filepath.Join(e.worktree("p"), ".agents", "DECISIONS.md"), "# decisions\n")
+	commitInWorktree(t, e, "p")
+	e.git("merge", "-q", "--ff-only", "p")
+	e.fake.Calls = nil
+
+	if err := e.remove(id, false); err != nil {
+		t.Fatalf("remove: %v", err)
+	}
+	assertRemoved(t, e, "p", id, []string{"RemoveWorktree", "DeleteSession"}, false)
 }
 
 func TestRemoveForce(t *testing.T) {
