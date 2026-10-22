@@ -135,7 +135,7 @@ func TestStatusReportsFields(t *testing.T) {
 			t.Fatal(err)
 		}
 		en := e.statusEntries()[0]
-		if en.Tasks.Done != 2 || en.Tasks.Skipped != 1 || en.Tasks.Total != 5 {
+		if en.Tasks == nil || en.Tasks.Done != 2 || en.Tasks.Skipped != 1 || en.Tasks.Total != 5 {
 			t.Errorf("tasks = %+v, want done 2 skipped 1 total 5", en.Tasks)
 		}
 		if en.State != "running" {
@@ -153,8 +153,8 @@ func TestStatusReportsFields(t *testing.T) {
 		if en.RunningFor != 300 || en.InStateFor != 240 {
 			t.Errorf("running_for/in_state_for = %d/%d, want 300/240", en.RunningFor, en.InStateFor)
 		}
-		if en.Plan != "p" || en.Repo != e.repo {
-			t.Errorf("plan/repo = %s/%s, want p/%s", en.Plan, en.Repo, e.repo)
+		if en.Plan == nil || *en.Plan != "p" || en.Repo != e.repo {
+			t.Errorf("plan/repo = %v/%s, want p/%s", en.Plan, en.Repo, e.repo)
 		}
 	})
 

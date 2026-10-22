@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"boy/internal/client"
 )
@@ -26,17 +27,54 @@ type StartOptions struct {
 }
 
 // Start starts a coder on a plan or an ad-hoc prompt, or opens the picker when
-// given neither. Only the plan flow is wired in this step; the prompt, ad-hoc
-// and picker flows return not-implemented errors until their own tasks.
+// given neither. The picker flow is a stub until its own task.
 func Start(ctx context.Context, d Deps, opts StartOptions) error {
 	switch {
 	case opts.Plan != "" && opts.Prompt != "":
 		return errors.New("pass a plan or a prompt, not both")
-	case opts.Plan == "":
-		return errors.New("not implemented yet")
-	default:
+	case opts.Plan != "":
 		return startPlan(ctx, d, opts.Plan)
+	case opts.Prompt != "":
+		if strings.TrimSpace(opts.Prompt) == "" {
+			return errors.New("prompt required")
+		}
+		return startAdhoc(ctx, d, opts.Prompt)
+	case d.Interactive:
+		return startPicker(ctx, d)
+	default:
+		return errors.New("plan or prompt required")
 	}
+}
+
+// startPicker opens the interactive chooser. Stub; the real flow lands with
+// the picker task.
+func startPicker(ctx context.Context, d Deps) error {
+	return errors.New("picker not implemented yet")
+}
+
+// startAdhoc starts a coder for a free-form prompt: worktree and branch are
+// named after the prompt, and the session is prompted with the prompt itself.
+func startAdhoc(ctx context.Context, d Deps, prompt string) error {
+	repo, err := mainCheckout(d.WorkDir)
+	if err != nil {
+		return err
+	}
+	name := AdhocName(prompt, d.Now())
+	worktree := worktreePath(repo, name)
+	haveWorktree := isDir(worktree)
+	if !haveWorktree {
+		if _, err := git(repo, "show-ref", "--verify", "--quiet", "refs/heads/"+name); err == nil {
+			return fmt.Errorf("branch exists without worktree: %s", name)
+		}
+	}
+
+	// The first server call: an unreachable server fails before any git change.
+	if _, err := activeSet(ctx, d); err != nil {
+		return err
+	}
+
+	message := fmt.Sprintf("ad-hoc %s started at %s", name, worktree)
+	return launch(ctx, d, repo, name, prompt, message, haveWorktree)
 }
 
 // startPlan starts a coder on the plan at planPath, or resumes the plan's
@@ -65,7 +103,8 @@ func startPlan(ctx context.Context, d Deps, planPath string) error {
 	}
 
 	if existing == nil {
-		return launch(ctx, d, repo, plan, haveWorktree)
+		message := fmt.Sprintf("plan %s started at %s", plan, worktree)
+		return launch(ctx, d, repo, plan, startPrompt(plan), message, haveWorktree)
 	}
 	return resume(ctx, d, *existing, plan)
 }
@@ -130,14 +169,15 @@ func newestSession(ctx context.Context, d Deps, dir string) (*client.Session, er
 	return &sessions[0], nil
 }
 
-// launch creates the worktree (unless it exists), then a coder session in it.
-func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) error {
-	worktree := worktreePath(repo, plan)
+// launch creates the worktree (unless it exists), then a coder session in it
+// prompted with firstPrompt, and prints the entry and message.
+func launch(ctx context.Context, d Deps, repo, name, firstPrompt, message string, haveWorktree bool) error {
+	worktree := worktreePath(repo, name)
 	if !haveWorktree {
 		if err := os.MkdirAll(filepath.Dir(worktree), 0o755); err != nil {
 			return err
 		}
-		if _, err := git(repo, "worktree", "add", "-b", plan, worktree, "HEAD"); err != nil {
+		if _, err := git(repo, "worktree", "add", "-b", name, worktree, "HEAD"); err != nil {
 			return err
 		}
 	}
@@ -153,14 +193,14 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	if err := d.Client.RefreshWorktrees(ctx, session.ProjectID); err != nil {
 		return d.explainServerError(err)
 	}
-	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan), ""); err != nil {
+	if err := d.Client.SendPrompt(ctx, session.ID, firstPrompt, ""); err != nil {
 		return d.explainServerError(err)
 	}
 
 	if err := printEntry(ctx, d, session); err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(d.Stderr, "plan %s started at %s\n", plan, worktree)
+	_, err = fmt.Fprintln(d.Stderr, message)
 	return err
 }
 

@@ -11,6 +11,7 @@ import (
 
 	"boy/internal/app"
 	"boy/internal/client"
+	"boy/internal/picker"
 	"boy/internal/testutil"
 )
 
@@ -29,6 +30,10 @@ type env struct {
 	stderr bytes.Buffer
 	// workDir is where commands run from; it defaults to repo.
 	workDir string
+	// picker is the chooser a command may open; nil when untested.
+	picker picker.Picker
+	// interactive says the command sees a terminal on stdin.
+	interactive bool
 }
 
 func newEnv(t *testing.T, plans ...string) *env {
@@ -55,6 +60,8 @@ func (e *env) deps() app.Deps {
 		Stderr:    &e.stderr,
 		WorkDir:   e.workDir,
 		ServerURL: serverURL,
+		Picker:    e.picker,
+		Interactive: e.interactive,
 		// These tests parse the stdout as JSON, so ask for it explicitly. The
 		// human-table default lands with its own task.
 		Output: "json",
@@ -64,7 +71,19 @@ func (e *env) deps() app.Deps {
 // start runs `boy start --plan <planPath>`.
 func (e *env) start(planPath string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: planPath})
+	return e.startOpts(app.StartOptions{Plan: planPath})
+}
+
+// startPrompt runs `boy start "<prompt>"`.
+func (e *env) startPrompt(prompt string) error {
+	e.t.Helper()
+	return e.startOpts(app.StartOptions{Prompt: prompt})
+}
+
+// startOpts runs `boy start` with the given options.
+func (e *env) startOpts(opts app.StartOptions) error {
+	e.t.Helper()
+	return app.Start(e.t.Context(), e.deps(), opts)
 }
 
 func (e *env) status(opts app.StatusOptions) error {
@@ -89,13 +108,13 @@ func (e *env) git(args ...string) string {
 // entry mirrors the status JSON documented in ACCEPTANCE.md. It is declared
 // here, not imported, so the tests pin the output format.
 type entry struct {
-	Session  string `json:"session"`
-	Repo     string `json:"repo"`
-	Worktree string `json:"worktree"`
-	Title    string `json:"title"`
-	Plan     string `json:"plan"`
-	Branch   string `json:"branch"`
-	Tasks    struct {
+	Session  string  `json:"session"`
+	Repo     string  `json:"repo"`
+	Worktree string  `json:"worktree"`
+	Title    string  `json:"title"`
+	Plan     *string `json:"plan"`
+	Branch   string  `json:"branch"`
+	Tasks    *struct {
 		Done    int `json:"done"`
 		Skipped int `json:"skipped"`
 		Total   int `json:"total"`
