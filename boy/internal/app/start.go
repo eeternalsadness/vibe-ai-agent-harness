@@ -19,9 +19,9 @@ var coderPermissions = []client.Rule{
 	{Action: "question", Resource: "*", Effect: "deny"},
 }
 
-// StartOptions is what a start command was given: a plan and/or a prompt.
+// StartOptions is what a start command was given: a plan path and/or a prompt.
 type StartOptions struct {
-	Plan   string // the plan to start ("" when starting a prompt)
+	Plan   string // the --plan path to start ("" when starting a prompt)
 	Prompt string // the ad-hoc prompt ("" when starting a plan)
 }
 
@@ -39,9 +39,10 @@ func Start(ctx context.Context, d Deps, opts StartOptions) error {
 	}
 }
 
-// startPlan starts a coder on a plan, or resumes the plan's existing coder.
-func startPlan(ctx context.Context, d Deps, plan string) error {
-	repo, err := mainCheckout(d.WorkDir)
+// startPlan starts a coder on the plan at planPath, or resumes the plan's
+// existing coder.
+func startPlan(ctx context.Context, d Deps, planPath string) error {
+	repo, plan, err := resolvePlan(d.WorkDir, planPath)
 	if err != nil {
 		return err
 	}
@@ -74,15 +75,38 @@ func Prompt(ctx context.Context, d Deps, sessionID, text string, steer bool) err
 	return errors.New("prompt not implemented yet")
 }
 
-// checkPlan verifies the plan is an active, committed plan directory.
+// resolvePlan resolves planPath, relative to dir, into the main checkout of
+// the repo that contains it and the plan's name. The path must name an active
+// plan directory, <repo>/.agents/plans/<name>; a missing path is
+// "plan not found", a path outside a repo "not a git repository" and any
+// other path "not an active plan". Messages use the path as given.
+func resolvePlan(dir, planPath string) (repo, plan string, err error) {
+	abs := planPath
+	if !filepath.IsAbs(planPath) {
+		abs = filepath.Join(dir, planPath)
+	}
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", "", fmt.Errorf("plan not found: %s", planPath)
+	}
+	repo, err = mainCheckout(filepath.Dir(resolved))
+	if err != nil {
+		return "", "", fmt.Errorf("not a git repository: %s", planPath)
+	}
+	if !isDir(resolved) {
+		return "", "", fmt.Errorf("not an active plan: %s", planPath)
+	}
+	want := filepath.Join(repo, ".agents", "plans", filepath.Base(resolved))
+	wantResolved, err := filepath.EvalSymlinks(want)
+	if err != nil || wantResolved != resolved {
+		return "", "", fmt.Errorf("not an active plan: %s", planPath)
+	}
+	return repo, filepath.Base(resolved), nil
+}
+
+// checkPlan reports uncommitted or untracked changes in the plan directory.
 func checkPlan(repo, plan string) error {
-	if plan == "" || plan != filepath.Base(plan) || plan == "." || plan == ".." {
-		return fmt.Errorf("plan not found: %s", plan)
-	}
 	rel := filepath.Join(".agents", "plans", plan)
-	if !isDir(filepath.Join(repo, rel)) {
-		return fmt.Errorf("plan not found: %s", plan)
-	}
 	changes, err := git(repo, "status", "--porcelain", "--", rel)
 	if err != nil {
 		return err

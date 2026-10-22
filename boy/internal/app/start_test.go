@@ -66,6 +66,9 @@ func assertStarted(t *testing.T, e *env, before gitState, plan string) {
 	for id := range e.fake.Sessions {
 		sessionID = id
 	}
+	if title := e.fake.Sessions[sessionID].Title; title != "" {
+		t.Errorf("session title = %q, want none", title)
+	}
 	if got := e.fake.CallsTo("RefreshWorktrees")[0].Args["projectID"]; got != e.fake.ProjectID {
 		t.Errorf("refresh projectID = %v, want %s", got, e.fake.ProjectID)
 	}
@@ -76,10 +79,14 @@ func assertStarted(t *testing.T, e *env, before gitState, plan string) {
 	if text, _ := prompt["text"].(string); !strings.Contains(text, plan) {
 		t.Errorf("prompt %q does not name the plan %q", text, plan)
 	}
+	if _, has := prompt["delivery"]; has {
+		t.Errorf("prompt delivery = %v, want none", prompt["delivery"])
+	}
 
 	en := e.startEntry()
-	if en.Session != sessionID || en.Plan != plan {
-		t.Errorf("stdout entry = session %s plan %s, want %s / %s", en.Session, en.Plan, sessionID, plan)
+	if en.Session != sessionID || en.Plan != plan || en.Branch != plan || en.Worktree != wt {
+		t.Errorf("stdout entry = session %s plan %s branch %s worktree %s, want %s / %s / %s / %s",
+			en.Session, en.Plan, en.Branch, en.Worktree, sessionID, plan, plan, wt)
 	}
 	if want := "plan " + plan + " started at " + wt + "\n"; e.stderr.String() != want {
 		t.Errorf("stderr = %q, want %q", e.stderr.String(), want)
@@ -87,10 +94,26 @@ func assertStarted(t *testing.T, e *env, before gitState, plan string) {
 }
 
 func TestStartCreatesWorktreeAndLaunchesCoder(t *testing.T) {
+	for _, path := range []string{".agents/plans/p", ".agents/plans/p/"} {
+		t.Run("path "+path, func(t *testing.T) {
+			e := newEnv(t, "p")
+			before := e.gitState()
+
+			if err := e.start(path); err != nil {
+				t.Fatalf("start: %v", err)
+			}
+			assertStarted(t, e, before, "p")
+		})
+	}
+}
+
+func TestStartPlanFromAnywhere(t *testing.T) {
 	e := newEnv(t, "p")
+	e.workDir = t.TempDir() // outside the repo
+	planPath := filepath.Join(e.repo, ".agents", "plans", "p")
 	before := e.gitState()
 
-	if err := e.start("p"); err != nil {
+	if err := e.start(planPath); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	assertStarted(t, e, before, "p")
@@ -99,20 +122,24 @@ func TestStartCreatesWorktreeAndLaunchesCoder(t *testing.T) {
 func TestStartRejectsInvalidRequest(t *testing.T) {
 	cases := []struct {
 		name  string
-		setup func(e *env) string // returns the plan to start
+		setup func(e *env) string // the plan path to start
+		plan  string              // the plan the path refers to, for the worktree check
 		want  func(e *env) string
 	}{
 		{
-			name: "not a git repository",
+			name: "path is not inside a git repository",
 			setup: func(e *env) string {
-				e.workDir = t.TempDir()
-				return "p"
+				e.workDir = e.t.TempDir()
+				testutil.WriteFile(e.t, filepath.Join(e.workDir, ".agents", "plans", "p", "TODO.md"), "x")
+				return ".agents/plans/p"
 			},
-			want: func(e *env) string { return "not a git repository: " + e.workDir },
+			plan: "p",
+			want: func(*env) string { return "not a git repository: .agents/plans/p" },
 		},
 		{
-			name:  "plan directory does not exist",
+			name:  "path does not exist",
 			setup: func(*env) string { return "nope" },
+			plan:  "nope",
 			want:  func(*env) string { return "plan not found: nope" },
 		},
 		{
@@ -121,40 +148,45 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
 				e.git("add", "-A")
 				e.git("commit", "-q", "-m", "archive")
-				return "old"
+				return ".agents/plans/archive/old"
 			},
-			want: func(*env) string { return "plan not found: old" },
+			plan: "old",
+			want: func(*env) string { return "not an active plan: .agents/plans/archive/old" },
 		},
 		{
 			name: "plan has a modified file",
 			setup: func(e *env) string {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "TODO.md"), "changed\n")
-				return "p"
+				return ".agents/plans/p"
 			},
+			plan: "p",
 			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
 			name: "plan has an untracked file",
 			setup: func(e *env) string {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "NOTES.md"), "new\n")
-				return "p"
+				return ".agents/plans/p"
 			},
+			plan: "p",
 			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
 			name: "branch exists without a worktree",
 			setup: func(e *env) string {
 				e.git("branch", "p")
-				return "p"
+				return ".agents/plans/p"
 			},
+			plan: "p",
 			want: func(*env) string { return "branch exists without worktree: p" },
 		},
 		{
 			name: "server unreachable",
 			setup: func(e *env) string {
 				e.fake.Failures["*"] = client.ErrUnreachable
-				return "p"
+				return ".agents/plans/p"
 			},
+			plan: "p",
 			want: func(*env) string { return "opencode server unreachable: " + serverURL },
 		},
 	}
@@ -162,10 +194,10 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newEnv(t, "p")
-			plan := tc.setup(e)
+			planPath := tc.setup(e)
 			before := e.gitState()
 
-			err := e.start(plan)
+			err := e.start(planPath)
 
 			if err == nil {
 				t.Fatal("start succeeded, want an error")
@@ -182,8 +214,8 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			if got := mutations(e.fake); len(got) != 0 {
 				t.Errorf("state-changing calls = %v, want none", got)
 			}
-			if _, statErr := os.Stat(e.worktree(plan)); statErr == nil {
-				t.Errorf("worktree %s exists", e.worktree(plan))
+			if _, statErr := os.Stat(filepath.Join(e.workDir, ".agents", "worktrees", tc.plan)); statErr == nil {
+				t.Errorf("worktree for %s exists", tc.plan)
 			}
 		})
 	}
@@ -194,7 +226,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	// second start's calls stand alone.
 	startedCoder := func(t *testing.T) (*env, string, gitState) {
 		e := newEnv(t, "p")
-		if err := e.start("p"); err != nil {
+		if err := e.start(".agents/plans/p"); err != nil {
 			t.Fatalf("first start: %v", err)
 		}
 		id := e.startEntry().Session
@@ -214,7 +246,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.git("worktree", "add", "-q", "-b", "p", e.worktree("p"), "HEAD")
 		before := e.gitState()
 
-		if err := e.start("p"); err != nil {
+		if err := e.start(".agents/plans/p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -233,7 +265,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	t.Run("coder is running: sends nothing", func(t *testing.T) {
 		e, id, before := startedCoder(t)
 
-		if err := e.start("p"); err != nil {
+		if err := e.start(".agents/plans/p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -255,7 +287,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.fake.Sessions[id].Idle = t0
 		e.fake.Sessions[id].Outcome = "succeeded"
 
-		if err := e.start("p"); err != nil {
+		if err := e.start(".agents/plans/p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -282,7 +314,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		writeTodo(t, e.worktree("p"), "p", todoWith("- [x] **Task 1** - a", "- [-] **Task 2** - b"))
 		before := e.gitState()
 
-		if err := e.start("p"); err != nil {
+		if err := e.start(".agents/plans/p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 

@@ -61,10 +61,10 @@ func (e *env) deps() app.Deps {
 	}
 }
 
-// start runs `boy start <plan>`.
-func (e *env) start(plan string) error {
+// start runs `boy start --plan <planPath>`.
+func (e *env) start(planPath string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: plan})
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: planPath})
 }
 
 func (e *env) status(opts app.StatusOptions) error {
@@ -89,10 +89,13 @@ func (e *env) git(args ...string) string {
 // entry mirrors the status JSON documented in ACCEPTANCE.md. It is declared
 // here, not imported, so the tests pin the output format.
 type entry struct {
-	Session string `json:"session"`
-	Repo    string `json:"repo"`
-	Plan    string `json:"plan"`
-	Tasks   struct {
+	Session  string `json:"session"`
+	Repo     string `json:"repo"`
+	Worktree string `json:"worktree"`
+	Title    string `json:"title"`
+	Plan     string `json:"plan"`
+	Branch   string `json:"branch"`
+	Tasks    struct {
 		Done    int `json:"done"`
 		Skipped int `json:"skipped"`
 		Total   int `json:"total"`

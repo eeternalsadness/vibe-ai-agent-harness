@@ -30,3 +30,16 @@ audit-orphans.py`) lacked the executable bit, which `ruff` flagged as EXE001 and
 blocked the whole pipeline. Fixed by marking them executable (`git update-index
 --chmod=+x`). This is unrelated to plan 20 but was required to get the pipeline
 green at all.
+
+## Task 16: `--plan` error messages use the path as given
+
+The scenario writes `not a git repository: <dir>`, where `<dir>` is "the
+current directory (prompt or no arguments) or `<path>` (`--plan`)". For the
+`--plan` form, boy reports the path exactly as the user gave it (relative or
+absolute), not the resolved absolute path or the containing directory.
+
+- Also: a `--plan` path that exists but names a file is "not an active plan"
+  (the plan must be a directory), and the "not a git repository" check runs
+  before that one, so a file outside any repo is "not a git repository".
+- Relative `--plan` paths resolve against the current directory (the command's
+  work dir), never against the process's original working directory.
