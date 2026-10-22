@@ -68,17 +68,21 @@ The harness uses two persistence layers with different purposes.
 
 ## Orchestration CLI (`boy`)
 
-`boy` runs a coder on a finished plan in the background, in its own git worktree, through the opencode server you already have running. It is installed to `~/.local/bin/boy` by `./install.sh` (which needs `go` on your PATH).
+`boy` runs coders in the background, each in its own git worktree under `.agents/worktrees/`, through the opencode server you already have running. It is installed to `~/.local/bin/boy` by `./install.sh` (which needs `go` on your PATH).
 
 ```bash
-boy start [--dir <repo>] <plan>          # worktree + branch <plan> under .agents/worktrees/, then start a coder
-boy status [--dir <repo> | --all | -A] [<session-id>]   # JSON array: tasks done, running or idle, outcome, timing
-boy remove [--force] <session-id>        # remove the worktree and session once the branch is merged
+boy start [--dir <repo>] [--plan <path> | "<prompt>"]   # a plan coder (branch <plan>) or an ad-hoc coder (branch adhoc-<slug>-<hash>), then start it
+boy prompt [--steer] <session-id> <text>                # send a follow-up to an idle or running coder
+boy status [--dir <repo> | --all | -A] [<session-id>]   # the coders as a table: state, tasks, branch, age
+boy remove [--force] <session-id>                       # remove the worktree and session once the branch is merged
 ```
 
+- Run `start` with no arguments on a terminal and it opens a picker: choose an active plan or type an ad-hoc prompt.
 - A plan must be committed and live directly under `.agents/plans/` (archived plans are not started).
 - `start` is safe to repeat: it reports a running coder, resumes an idle one that has tasks left, and does nothing for a finished one.
-- The coder commits after each task and never pushes. You merge the branch; `remove` refuses to delete an unmerged or dirty worktree without `--force`, and keeps the branch.
+- `prompt` sends follow-ups to a coder: straight away while it is idle, queued while it is running, or steered into the running turn with `--steer`. It never interrupts.
+- Coders run unattended: they record decisions in a gitignored `.agents/DECISIONS.md` in their worktree, commit once the validation pipeline is green, and never push. You merge the branch; `remove` refuses to delete an unmerged or dirty worktree without `--force`, and keeps the branch.
+- Output is a human table by default; `-o json` (on `start`, `status` and `prompt`) prints machine-readable JSON instead.
 - `boy` only attaches to a server, it never starts one. It finds the server in opencode's `~/.local/state/opencode/service.json`. `server_url` and `server_password` in `~/.config/boy/config.yaml` override that, and `BOY_SERVER_URL` / `BOY_SERVER_PASSWORD` override both.
 
 ## Getting Started
