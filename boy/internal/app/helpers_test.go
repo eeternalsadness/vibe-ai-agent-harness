@@ -31,7 +31,7 @@ type env struct {
 	// workDir is where commands run from; it defaults to repo.
 	workDir string
 	// picker is the chooser a command may open; nil when untested.
-	picker picker.Picker
+	picker *picker.Fake
 	// interactive says the command sees a terminal on stdin.
 	interactive bool
 }

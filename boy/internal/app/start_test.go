@@ -128,13 +128,20 @@ func TestStartPlanFromAnywhere(t *testing.T) {
 func TestAdhocStartLaunchesCoder(t *testing.T) {
 	e := newEnv(t) // no plans: a clean main checkout
 	const prompt = "Fix the auth typo in login.go, please!"
-	name := app.AdhocName(prompt, t0)
-	wt := e.worktree(name)
 	before := e.gitState()
 
 	if err := e.startPrompt(prompt); err != nil {
 		t.Fatalf("start: %v", err)
 	}
+	assertAdhocStarted(t, e, prompt, before)
+}
+
+// assertAdhocStarted checks the git state, the recorded calls, the entry and
+// the stderr message for a freshly started ad-hoc coder for prompt.
+func assertAdhocStarted(t *testing.T, e *env, prompt string, before gitState) {
+	t.Helper()
+	name := app.AdhocName(prompt, t0)
+	wt := e.worktree(name)
 
 	// start-creates-worktree, with an ad-hoc name
 	if !strings.Contains(e.git("worktree", "list", "--porcelain"), "worktree "+wt+"\n") {
@@ -328,7 +335,7 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			if got := mutations(e.fake); len(got) != 0 {
 				t.Errorf("state-changing calls = %v, want none", got)
 			}
-			if fake, ok := e.picker.(*picker.Fake); ok && fake.Called {
+			if e.picker != nil && e.picker.Called {
 				t.Error("the picker was called, want none")
 			}
 			if tc.coder != "" {

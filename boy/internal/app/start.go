@@ -46,10 +46,69 @@ func Start(ctx context.Context, d Deps, opts StartOptions) error {
 	}
 }
 
-// startPicker opens the interactive chooser. Stub; the real flow lands with
-// the picker task.
+// startPicker opens the interactive chooser: plan or ad-hoc, then the plan
+// or the prompt.
 func startPicker(ctx context.Context, d Deps) error {
-	return errors.New("picker not implemented yet")
+	repo, err := mainCheckout(d.WorkDir)
+	if err != nil {
+		return err
+	}
+	choice, err := d.Picker.Choose("start", []string{"plan", "ad-hoc"})
+	if err != nil {
+		return err
+	}
+	switch choice {
+	case 0:
+		return startPickerPlan(ctx, d, repo)
+	case 1:
+		line, err := d.Picker.ReadLine("prompt: ")
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(line) == "" {
+			return errors.New("prompt required")
+		}
+		return startAdhoc(ctx, d, line)
+	default:
+		return fmt.Errorf("unexpected choice %d", choice)
+	}
+}
+
+// startPickerPlan lists the active plans and starts the one the user chose.
+func startPickerPlan(ctx context.Context, d Deps, repo string) error {
+	names, err := activePlans(repo)
+	if err != nil {
+		return err
+	}
+	if len(names) == 0 {
+		return fmt.Errorf("no active plans in %s", repo)
+	}
+	idx, err := d.Picker.Choose("plan", names)
+	if err != nil {
+		return err
+	}
+	return startPlan(ctx, d, filepath.Join(repo, ".agents", "plans", names[idx]))
+}
+
+// activePlans lists the directories under <repo>/.agents/plans except
+// archive, sorted by name.
+func activePlans(repo string) ([]string, error) {
+	dirs, err := os.ReadDir(filepath.Join(repo, ".agents", "plans"))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var names []string
+	for _, d := range dirs {
+		if !d.IsDir() || d.Name() == "archive" {
+			continue
+		}
+		names = append(names, d.Name())
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 // startAdhoc starts a coder for a free-form prompt: worktree and branch are

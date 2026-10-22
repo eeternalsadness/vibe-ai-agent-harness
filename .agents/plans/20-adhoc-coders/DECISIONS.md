@@ -43,3 +43,18 @@ absolute), not the resolved absolute path or the containing directory.
   before that one, so a file outside any repo is "not a git repository".
 - Relative `--plan` paths resolve against the current directory (the command's
   work dir), never against the process's original working directory.
+
+## Task 18: the picker's ad-hoc branch checks the blank line itself
+
+When the picker's "ad-hoc" step reads a line, the flow does not recurse
+through `Start` (which for a non-empty prompt would be equivalent). An empty
+line would not match `Start`'s `opts.Prompt != ""` branch and would fall
+through to the interactive case, reopening the picker instead of failing.
+
+- Chosen: the ad-hoc branch checks `strings.TrimSpace(line) == ""` and
+  returns `prompt required` itself, then calls `startAdhoc` directly with the
+  line.
+- Why: the scenario requires "ad-hoc chosen and the line empty or only
+  whitespace" to fail with `prompt required`, and the direct call keeps the
+  flow flat instead of re-entering the `Start` switch with the same
+  `Interactive: true` deps.
