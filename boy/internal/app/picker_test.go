@@ -83,7 +83,7 @@ func TestPickerRejects(t *testing.T) {
 			want: func(*env) string { return "cancelled" },
 		},
 		{
-			name: "cancelled at the second step",
+			name:  "cancelled at the second step",
 			plans: true,
 			setup: func(e *env) {
 				e.picker = picker.NewFake()

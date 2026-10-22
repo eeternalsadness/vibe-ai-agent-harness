@@ -54,16 +54,16 @@ func (e *env) deps() app.Deps {
 	e.stdout.Reset()
 	e.stderr.Reset()
 	return app.Deps{
-		Client:    e.fake,
-		Now:       e.clock.Now,
-		Stdout:    &e.stdout,
-		Stderr:    &e.stderr,
-		WorkDir:   e.workDir,
-		ServerURL: serverURL,
-		Picker:    e.picker,
+		Client:      e.fake,
+		Now:         e.clock.Now,
+		Stdout:      &e.stdout,
+		Stderr:      &e.stderr,
+		WorkDir:     e.workDir,
+		ServerURL:   serverURL,
+		Picker:      e.picker,
 		Interactive: e.interactive,
-		// These tests parse the stdout as JSON, so ask for it explicitly. The
-		// human-table default lands with its own task.
+		// These tests parse the stdout as JSON, so ask for it explicitly;
+		// table tests set Output "" through the *With helpers.
 		Output: "json",
 	}
 }
@@ -98,6 +98,22 @@ func (e *env) promptWith(output, sessionID, text string, steer bool) error {
 	d := e.deps()
 	d.Output = output
 	return app.Prompt(e.t.Context(), d, sessionID, text, steer)
+}
+
+// startWith runs `boy start` with the given output format.
+func (e *env) startWith(output string, opts app.StartOptions) error {
+	e.t.Helper()
+	d := e.deps()
+	d.Output = output
+	return app.Start(e.t.Context(), d, opts)
+}
+
+// statusWith runs `boy status` with the given output format.
+func (e *env) statusWith(output string, opts app.StatusOptions) error {
+	e.t.Helper()
+	d := e.deps()
+	d.Output = output
+	return app.Status(e.t.Context(), d, opts)
 }
 
 func (e *env) status(opts app.StatusOptions) error {

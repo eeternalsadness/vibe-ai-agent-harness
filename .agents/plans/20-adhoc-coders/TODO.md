@@ -18,8 +18,8 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 6** - write the tests for adhoc-start-launches-coder and start-rejects-invalid-request
 - [x] **Task 7** - write the tests for picker-starts-plan, picker-starts-adhoc, picker-rejects
 - [x] **Task 8** - write the tests for prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request
-- [ ] **Task 9** - write the tests for status-reports-fields and status-human-table
-- [ ] **Task 10** - write the test for output-format-flag
+- [x] **Task 9** - write the tests for status-reports-fields and status-human-table
+- [x] **Task 10** - write the test for output-format-flag
 - [ ] **Task 11** - write the tests for remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file
 - [ ] **Task 12** - write the test for coder-instructions
 
@@ -29,7 +29,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
       Verify: client-sends-opencode-requests
 - [x] **Task 14** - implement ad-hoc naming
       Verify: adhoc-name-format
-- [ ] **Task 15** - implement the new status entry and table
+- [x] **Task 15** - implement the new status entry and table
       Verify: status-reports-fields, status-human-table
 - [x] **Task 16** - start plans by path
       Verify: start-creates-worktree, start-launches-coder, start-plan-from-anywhere, start-is-idempotent

@@ -3,9 +3,12 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"boy/internal/client"
@@ -114,6 +117,74 @@ func buildEntry(ctx context.Context, d Deps, s client.Session, active map[string
 	e.RunningFor = int64(now.Sub(s.Created).Seconds())
 	e.InStateFor = int64(now.Sub(since).Seconds())
 	return e, nil
+}
+
+// tableHeader is the human-table header, without the REPO column.
+var tableHeader = []string{"SESSION", "STATE", "TASKS", "BRANCH", "AGE", "IN STATE", "TITLE"}
+
+// entryRow is one coder as human-table cells; repo prepends the repo column.
+func entryRow(e Entry, repo bool) []string {
+	tasks := "-"
+	if e.Tasks != nil {
+		tasks = fmt.Sprintf("%d/%d", e.Tasks.Done, e.Tasks.Total)
+	}
+	row := []string{
+		e.Session,
+		e.State,
+		tasks,
+		e.Branch,
+		(time.Duration(e.RunningFor) * time.Second).String(),
+		(time.Duration(e.InStateFor) * time.Second).String(),
+		e.Title,
+	}
+	if repo {
+		row = append([]string{e.Repo}, row...)
+	}
+	return row
+}
+
+// tableRows is the header plus one row per entry.
+func tableRows(entries []Entry, repo bool) [][]string {
+	header := make([]string, 0, len(tableHeader)+1)
+	if repo {
+		header = append(header, "REPO")
+	}
+	header = append(header, tableHeader...)
+	rows := [][]string{header}
+	for _, e := range entries {
+		rows = append(rows, entryRow(e, repo))
+	}
+	return rows
+}
+
+// writeTable writes rows, header first: columns padded to their width,
+// separated by two spaces, one row per line.
+func writeTable(w io.Writer, rows [][]string) error {
+	widths := make([]int, len(rows[0]))
+	for _, r := range rows {
+		for i, c := range r {
+			if len(c) > widths[i] {
+				widths[i] = len(c)
+			}
+		}
+	}
+	for _, r := range rows {
+		var b strings.Builder
+		for j, c := range r {
+			if j > 0 {
+				b.WriteString("  ")
+			}
+			if j < len(r)-1 {
+				fmt.Fprintf(&b, "%-*s", widths[j], c)
+			} else {
+				b.WriteString(c)
+			}
+		}
+		if _, err := fmt.Fprintln(w, b.String()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // writeJSON prints v as indented JSON followed by a newline.

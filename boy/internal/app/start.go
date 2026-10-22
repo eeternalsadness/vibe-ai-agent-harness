@@ -29,6 +29,9 @@ type StartOptions struct {
 // Start starts a coder on a plan or an ad-hoc prompt, or opens the picker when
 // given neither. The picker flow is a stub until its own task.
 func Start(ctx context.Context, d Deps, opts StartOptions) error {
+	if err := checkOutput(d.Output); err != nil {
+		return err
+	}
 	switch {
 	case opts.Plan != "" && opts.Prompt != "":
 		return errors.New("pass a plan or a prompt, not both")
@@ -324,7 +327,8 @@ func resume(ctx context.Context, d Deps, s client.Session, plan string) error {
 	return err
 }
 
-// printEntry prints the session's current status entry as a JSON object.
+// printEntry prints the session's current status entry, as JSON or the
+// human table.
 func printEntry(ctx context.Context, d Deps, s client.Session) error {
 	// Re-read the session: starting or resuming changed its state.
 	current, err := d.Client.GetSession(ctx, s.ID)
@@ -339,7 +343,10 @@ func printEntry(ctx context.Context, d Deps, s client.Session) error {
 	if err != nil {
 		return err
 	}
-	return writeJSON(d, entry)
+	if d.Output == "json" {
+		return writeJSON(d, entry)
+	}
+	return writeTable(d.Stdout, tableRows([]Entry{entry}, false))
 }
 
 func startPrompt(plan string) string {

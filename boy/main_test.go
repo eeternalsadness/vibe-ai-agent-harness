@@ -15,3 +15,23 @@ func TestStatusAllHasShorthandA(t *testing.T) {
 	}
 	t.Fatal("no status command")
 }
+
+func TestCommandsHaveOutputFlag(t *testing.T) {
+	for _, name := range []string{"start", "prompt", "status"} {
+		t.Run(name, func(t *testing.T) {
+			found := false
+			for _, c := range newRootCmd().Commands() {
+				if c.Name() != name {
+					continue
+				}
+				found = true
+				if f := c.Flags().Lookup("output"); f == nil || f.Shorthand != "o" {
+					t.Errorf("%s --output = %v, want -o/--output", name, f)
+				}
+			}
+			if !found {
+				t.Fatalf("no %s command", name)
+			}
+		})
+	}
+}

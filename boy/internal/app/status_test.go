@@ -1,7 +1,10 @@
 package app_test
 
 import (
+	"reflect"
+	"regexp"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -111,6 +114,15 @@ func TestStatusScopedToSession(t *testing.T) {
 func TestStatusReportsFields(t *testing.T) {
 	e := newEnv(t, "p")
 	id := startCoder(t, e, "p") // session created at t0
+	const adhocPrompt = "fix the login typo"
+	if err := e.startPrompt(adhocPrompt); err != nil {
+		t.Fatalf("start ad-hoc: %v", err)
+	}
+	idA := e.startEntry().Session
+	name := app.AdhocName(adhocPrompt, t0)
+
+	e.fake.Sessions[id].Title = "plan title"
+	e.fake.Sessions[idA].Title = "adhoc title"
 	writeTodo(t, e.worktree("p"), "p", todoWith(
 		"- [x] **Task 1** - a", "- [x] **Task 2** - b", "- [-] **Task 3** - c",
 		"- [ ] **Task 4** - d", "- [ ] **Task 5** - e"))
@@ -180,6 +192,127 @@ func TestStatusReportsFields(t *testing.T) {
 			t.Errorf("in_state_for = %d, want 20", en.InStateFor)
 		}
 	})
+
+	t.Run("both coders listed", func(t *testing.T) {
+		if err := e.status(app.StatusOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		assertSessions(t, e.statusEntries(), id, idA)
+	})
+
+	t.Run("--all", func(t *testing.T) {
+		if err := e.status(app.StatusOptions{All: true}); err != nil {
+			t.Fatal(err)
+		}
+		assertSessions(t, e.statusEntries(), id, idA)
+	})
+
+	t.Run("scoped to the ad-hoc session", func(t *testing.T) {
+		if err := e.status(app.StatusOptions{SessionID: idA}); err != nil {
+			t.Fatal(err)
+		}
+		assertSessions(t, e.statusEntries(), idA)
+	})
+
+	t.Run("entry fields", func(t *testing.T) {
+		if err := e.status(app.StatusOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		byID := map[string]entry{}
+		for _, en := range e.statusEntries() {
+			byID[en.Session] = en
+		}
+		p := byID[id]
+		if p.Worktree != e.worktree("p") || p.Branch != "p" || p.Title != "plan title" || p.Plan == nil || *p.Plan != "p" {
+			t.Errorf("plan entry = %+v", p)
+		}
+		a := byID[idA]
+		if a.Plan != nil || a.Tasks != nil || a.Branch != name || a.Worktree != e.worktree(name) || a.Title != "adhoc title" {
+			t.Errorf("ad-hoc entry = %+v", a)
+		}
+	})
+}
+
+var tableSplit = regexp.MustCompile(`\s{2,}`)
+
+// tableCells splits one table line on runs of two or more spaces.
+func tableCells(line string) []string {
+	return tableSplit.Split(line, -1)
+}
+
+// tableLines splits the table stdout into lines.
+func tableLines(s string) []string {
+	return strings.Split(strings.TrimRight(s, "\n"), "\n")
+}
+
+func TestStatusHumanTable(t *testing.T) {
+	e := newEnv(t, "p")
+	id := startCoder(t, e, "p")
+	const adhocPrompt = "fix the login typo"
+	if err := e.startPrompt(adhocPrompt); err != nil {
+		t.Fatalf("start ad-hoc: %v", err)
+	}
+	idA := e.startEntry().Session
+	name := app.AdhocName(adhocPrompt, t0)
+	writeTodo(t, e.worktree("p"), "p", todoWith(
+		"- [x] **Task 1** - a", "- [x] **Task 2** - b", "- [-] **Task 3** - c",
+		"- [ ] **Task 4** - d", "- [ ] **Task 5** - e"))
+
+	e.fake.Sessions[id].Title = "plan title"
+	e.fake.Sessions[idA].Title = "adhoc title"
+	latest := t0.Add(60 * time.Second)  // plan coder's latest prompt
+	idleAt := t0.Add(280 * time.Second) // ad-hoc coder went idle
+	e.fake.Prompts[id] = []time.Time{t0, latest}
+	delete(e.fake.Active, idA)
+	e.fake.Sessions[idA].Idle = idleAt
+	e.clock.Set(t0.Add(300 * time.Second))
+
+	if err := e.statusWith("", app.StatusOptions{}); err != nil {
+		t.Fatalf("status: %v", err)
+	}
+	want := [][]string{
+		{"SESSION", "STATE", "TASKS", "BRANCH", "AGE", "IN STATE", "TITLE"},
+		{idA, "idle", "-", name, "5m0s", "20s", "adhoc title"},
+		{id, "running", "2/5", "p", "5m0s", "4m0s", "plan title"},
+	}
+	lines := tableLines(e.stdout.String())
+	if len(lines) != len(want) {
+		t.Fatalf("lines = %d, want %d\n%s", len(lines), len(want), e.stdout.String())
+	}
+	for i, w := range want {
+		if got := tableCells(lines[i]); !reflect.DeepEqual(got, w) {
+			t.Errorf("line %d = %v, want %v", i, got, w)
+		}
+	}
+
+	// --all prepends the repo column.
+	if err := e.statusWith("", app.StatusOptions{All: true}); err != nil {
+		t.Fatalf("status --all: %v", err)
+	}
+	wantAll := [][]string{
+		{"REPO", "SESSION", "STATE", "TASKS", "BRANCH", "AGE", "IN STATE", "TITLE"},
+		{e.repo, idA, "idle", "-", name, "5m0s", "20s", "adhoc title"},
+		{e.repo, id, "running", "2/5", "p", "5m0s", "4m0s", "plan title"},
+	}
+	lines = tableLines(e.stdout.String())
+	if len(lines) != len(wantAll) {
+		t.Fatalf("--all lines = %d, want %d\n%s", len(lines), len(wantAll), e.stdout.String())
+	}
+	for i, w := range wantAll {
+		if got := tableCells(lines[i]); !reflect.DeepEqual(got, w) {
+			t.Errorf("--all line %d = %v, want %v", i, got, w)
+		}
+	}
+
+	// A repo with no coders prints the header only.
+	empty := newEnv(t)
+	if err := empty.statusWith("", app.StatusOptions{}); err != nil {
+		t.Fatalf("status in an empty repo: %v", err)
+	}
+	lines = tableLines(empty.stdout.String())
+	if len(lines) != 1 || !reflect.DeepEqual(tableCells(lines[0]), want[0]) {
+		t.Errorf("empty repo = %q, want the header only", empty.stdout.String())
+	}
 }
 
 func TestStatusIgnoresNonCoderSessions(t *testing.T) {
