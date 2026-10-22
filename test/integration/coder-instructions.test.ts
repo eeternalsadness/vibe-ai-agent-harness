@@ -37,6 +37,16 @@ function has(content: string, needle: string): boolean {
   return content.toLowerCase().includes(needle.toLowerCase())
 }
 
+// section returns the text of the named level-two heading, up to the next
+// level-two heading.
+function section(content: string, heading: string): string {
+  const start = content.indexOf(heading)
+  if (start === -1) return ""
+  const rest = content.slice(start)
+  const next = rest.indexOf("\n## ", 1)
+  return next === -1 ? rest : rest.slice(0, next)
+}
+
 test("coder-instructions: commits after each task whose pipeline is green, and never pushes", () => {
   expect(has(coder, "commit")).toBe(true)
   expect(has(coder, "never push")).toBe(true)
@@ -53,4 +63,21 @@ test("coder-instructions: resolves ambiguity itself and records the decision in 
   const asking = /\bask (the user|rather than guess|targeted questions|for clarification)/i
   expect(coder).not.toMatch(asking)
   expect(coder).not.toMatch(/stop and explain/i)
+})
+
+test("coder-instructions: decisions go to .agents/DECISIONS.md and it is never committed", () => {
+  expect(has(coder, ".agents/DECISIONS.md")).toBe(true)
+  expect(coder).toMatch(/never commit `?\.agents\/DECISIONS\.md/i)
+  expect(coder).toMatch(/no longer hold/i)
+
+  // The plan 19 locations are gone: no decisions in the plan directory, none
+  // only in the final message.
+  expect(coder).not.toMatch(/DECISIONS\.md`? in the plan directory/i)
+  expect(coder).not.toMatch(/final message instead/i)
+})
+
+test("coder-instructions: the ad-hoc workflow commits once the pipeline is green", () => {
+  const adhoc = section(coder, "## Workflow — Ad-hoc Mode")
+  expect(adhoc).not.toBe("")
+  expect(has(adhoc, "commit")).toBe(true)
 })

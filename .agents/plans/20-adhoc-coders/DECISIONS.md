@@ -85,3 +85,14 @@ name for ad-hoc coders, and the message is already `branch not merged:
 <branch>`. An ignored `.agents/DECISIONS.md` never appears in `git status
 --porcelain`. The new tests (ad-hoc unmerged case, ad-hoc removal, decisions
 file) pass against the unchanged code, as the task anticipated.
+
+## Task 21: the ad-hoc commit step comes after the docs step
+
+The spec says to add the commit step after the pipeline step, and that the
+two workflows should differ only in the plan files.
+- Options: put commit immediately after self-verify (literal reading), or
+  after the docs update (plan mode commits after updating documentation, so
+  the ad-hoc commit covers the docs change too).
+- Chosen: after the docs update. It still is a step after the pipeline step,
+  and it is the only reading under which the workflows differ only in the
+  plan files.
