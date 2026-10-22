@@ -3,6 +3,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -24,6 +25,17 @@ type Deps struct {
 	Interactive bool
 	// Output is the requested output format: "" (the human table) or "json".
 	Output string
+}
+
+// checkOutput rejects output formats boy does not render. Every command calls
+// it before any client call.
+func checkOutput(output string) error {
+	switch output {
+	case "", "json":
+		return nil
+	default:
+		return fmt.Errorf("unknown output format: %s", output)
+	}
 }
 
 // StatusOptions selects which coders Status reports.

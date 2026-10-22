@@ -17,7 +17,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 5** - write the tests for start-creates-worktree, start-launches-coder, start-plan-from-anywhere, start-is-idempotent
 - [x] **Task 6** - write the tests for adhoc-start-launches-coder and start-rejects-invalid-request
 - [x] **Task 7** - write the tests for picker-starts-plan, picker-starts-adhoc, picker-rejects
-- [ ] **Task 8** - write the tests for prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request
+- [x] **Task 8** - write the tests for prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request
 - [ ] **Task 9** - write the tests for status-reports-fields and status-human-table
 - [ ] **Task 10** - write the test for output-format-flag
 - [ ] **Task 11** - write the tests for remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file
@@ -37,7 +37,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
       Verify: adhoc-start-launches-coder, start-rejects-invalid-request
 - [x] **Task 18** - add the picker
       Verify: picker-starts-plan, picker-starts-adhoc, picker-rejects
-- [ ] **Task 19** - implement prompt
+- [x] **Task 19** - implement prompt
       Verify: prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request, output-format-flag
 - [ ] **Task 20** - update remove
       Verify: remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file

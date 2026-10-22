@@ -58,3 +58,21 @@ through to the interactive case, reopening the picker instead of failing.
   whitespace" to fail with `prompt required`, and the direct call keeps the
   flow flat instead of re-entering the `Start` switch with the same
   `Interactive: true` deps.
+
+## Task 19: output-format-flag is split across the prompt and status units
+
+The scenario covers `start`, `status`, and `prompt`, but its
+"without `-o` stdout is the table" half needs the table renderer that Task 15
+introduces, so the full test (Task 10) cannot be green in the prompt unit.
+
+- Chosen: the `checkOutput` helper (`unknown output format: <value>`) is
+  implemented in the prompt unit and wired into `Prompt` only; `start` and
+  `status` get it in the status unit, together with the renderer. The
+  prompt-rejects table carries an `unknown output format: yaml` case (with a
+  no-client-calls assertion) so the prompt side is tested now. The remaining
+  output-format-flag assertions (table vs JSON for `""`/`json` on all three
+  commands, and the `--output` long form in `main_test.go`) land with the
+  status unit, where the scenario becomes fully green.
+- Why: keeps each committed unit green while following the task order, and
+  puts the "every command" rejection where the renderer already touches every
+  command.

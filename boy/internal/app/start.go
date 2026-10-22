@@ -168,9 +168,43 @@ func startPlan(ctx context.Context, d Deps, planPath string) error {
 	return resume(ctx, d, *existing, plan)
 }
 
-// Prompt sends a follow-up to a coder. Stub for now.
+// Prompt sends a follow-up to a coder. An idle coder gets the text directly;
+// a running coder gets it queued, or steered into the running turn when asked.
+// It never interrupts.
 func Prompt(ctx context.Context, d Deps, sessionID, text string, steer bool) error {
-	return errors.New("prompt not implemented yet")
+	if err := checkOutput(d.Output); err != nil {
+		return err
+	}
+	if strings.TrimSpace(text) == "" {
+		return errors.New("prompt required")
+	}
+
+	// The first server call, so an unreachable server fails first.
+	active, err := activeSet(ctx, d)
+	if err != nil {
+		return err
+	}
+	s, err := coderSession(ctx, d, sessionID)
+	if err != nil {
+		return err
+	}
+
+	delivery, message := "", fmt.Sprintf("prompt sent to session %s", sessionID)
+	if active[s.ID] {
+		delivery, message = "queue", fmt.Sprintf("prompt queued for session %s", sessionID)
+		if steer {
+			delivery, message = "steer", fmt.Sprintf("prompt steered into session %s", sessionID)
+		}
+	}
+	if err := d.Client.SendPrompt(ctx, sessionID, text, delivery); err != nil {
+		return d.explainServerError(err)
+	}
+
+	if err := printEntry(ctx, d, s); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(d.Stderr, message)
+	return err
 }
 
 // resolvePlan resolves planPath, relative to dir, into the main checkout of

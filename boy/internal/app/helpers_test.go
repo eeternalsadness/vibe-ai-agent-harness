@@ -86,6 +86,20 @@ func (e *env) startOpts(opts app.StartOptions) error {
 	return app.Start(e.t.Context(), e.deps(), opts)
 }
 
+// prompt runs `boy prompt <session-id> <text>`.
+func (e *env) prompt(sessionID, text string, steer bool) error {
+	e.t.Helper()
+	return e.promptWith("json", sessionID, text, steer)
+}
+
+// promptWith runs `boy prompt` with the given output format.
+func (e *env) promptWith(output, sessionID, text string, steer bool) error {
+	e.t.Helper()
+	d := e.deps()
+	d.Output = output
+	return app.Prompt(e.t.Context(), d, sessionID, text, steer)
+}
+
 func (e *env) status(opts app.StatusOptions) error {
 	e.t.Helper()
 	return app.Status(e.t.Context(), e.deps(), opts)
