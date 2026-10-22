@@ -1,5 +1,6 @@
 // Command boy starts, inspects, and removes background coders, each working
-// on a plan in its own git worktree through an opencode server.
+// on a plan or an ad-hoc prompt in its own git worktree through an opencode
+// server.
 package main
 
 import (
@@ -8,10 +9,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	"boy/internal/app"
 	"boy/internal/client"
 	"boy/internal/config"
+	"boy/internal/picker"
 )
 
 func main() {
@@ -33,55 +36,86 @@ func newDeps(cmd *cobra.Command) (app.Deps, error) {
 		return app.Deps{}, err
 	}
 	return app.Deps{
-		Client:    client.NewHTTP(server.URL, server.Password),
-		Now:       time.Now,
-		Stdout:    cmd.OutOrStdout(),
-		Stderr:    cmd.ErrOrStderr(),
-		WorkDir:   wd,
-		ServerURL: server.URL,
+		Client:      client.NewHTTP(server.URL, server.Password),
+		Picker:      picker.NewTerminal(),
+		Now:         time.Now,
+		Stdout:      cmd.OutOrStdout(),
+		Stderr:      cmd.ErrOrStderr(),
+		WorkDir:     wd,
+		ServerURL:   server.URL,
+		Interactive: term.IsTerminal(int(os.Stdin.Fd())),
 	}, nil
 }
 
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "boy",
-		Short:         "Run plan coders in background git worktrees",
+		Short:         "Run background coders in isolated git worktrees",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(newStartCmd(), newStatusCmd(), newRemoveCmd())
+	root.AddCommand(newStartCmd(), newPromptCmd(), newStatusCmd(), newRemoveCmd())
 	return root
 }
 
 func newStartCmd() *cobra.Command {
-	var dir string
+	var plan, output string
 	cmd := &cobra.Command{
-		Use:   "start [--dir <repo>] <plan>",
-		Short: "Start a coder on a plan in its own worktree",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := newDeps(cmd)
-			if err != nil {
-				return err
-			}
-			return app.Start(cmd.Context(), d, dir, args[0])
-		},
-	}
-	cmd.Flags().StringVar(&dir, "dir", "", "repo to start the plan in (default: the repo containing the current directory)")
-	return cmd
-}
-
-func newStatusCmd() *cobra.Command {
-	var opts app.StatusOptions
-	cmd := &cobra.Command{
-		Use:   "status [--dir <repo> | --all] [<session-id>]",
-		Short: "Report on coders as JSON",
+		Use:   "start [--plan <path> | \"<prompt>\"]",
+		Short: "Start a plan or an ad-hoc coder in its own worktree",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d, err := newDeps(cmd)
 			if err != nil {
 				return err
 			}
+			d.Output = output
+			opts := app.StartOptions{Plan: plan}
+			if len(args) == 1 {
+				opts.Prompt = args[0]
+			}
+			return app.Start(cmd.Context(), d, opts)
+		},
+	}
+	cmd.Flags().StringVar(&plan, "plan", "", "path to an active plan to start")
+	cmd.Flags().StringVarP(&output, "output", "o", "", "output format: json (default: human table)")
+	return cmd
+}
+
+func newPromptCmd() *cobra.Command {
+	var steer bool
+	var output string
+	cmd := &cobra.Command{
+		Use:   "prompt [--steer] <session-id> <text>",
+		Short: "Send a follow-up to a coder",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			d, err := newDeps(cmd)
+			if err != nil {
+				return err
+			}
+			d.Output = output
+			return app.Prompt(cmd.Context(), d, args[0], args[1], steer)
+		},
+	}
+	cmd.Flags().BoolVar(&steer, "steer", false, "redirect the current turn instead of queueing")
+	cmd.Flags().StringVarP(&output, "output", "o", "", "output format: json (default: human table)")
+	return cmd
+}
+
+func newStatusCmd() *cobra.Command {
+	var opts app.StatusOptions
+	var output string
+	cmd := &cobra.Command{
+		Use:   "status [--dir <repo> | --all | -A] [<session-id>]",
+		Short: "Report on coders",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			d, err := newDeps(cmd)
+			if err != nil {
+				return err
+			}
+			d.Output = output
 			if len(args) == 1 {
 				opts.SessionID = args[0]
 			}
@@ -90,6 +124,7 @@ func newStatusCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&opts.Dir, "dir", "", "repo to report on (default: the repo containing the current directory)")
 	cmd.Flags().BoolVarP(&opts.All, "all", "A", false, "report coders in every repo")
+	cmd.Flags().StringVarP(&output, "output", "o", "", "output format: json (default: human table)")
 	return cmd
 }
 

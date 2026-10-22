@@ -90,97 +90,87 @@ func TestStartCreatesWorktreeAndLaunchesCoder(t *testing.T) {
 	e := newEnv(t, "p")
 	before := e.gitState()
 
-	if err := e.start("", "p"); err != nil {
+	if err := e.start("p"); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	assertStarted(t, e, before, "p")
 }
 
-func TestStartFromOtherDir(t *testing.T) {
-	e := newEnv(t, "p")
-	e.workDir = t.TempDir() // outside the repo
-	before := e.gitState()
-
-	if err := e.start(e.repo, "p"); err != nil {
-		t.Fatalf("start --dir: %v", err)
-	}
-	assertStarted(t, e, before, "p")
-}
-
 func TestStartRejectsInvalidRequest(t *testing.T) {
-	notRepo := t.TempDir()
-
 	cases := []struct {
 		name  string
-		setup func(e *env) (dir, plan string)
-		want  func(e *env, dir string) string
+		setup func(e *env) string // returns the plan to start
+		want  func(e *env) string
 	}{
 		{
-			name:  "dir is not inside a git repo",
-			setup: func(e *env) (string, string) { return notRepo, "p" },
-			want:  func(_ *env, dir string) string { return "not a git repository: " + dir },
+			name: "not a git repository",
+			setup: func(e *env) string {
+				e.workDir = t.TempDir()
+				return "p"
+			},
+			want: func(e *env) string { return "not a git repository: " + e.workDir },
 		},
 		{
 			name:  "plan directory does not exist",
-			setup: func(e *env) (string, string) { return "", "nope" },
-			want:  func(*env, string) string { return "plan not found: nope" },
+			setup: func(*env) string { return "nope" },
+			want:  func(*env) string { return "plan not found: nope" },
 		},
 		{
 			name: "archived plan",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) string {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
 				e.git("add", "-A")
 				e.git("commit", "-q", "-m", "archive")
-				return "", "old"
+				return "old"
 			},
-			want: func(*env, string) string { return "plan not found: old" },
+			want: func(*env) string { return "plan not found: old" },
 		},
 		{
 			name: "plan has a modified file",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) string {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "TODO.md"), "changed\n")
-				return "", "p"
+				return "p"
 			},
-			want: func(*env, string) string { return "plan has uncommitted changes: p" },
+			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
 			name: "plan has an untracked file",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) string {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "NOTES.md"), "new\n")
-				return "", "p"
+				return "p"
 			},
-			want: func(*env, string) string { return "plan has uncommitted changes: p" },
+			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
 			name: "branch exists without a worktree",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) string {
 				e.git("branch", "p")
-				return "", "p"
+				return "p"
 			},
-			want: func(*env, string) string { return "branch exists without worktree: p" },
+			want: func(*env) string { return "branch exists without worktree: p" },
 		},
 		{
 			name: "server unreachable",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) string {
 				e.fake.Failures["*"] = client.ErrUnreachable
-				return "", "p"
+				return "p"
 			},
-			want: func(*env, string) string { return "opencode server unreachable: " + serverURL },
+			want: func(*env) string { return "opencode server unreachable: " + serverURL },
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newEnv(t, "p")
-			dir, plan := tc.setup(e)
+			plan := tc.setup(e)
 			before := e.gitState()
 
-			err := e.start(dir, plan)
+			err := e.start(plan)
 
 			if err == nil {
 				t.Fatal("start succeeded, want an error")
 			}
-			if want := tc.want(e, dir); err.Error() != want {
+			if want := tc.want(e); err.Error() != want {
 				t.Errorf("error = %q, want %q", err.Error(), want)
 			}
 			if e.stdout.Len() != 0 {
@@ -204,7 +194,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	// second start's calls stand alone.
 	startedCoder := func(t *testing.T) (*env, string, gitState) {
 		e := newEnv(t, "p")
-		if err := e.start("", "p"); err != nil {
+		if err := e.start("p"); err != nil {
 			t.Fatalf("first start: %v", err)
 		}
 		id := e.startEntry().Session
@@ -224,7 +214,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.git("worktree", "add", "-q", "-b", "p", e.worktree("p"), "HEAD")
 		before := e.gitState()
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.start("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -243,7 +233,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	t.Run("coder is running: sends nothing", func(t *testing.T) {
 		e, id, before := startedCoder(t)
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.start("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -265,7 +255,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.fake.Sessions[id].Idle = t0
 		e.fake.Sessions[id].Outcome = "succeeded"
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.start("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -292,7 +282,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		writeTodo(t, e.worktree("p"), "p", todoWith("- [x] **Task 1** - a", "- [-] **Task 2** - b"))
 		before := e.gitState()
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.start("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 

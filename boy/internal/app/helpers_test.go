@@ -55,13 +55,16 @@ func (e *env) deps() app.Deps {
 		Stderr:    &e.stderr,
 		WorkDir:   e.workDir,
 		ServerURL: serverURL,
+		// These tests parse the stdout as JSON, so ask for it explicitly. The
+		// human-table default lands with its own task.
+		Output: "json",
 	}
 }
 
-// start runs `boy start --dir <dir> <plan>`; an empty dir means the working directory.
-func (e *env) start(dir, plan string) error {
+// start runs `boy start <plan>`.
+func (e *env) start(plan string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), dir, plan)
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: plan})
 }
 
 func (e *env) status(opts app.StatusOptions) error {

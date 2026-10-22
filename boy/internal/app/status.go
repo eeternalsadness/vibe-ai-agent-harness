@@ -67,7 +67,7 @@ func Status(ctx context.Context, d Deps, opts StatusOptions) error {
 		if entries[i].Repo != entries[j].Repo {
 			return entries[i].Repo < entries[j].Repo
 		}
-		return entries[i].Plan < entries[j].Plan
+		return entries[i].Branch < entries[j].Branch
 	})
 	return writeJSON(d, entries)
 }

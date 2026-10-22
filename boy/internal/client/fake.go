@@ -93,10 +93,14 @@ func (f *Fake) CreateSession(_ context.Context, req CreateSessionRequest) (Sessi
 }
 
 // SendPrompt records a user message and marks the session running.
-func (f *Fake) SendPrompt(_ context.Context, sessionID, text string) error {
+func (f *Fake) SendPrompt(_ context.Context, sessionID, text, delivery string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if err := f.record("SendPrompt", map[string]any{"session": sessionID, "text": text}); err != nil {
+	args := map[string]any{"session": sessionID, "text": text}
+	if delivery != "" {
+		args["delivery"] = delivery
+	}
+	if err := f.record("SendPrompt", args); err != nil {
 		return err
 	}
 	s, ok := f.Sessions[sessionID]

@@ -110,13 +110,13 @@ func TestCreateSession(t *testing.T) {
 	c := serve(t,
 		[]want{{
 			method: "POST", path: "/api/session",
-			body: `{"title":"plan p","agent":"coder","location":{"directory":"/wt"},` +
+			body: `{"agent":"coder","location":{"directory":"/wt"},` +
 				`"permissions":[{"action":"*","resource":"*","effect":"allow"},{"action":"question","resource":"*","effect":"deny"}]}`,
 		}},
 		[]reply{ok(`{"data":` + sessionJSON + `}`)})
 
 	got, err := c.CreateSession(context.Background(), CreateSessionRequest{
-		Title: "plan p", Agent: "coder", Directory: "/wt",
+		Agent: "coder", Directory: "/wt",
 		Permissions: []Rule{
 			{Action: "*", Resource: "*", Effect: "allow"},
 			{Action: "question", Resource: "*", Effect: "deny"},
@@ -132,7 +132,7 @@ func TestSendPrompt(t *testing.T) {
 	c := serve(t,
 		[]want{{method: "POST", path: "/api/session/ses_1/prompt", body: `{"text":"go"}`}},
 		[]reply{ok(`{"data":{}}`)})
-	if err := c.SendPrompt(context.Background(), "ses_1", "go"); err != nil {
+	if err := c.SendPrompt(context.Background(), "ses_1", "go", ""); err != nil {
 		t.Fatal(err)
 	}
 }

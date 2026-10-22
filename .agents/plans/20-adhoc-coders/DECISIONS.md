@@ -1,0 +1,32 @@
+# Plan 20 Implementation Decisions
+
+## Task 2: `StartOptions.Plan` stays a plan *name* in the scaffolding step
+
+The plan's Task 2 says to scaffold the new signatures "with no new behavior" and
+puts `--plan <path>` path resolution in Task 16. The cobra surface introduced in
+Task 2 already declares the flag as `--plan <path>`, but resolving that path is
+behavior that belongs to Task 16.
+
+- Chosen: `StartOptions{Plan, Prompt string}`. In Task 2 `Plan` carries the plan
+  *name* and `startPlan` resolves the repo from `WorkDir`, exactly as plan 19 did.
+  The cobra `--plan` flag exists but is treated as a name until Task 16 rewrites
+  `startPlan` to treat it as a path. The old `start --dir` flag is removed now
+  (the flag set is part of the scaffolding), so the `--dir`-based test
+  `TestStartFromOtherDir` is deleted; its replacement (`start-plan-from-anywhere`)
+  is written in Task 5 and made to pass in Task 16.
+- Why: keeps Task 2 a pure signature refactor (build + vet + existing tests stay
+  green), keeps path resolution clearly in Task 16 where the rewritten start tests
+  (Task 5) exercise it, and avoids reworking `Start` twice.
+- The test-first pairing: the start tests are rewritten to `--plan <path>` in Task
+  5 and made to pass in Task 16, so those two tasks form one red-to-green unit and
+  are committed together. The same pattern applies to the other test (3-12) /
+  implement (13-21) pairs.
+
+## Pre-existing lint failure fixed in the Task 1 commit
+
+Two shebang'd Python scripts (`src/global/skills/validating-work/scripts/
+pipeline_runner.py` and `src/global/skills/maintaining-knowledge-base/scripts/
+audit-orphans.py`) lacked the executable bit, which `ruff` flagged as EXE001 and
+blocked the whole pipeline. Fixed by marking them executable (`git update-index
+--chmod=+x`). This is unrelated to plan 20 but was required to get the pipeline
+green at all.

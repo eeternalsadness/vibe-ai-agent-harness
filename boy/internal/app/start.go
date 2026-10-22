@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,16 +19,29 @@ var coderPermissions = []client.Rule{
 	{Action: "question", Resource: "*", Effect: "deny"},
 }
 
-// Start starts a coder on a plan, or resumes the plan's existing coder.
-func Start(ctx context.Context, d Deps, dir, plan string) error {
-	if dir == "" {
-		dir = d.WorkDir
-	}
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(d.WorkDir, dir)
-	}
+// StartOptions is what a start command was given: a plan and/or a prompt.
+type StartOptions struct {
+	Plan   string // the plan to start ("" when starting a prompt)
+	Prompt string // the ad-hoc prompt ("" when starting a plan)
+}
 
-	repo, err := mainCheckout(dir)
+// Start starts a coder on a plan or an ad-hoc prompt, or opens the picker when
+// given neither. Only the plan flow is wired in this step; the prompt, ad-hoc
+// and picker flows return not-implemented errors until their own tasks.
+func Start(ctx context.Context, d Deps, opts StartOptions) error {
+	switch {
+	case opts.Plan != "" && opts.Prompt != "":
+		return errors.New("pass a plan or a prompt, not both")
+	case opts.Plan == "":
+		return errors.New("not implemented yet")
+	default:
+		return startPlan(ctx, d, opts.Plan)
+	}
+}
+
+// startPlan starts a coder on a plan, or resumes the plan's existing coder.
+func startPlan(ctx context.Context, d Deps, plan string) error {
+	repo, err := mainCheckout(d.WorkDir)
 	if err != nil {
 		return err
 	}
@@ -53,6 +67,11 @@ func Start(ctx context.Context, d Deps, dir, plan string) error {
 		return launch(ctx, d, repo, plan, haveWorktree)
 	}
 	return resume(ctx, d, *existing, plan)
+}
+
+// Prompt sends a follow-up to a coder. Stub for now.
+func Prompt(ctx context.Context, d Deps, sessionID, text string, steer bool) error {
+	return errors.New("prompt not implemented yet")
 }
 
 // checkPlan verifies the plan is an active, committed plan directory.
@@ -100,7 +119,6 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	}
 
 	session, err := d.Client.CreateSession(ctx, client.CreateSessionRequest{
-		Title:       "plan " + plan,
 		Agent:       "coder",
 		Directory:   worktree,
 		Permissions: coderPermissions,
@@ -111,7 +129,7 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	if err := d.Client.RefreshWorktrees(ctx, session.ProjectID); err != nil {
 		return d.explainServerError(err)
 	}
-	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan)); err != nil {
+	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan), ""); err != nil {
 		return d.explainServerError(err)
 	}
 
@@ -136,7 +154,7 @@ func resume(ctx context.Context, d Deps, s client.Session, plan string) error {
 	case countTasks(s.Directory, plan).finished():
 		message = fmt.Sprintf("plan already finished: %s (session %s)", plan, s.ID)
 	default:
-		if err := d.Client.SendPrompt(ctx, s.ID, resumePrompt(plan)); err != nil {
+		if err := d.Client.SendPrompt(ctx, s.ID, resumePrompt(plan), ""); err != nil {
 			return d.explainServerError(err)
 		}
 		message = fmt.Sprintf("resumed session %s for %s", s.ID, plan)

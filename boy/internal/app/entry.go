@@ -22,8 +22,11 @@ type Tasks struct {
 type Entry struct {
 	Session    string  `json:"session"`
 	Repo       string  `json:"repo"`
-	Plan       string  `json:"plan"`
-	Tasks      Tasks   `json:"tasks"`
+	Worktree   string  `json:"worktree"`
+	Title      string  `json:"title"`
+	Plan       *string `json:"plan"`
+	Branch     string  `json:"branch"`
+	Tasks      *Tasks  `json:"tasks"`
 	State      string  `json:"state"`
 	Outcome    *string `json:"outcome"`
 	StartedAt  string  `json:"started_at"`
@@ -72,15 +75,22 @@ func activeSet(ctx context.Context, d Deps) (map[string]bool, error) {
 
 // buildEntry assembles the status entry for a coder session.
 func buildEntry(ctx context.Context, d Deps, s client.Session, active map[string]bool) (Entry, error) {
-	repo, plan, _ := planFromWorktree(s.Directory)
+	repo, name, _ := planFromWorktree(s.Directory)
 	now := d.Now()
 	e := Entry{
 		Session:   s.ID,
 		Repo:      repo,
-		Plan:      plan,
-		Tasks:     countTasks(s.Directory, plan),
+		Worktree:  s.Directory,
+		Title:     s.Title,
+		Branch:    name,
 		State:     "idle",
 		StartedAt: s.Created.UTC().Format(time.RFC3339),
+	}
+	if !IsAdhocName(name) {
+		plan := name
+		tasks := countTasks(s.Directory, name)
+		e.Plan = &plan
+		e.Tasks = &tasks
 	}
 	if s.Outcome != "" {
 		outcome := s.Outcome
