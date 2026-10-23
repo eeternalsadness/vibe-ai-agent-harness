@@ -27,7 +27,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 - [x] **Task 13** - update the HTTP client
       Verify: client-sends-opencode-requests
-- [ ] **Task 14** - implement ad-hoc naming
+- [x] **Task 14** - implement ad-hoc naming
       Verify: adhoc-name-format
 - [ ] **Task 15** - implement the new status entry and table
       Verify: status-reports-fields, status-human-table
