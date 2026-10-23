@@ -19,7 +19,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 7** - write the tests for picker-starts-plan, picker-starts-adhoc, picker-rejects
 - [x] **Task 8** - write the tests for prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request
 - [x] **Task 9** - write the tests for status-reports-fields and status-human-table
-- [ ] **Task 10** - write the test for output-format-flag
+- [x] **Task 10** - write the test for output-format-flag
 - [ ] **Task 11** - write the tests for remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file
 - [ ] **Task 12** - write the test for coder-instructions
 
