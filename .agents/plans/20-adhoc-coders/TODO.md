@@ -12,7 +12,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Tests
 
-- [ ] **Task 3** - write the test for client-sends-opencode-requests
+- [x] **Task 3** - write the test for client-sends-opencode-requests
 - [ ] **Task 4** - write the test for adhoc-name-format
 - [ ] **Task 5** - write the tests for start-creates-worktree, start-launches-coder, start-plan-from-anywhere, start-is-idempotent
 - [ ] **Task 6** - write the tests for adhoc-start-launches-coder and start-rejects-invalid-request
@@ -25,7 +25,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Implementation
 
-- [ ] **Task 13** - update the HTTP client
+- [x] **Task 13** - update the HTTP client
       Verify: client-sends-opencode-requests
 - [ ] **Task 14** - implement ad-hoc naming
       Verify: adhoc-name-format

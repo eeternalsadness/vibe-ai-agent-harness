@@ -17,7 +17,7 @@ const testPassword = "s3cret"
 
 // sessionJSON is shaped like a session in opencode v2.0.32 replies. Times
 // are epoch milliseconds.
-const sessionJSON = `{"id":"ses_1","projectID":"prj_1","parentID":null,"agent":"coder","outcome":"succeeded",` +
+const sessionJSON = `{"id":"ses_1","projectID":"prj_1","parentID":null,"title":"Fix the thing","agent":"coder","outcome":"succeeded",` +
 	`"cost":0,"tokens":{},"time":{"created":1000,"updated":2000,"idle":3000},` +
 	`"location":{"directory":"/repo/.agents/worktrees/p"}}`
 
@@ -101,7 +101,7 @@ func ok(body string) reply { return reply{http.StatusOK, body} }
 
 func wantSession1() Session {
 	return Session{
-		ID: "ses_1", ProjectID: "prj_1", Directory: "/repo/.agents/worktrees/p", Agent: "coder",
+		ID: "ses_1", ProjectID: "prj_1", Directory: "/repo/.agents/worktrees/p", Agent: "coder", Title: "Fix the thing",
 		Created: time.UnixMilli(1000), Idle: time.UnixMilli(3000), Outcome: "succeeded",
 	}
 }
@@ -129,11 +129,24 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestSendPrompt(t *testing.T) {
-	c := serve(t,
-		[]want{{method: "POST", path: "/api/session/ses_1/prompt", body: `{"text":"go"}`}},
-		[]reply{ok(`{"data":{}}`)})
-	if err := c.SendPrompt(context.Background(), "ses_1", "go", ""); err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		name     string
+		delivery string
+		body     string
+	}{
+		{"no delivery leaves the field out", "", `{"text":"go"}`},
+		{"queue", DeliveryQueue, `{"text":"go","delivery":"queue"}`},
+		{"steer", DeliverySteer, `{"text":"go","delivery":"steer"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := serve(t,
+				[]want{{method: "POST", path: "/api/session/ses_1/prompt", body: tc.body}},
+				[]reply{ok(`{"data":{}}`)})
+			if err := c.SendPrompt(context.Background(), "ses_1", "go", tc.delivery); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -308,7 +321,7 @@ func TestRejectedCredentials(t *testing.T) {
 func assertSession(t *testing.T, got, want Session) {
 	t.Helper()
 	if got.ID != want.ID || got.ProjectID != want.ProjectID || got.Directory != want.Directory ||
-		got.Agent != want.Agent || got.Outcome != want.Outcome || got.ParentID != want.ParentID ||
+		got.Agent != want.Agent || got.Title != want.Title || got.Outcome != want.Outcome || got.ParentID != want.ParentID ||
 		!got.Created.Equal(want.Created) || !got.Idle.Equal(want.Idle) {
 		t.Errorf("session = %+v, want %+v", got, want)
 	}
