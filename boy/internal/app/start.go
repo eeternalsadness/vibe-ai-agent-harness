@@ -136,8 +136,12 @@ func startAdhoc(ctx context.Context, d Deps, prompt string) error {
 	}
 
 	name := AdhocName(prompt, d.Now())
-	haveWorktree := isDir(worktreePath(repo, name))
-	if !haveWorktree && branchExists(repo, name) {
+	// The name carries a hash of the start time, so a clash needs the same
+	// prompt at the same instant. Fail clearly rather than reuse a coder.
+	if isDir(worktreePath(repo, name)) {
+		return fmt.Errorf("worktree exists: %s", name)
+	}
+	if branchExists(repo, name) {
 		return fmt.Errorf("branch exists without worktree: %s", name)
 	}
 
@@ -145,7 +149,7 @@ func startAdhoc(ctx context.Context, d Deps, prompt string) error {
 	if _, err := activeSet(ctx, d); err != nil {
 		return err
 	}
-	return launch(ctx, d, repo, name, haveWorktree, prompt)
+	return launch(ctx, d, repo, name, false, prompt)
 }
 
 // startFromPicker asks whether to start a plan or an ad-hoc prompt, then

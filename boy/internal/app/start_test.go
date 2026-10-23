@@ -295,6 +295,14 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			want: func(*env) string { return "branch exists without worktree: " + wantAdhocName("do-it", "do it", t0) },
 		},
 		{
+			name: "ad-hoc worktree already exists",
+			setup: func(e *env) {
+				e.git("worktree", "add", "-q", "-b", wantAdhocName("do-it", "do it", t0), e.worktree(wantAdhocName("do-it", "do it", t0)), "HEAD")
+			},
+			run:  func(e *env) error { return e.startAdhoc("do it") },
+			want: func(*env) string { return "worktree exists: " + wantAdhocName("do-it", "do it", t0) },
+		},
+		{
 			name: "both a plan and a prompt",
 			run: func(e *env) error {
 				prompt, plan := "do it", e.planPath("p")
