@@ -18,6 +18,14 @@ var (
 	ErrUnauthorized = errors.New("server rejected credentials")
 )
 
+// Prompt delivery modes for a session that is already running.
+const (
+	// DeliveryQueue runs the prompt after the current turn.
+	DeliveryQueue = "queue"
+	// DeliverySteer redirects the current turn.
+	DeliverySteer = "steer"
+)
+
 // Rule is one entry of a session permission rule set.
 type Rule struct {
 	Action   string `json:"action"`
@@ -30,6 +38,7 @@ type Session struct {
 	ID        string
 	ProjectID string
 	ParentID  string // empty for top-level sessions
+	Title     string // empty until the server has named the session
 	Directory string
 	Agent     string
 	Created   time.Time
@@ -39,7 +48,6 @@ type Session struct {
 
 // CreateSessionRequest describes a new session.
 type CreateSessionRequest struct {
-	Title       string
 	Agent       string
 	Directory   string
 	Permissions []Rule
@@ -49,8 +57,10 @@ type CreateSessionRequest struct {
 type Client interface {
 	// CreateSession creates a session rooted at req.Directory.
 	CreateSession(ctx context.Context, req CreateSessionRequest) (Session, error)
-	// SendPrompt queues a prompt on the session without waiting for the reply.
-	SendPrompt(ctx context.Context, sessionID, text string) error
+	// SendPrompt sends a prompt to the session without waiting for the reply.
+	// delivery is empty, DeliveryQueue or DeliverySteer; empty leaves the
+	// choice to the server.
+	SendPrompt(ctx context.Context, sessionID, text, delivery string) error
 	// ListSessions returns top-level sessions, newest first. A non-empty
 	// directory restricts the result to sessions rooted exactly there.
 	ListSessions(ctx context.Context, directory string) ([]Session, error)

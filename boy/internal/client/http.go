@@ -89,6 +89,7 @@ type sessionDTO struct {
 	ID        string  `json:"id"`
 	ProjectID string  `json:"projectID"`
 	ParentID  *string `json:"parentID"`
+	Title     string  `json:"title"`
 	Agent     string  `json:"agent"`
 	Outcome   string  `json:"outcome"`
 	Time      struct {
@@ -105,6 +106,7 @@ func (d sessionDTO) session() Session {
 		ID:        d.ID,
 		ProjectID: d.ProjectID,
 		Directory: d.Location.Directory,
+		Title:     d.Title,
 		Agent:     d.Agent,
 		Outcome:   d.Outcome,
 		Created:   time.UnixMilli(int64(d.Time.Created)),
@@ -122,7 +124,6 @@ func sessionPath(id string) string { return "/api/session/" + url.PathEscape(id)
 
 func (c *HTTP) CreateSession(ctx context.Context, req CreateSessionRequest) (Session, error) {
 	body := map[string]any{
-		"title":       req.Title,
 		"agent":       req.Agent,
 		"location":    map[string]string{"directory": req.Directory},
 		"permissions": req.Permissions,
@@ -136,8 +137,12 @@ func (c *HTTP) CreateSession(ctx context.Context, req CreateSessionRequest) (Ses
 	return reply.Data.session(), nil
 }
 
-func (c *HTTP) SendPrompt(ctx context.Context, sessionID, text string) error {
-	return c.do(ctx, http.MethodPost, sessionPath(sessionID)+"/prompt", nil, map[string]string{"text": text}, nil)
+func (c *HTTP) SendPrompt(ctx context.Context, sessionID, text, delivery string) error {
+	body := map[string]string{"text": text}
+	if delivery != "" {
+		body["delivery"] = delivery
+	}
+	return c.do(ctx, http.MethodPost, sessionPath(sessionID)+"/prompt", nil, body, nil)
 }
 
 func (c *HTTP) ListSessions(ctx context.Context, directory string) ([]Session, error) {

@@ -11,7 +11,7 @@ import (
 )
 
 // Call is one recorded Fake invocation. Args holds the call's arguments by
-// name: "session", "directory", "text", "projectID", "force", "request".
+// name: "session", "directory", "text", "delivery", "projectID", "force", "request".
 type Call struct {
 	Name string
 	Args map[string]any
@@ -93,10 +93,10 @@ func (f *Fake) CreateSession(_ context.Context, req CreateSessionRequest) (Sessi
 }
 
 // SendPrompt records a user message and marks the session running.
-func (f *Fake) SendPrompt(_ context.Context, sessionID, text string) error {
+func (f *Fake) SendPrompt(_ context.Context, sessionID, text, delivery string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if err := f.record("SendPrompt", map[string]any{"session": sessionID, "text": text}); err != nil {
+	if err := f.record("SendPrompt", map[string]any{"session": sessionID, "text": text, "delivery": delivery}); err != nil {
 		return err
 	}
 	s, ok := f.Sessions[sessionID]

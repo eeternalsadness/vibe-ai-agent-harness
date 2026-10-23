@@ -8,7 +8,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 - [x] **Task 1** - ignore `.agents/DECISIONS.md` (test and fix together)
       Verify: decisions-gitignored
-- [ ] **Task 2** - scaffold the picker package, new Deps fields, client signature changes, and CLI flags
+- [x] **Task 2** - scaffold the picker package, new Deps fields, client signature changes, and CLI flags
 
 ## Tests
 

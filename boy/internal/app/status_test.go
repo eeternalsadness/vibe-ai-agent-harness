@@ -12,7 +12,7 @@ import (
 // startCoder starts a coder for plan in e's repo and returns its session id.
 func startCoder(t *testing.T, e *env, plan string) string {
 	t.Helper()
-	if err := e.start("", plan); err != nil {
+	if err := e.startPlan(plan); err != nil {
 		t.Fatalf("start %s: %v", plan, err)
 	}
 	return e.startEntry().Session

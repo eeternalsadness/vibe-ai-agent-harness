@@ -19,13 +19,8 @@ var coderPermissions = []client.Rule{
 }
 
 // Start starts a coder on a plan, or resumes the plan's existing coder.
-func Start(ctx context.Context, d Deps, dir, plan string) error {
-	if dir == "" {
-		dir = d.WorkDir
-	}
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(d.WorkDir, dir)
-	}
+func Start(ctx context.Context, d Deps, opts StartOptions) error {
+	dir, plan := d.WorkDir, opts.Plan
 
 	repo, err := mainCheckout(dir)
 	if err != nil {
@@ -100,7 +95,6 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	}
 
 	session, err := d.Client.CreateSession(ctx, client.CreateSessionRequest{
-		Title:       "plan " + plan,
 		Agent:       "coder",
 		Directory:   worktree,
 		Permissions: coderPermissions,
@@ -111,7 +105,7 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	if err := d.Client.RefreshWorktrees(ctx, session.ProjectID); err != nil {
 		return d.explainServerError(err)
 	}
-	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan)); err != nil {
+	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan), ""); err != nil {
 		return d.explainServerError(err)
 	}
 
@@ -136,7 +130,7 @@ func resume(ctx context.Context, d Deps, s client.Session, plan string) error {
 	case countTasks(s.Directory, plan).finished():
 		message = fmt.Sprintf("plan already finished: %s (session %s)", plan, s.ID)
 	default:
-		if err := d.Client.SendPrompt(ctx, s.ID, resumePrompt(plan)); err != nil {
+		if err := d.Client.SendPrompt(ctx, s.ID, resumePrompt(plan), ""); err != nil {
 			return d.explainServerError(err)
 		}
 		message = fmt.Sprintf("resumed session %s for %s", s.ID, plan)

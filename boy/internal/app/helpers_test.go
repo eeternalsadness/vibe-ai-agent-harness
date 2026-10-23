@@ -11,6 +11,7 @@ import (
 
 	"boy/internal/app"
 	"boy/internal/client"
+	"boy/internal/picker"
 	"boy/internal/testutil"
 )
 
@@ -29,20 +30,26 @@ type env struct {
 	stderr bytes.Buffer
 	// workDir is where commands run from; it defaults to repo.
 	workDir string
+	// output is the -o value commands run with; it defaults to json.
+	output string
+	// picker and interactive stand in for the terminal. A newEnv env has a
+	// terminal-less picker that fails the test if it is used.
+	picker      *picker.Fake
+	interactive bool
 }
 
 func newEnv(t *testing.T, plans ...string) *env {
 	t.Helper()
 	clock := testutil.NewClock(t0)
 	repo := testutil.NewRepo(t, plans...)
-	return &env{t: t, repo: repo, fake: client.NewFake(clock.Now), clock: clock, workDir: repo}
+	return &env{t: t, repo: repo, fake: client.NewFake(clock.Now), clock: clock, workDir: repo, output: "json", picker: &picker.Fake{}}
 }
 
 // otherRepo creates a second repo that shares this env's fake client and clock.
 func (e *env) otherRepo(plans ...string) *env {
 	e.t.Helper()
 	repo := testutil.NewRepo(e.t, plans...)
-	return &env{t: e.t, repo: repo, fake: e.fake, clock: e.clock, workDir: repo}
+	return &env{t: e.t, repo: repo, fake: e.fake, clock: e.clock, workDir: repo, output: e.output, picker: e.picker}
 }
 
 func (e *env) deps() app.Deps {
@@ -55,13 +62,45 @@ func (e *env) deps() app.Deps {
 		Stderr:    &e.stderr,
 		WorkDir:   e.workDir,
 		ServerURL: serverURL,
+
+		Picker:      e.picker,
+		Interactive: e.interactive,
+		Output:      e.output,
 	}
 }
 
-// start runs `boy start --dir <dir> <plan>`; an empty dir means the working directory.
-func (e *env) start(dir, plan string) error {
+// planPath is the path of a plan directory in this env's repo.
+func (e *env) planPath(plan string) string {
+	return filepath.Join(e.repo, ".agents", "plans", plan)
+}
+
+// start runs `boy start --plan <path>`.
+func (e *env) start(path string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), dir, plan)
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: path})
+}
+
+// startPlan runs `boy start --plan <repo>/.agents/plans/<plan>`.
+func (e *env) startPlan(plan string) error {
+	e.t.Helper()
+	return e.start(e.planPath(plan))
+}
+
+// startAdhoc runs `boy start "<prompt>"`.
+func (e *env) startAdhoc(prompt string) error {
+	e.t.Helper()
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Prompt: prompt})
+}
+
+// startPicker runs `boy start` with no arguments.
+func (e *env) startPicker() error {
+	e.t.Helper()
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{})
+}
+
+func (e *env) prompt(sessionID, text string, steer bool) error {
+	e.t.Helper()
+	return app.Prompt(e.t.Context(), e.deps(), app.PromptOptions{SessionID: sessionID, Text: text, Steer: steer})
 }
 
 func (e *env) status(opts app.StatusOptions) error {

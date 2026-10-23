@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"boy/internal/client"
+	"boy/internal/picker"
 )
 
 // Deps is everything a command needs from the outside world.
@@ -17,6 +18,24 @@ type Deps struct {
 	Stderr    io.Writer
 	WorkDir   string // the directory the command was run from
 	ServerURL string // used in error messages
+
+	Picker      picker.Picker
+	Interactive bool   // whether stdin is a terminal, so the picker may be opened
+	Output      string // "" for the human table, or "json"
+}
+
+// StartOptions says what to start. At most one field is set; with neither,
+// Start asks through the picker.
+type StartOptions struct {
+	Plan   string // path of an active plan directory
+	Prompt string // ad-hoc instructions
+}
+
+// PromptOptions describes a follow-up to a running or idle coder.
+type PromptOptions struct {
+	SessionID string
+	Text      string
+	Steer     bool // redirect the current turn instead of queueing behind it
 }
 
 // StatusOptions selects which coders Status reports.

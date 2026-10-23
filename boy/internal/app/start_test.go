@@ -90,7 +90,7 @@ func TestStartCreatesWorktreeAndLaunchesCoder(t *testing.T) {
 	e := newEnv(t, "p")
 	before := e.gitState()
 
-	if err := e.start("", "p"); err != nil {
+	if err := e.startPlan("p"); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	assertStarted(t, e, before, "p")
@@ -101,7 +101,7 @@ func TestStartFromOtherDir(t *testing.T) {
 	e.workDir = t.TempDir() // outside the repo
 	before := e.gitState()
 
-	if err := e.start(e.repo, "p"); err != nil {
+	if err := e.startPlan("p"); err != nil {
 		t.Fatalf("start --dir: %v", err)
 	}
 	assertStarted(t, e, before, "p")
@@ -175,7 +175,7 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			dir, plan := tc.setup(e)
 			before := e.gitState()
 
-			err := e.start(dir, plan)
+			err := e.start(filepath.Join(dir, ".agents", "plans", plan))
 
 			if err == nil {
 				t.Fatal("start succeeded, want an error")
@@ -204,7 +204,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	// second start's calls stand alone.
 	startedCoder := func(t *testing.T) (*env, string, gitState) {
 		e := newEnv(t, "p")
-		if err := e.start("", "p"); err != nil {
+		if err := e.startPlan("p"); err != nil {
 			t.Fatalf("first start: %v", err)
 		}
 		id := e.startEntry().Session
@@ -224,7 +224,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.git("worktree", "add", "-q", "-b", "p", e.worktree("p"), "HEAD")
 		before := e.gitState()
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.startPlan("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -243,7 +243,7 @@ func TestStartIsIdempotent(t *testing.T) {
 	t.Run("coder is running: sends nothing", func(t *testing.T) {
 		e, id, before := startedCoder(t)
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.startPlan("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -265,7 +265,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		e.fake.Sessions[id].Idle = t0
 		e.fake.Sessions[id].Outcome = "succeeded"
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.startPlan("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
@@ -292,7 +292,7 @@ func TestStartIsIdempotent(t *testing.T) {
 		writeTodo(t, e.worktree("p"), "p", todoWith("- [x] **Task 1** - a", "- [-] **Task 2** - b"))
 		before := e.gitState()
 
-		if err := e.start("", "p"); err != nil {
+		if err := e.startPlan("p"); err != nil {
 			t.Fatalf("start: %v", err)
 		}
 
