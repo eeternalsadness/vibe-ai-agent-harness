@@ -58,6 +58,13 @@ test("planner-defines-acceptance-format: rendered planner documents the ACCEPTAN
   expect(has(planner, "[MANUAL]")).toBe(true)
 })
 
+test("planner-specifies-edge-cases: rendered planner requires one line per case and boundary inputs", async () => {
+  const planner = await readRendered("agents/planner/planner.md")
+
+  expect(has(planner, "own line")).toBe(true)
+  expect(has(planner, "boundary inputs")).toBe(true)
+})
+
 test("planner-todo-verify-references: rendered planner describes the TODO Verify: convention", async () => {
   const planner = await readRendered("agents/planner/planner.md")
 

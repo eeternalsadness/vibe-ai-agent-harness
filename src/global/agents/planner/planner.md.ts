@@ -88,6 +88,8 @@ The machine-checkable definition of done. Without it, "done" means "a human appr
 
 Vagueness test: if you cannot write a failing test from a scenario, the scenario is too vague. Rewrite it until you can.
 
+- **Edge cases.** Give each case its own line with its exact result; never join cases with "or". For every rule that accepts, rejects, or excludes something, list its boundary inputs: the excluded item itself, absent vs empty vs whitespace, relative vs absolute paths.
+
 Criteria that genuinely cannot be verified programmatically are allowed only as the exception, never as an escape hatch: mark them **[MANUAL]** and state how a human confirms them. If a programmatic check exists, use it — do not mark it manual.
 
 ### IMPLEMENTATION.md (complex plans only)
