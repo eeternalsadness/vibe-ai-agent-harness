@@ -29,19 +29,19 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
       Verify: client-sends-opencode-requests
 - [x] **Task 14** - implement ad-hoc naming
       Verify: adhoc-name-format
-- [ ] **Task 15** - implement the new status entry and table
+- [x] **Task 15** - implement the new status entry and table
       Verify: status-reports-fields, status-human-table
-- [ ] **Task 16** - start plans by path
+- [x] **Task 16** - start plans by path
       Verify: start-creates-worktree, start-launches-coder, start-plan-from-anywhere, start-is-idempotent
-- [ ] **Task 17** - start ad-hoc coders
+- [x] **Task 17** - start ad-hoc coders
       Verify: adhoc-start-launches-coder, start-rejects-invalid-request
-- [ ] **Task 18** - add the picker
+- [x] **Task 18** - add the picker
       Verify: picker-starts-plan, picker-starts-adhoc, picker-rejects
-- [ ] **Task 19** - implement prompt
+- [x] **Task 19** - implement prompt
       Verify: prompt-idle-coder, prompt-running-coder, prompt-rejects-invalid-request, output-format-flag
-- [ ] **Task 20** - update remove
+- [x] **Task 20** - update remove
       Verify: remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file
-- [ ] **Task 21** - update the coder agent's decision and commit rules
+- [x] **Task 21** - update the coder agent's decision and commit rules
       Verify: coder-instructions
 - [ ] **Task 22** - update the docs
 - [ ] **Task 23** - live checks (human)

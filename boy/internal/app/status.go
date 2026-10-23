@@ -21,8 +21,11 @@ func isCoder(s client.Session) bool {
 	return ok && isDir(s.Directory)
 }
 
-// Status prints a JSON array with one entry per coder.
+// Status prints one entry per coder: a JSON array, or the table.
 func Status(ctx context.Context, d Deps, opts StatusOptions) error {
+	if err := checkOutput(d); err != nil {
+		return err
+	}
 	// Fetched once per command; it is also the first server call, so an
 	// unreachable server fails before anything else.
 	active, err := activeSet(ctx, d)
@@ -67,9 +70,9 @@ func Status(ctx context.Context, d Deps, opts StatusOptions) error {
 		if entries[i].Repo != entries[j].Repo {
 			return entries[i].Repo < entries[j].Repo
 		}
-		return entries[i].Plan < entries[j].Plan
+		return entries[i].Branch < entries[j].Branch
 	})
-	return writeJSON(d, entries)
+	return writeEntries(d, entries, opts.All)
 }
 
 // coderSession fetches one session and checks that it is a coder.

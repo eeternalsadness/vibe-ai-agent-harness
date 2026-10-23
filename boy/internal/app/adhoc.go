@@ -1,10 +1,8 @@
 package app
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -48,8 +46,3 @@ func promptSlug(prompt string) string {
 
 // isAdhoc reports whether a coder name belongs to an ad-hoc coder.
 func isAdhoc(name string) bool { return strings.HasPrefix(name, adhocPrefix) }
-
-// Prompt sends a follow-up to a coder.
-func Prompt(ctx context.Context, d Deps, opts PromptOptions) error {
-	return errors.New("not implemented")
-}

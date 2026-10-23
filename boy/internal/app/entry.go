@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,12 +17,16 @@ type Tasks struct {
 	Total   int `json:"total"`
 }
 
-// Entry is one coder in the status output.
+// Entry is one coder in the status output. Plan and Tasks are nil for an
+// ad-hoc coder, which is what marks it as ad-hoc.
 type Entry struct {
 	Session    string  `json:"session"`
 	Repo       string  `json:"repo"`
-	Plan       string  `json:"plan"`
-	Tasks      Tasks   `json:"tasks"`
+	Worktree   string  `json:"worktree"`
+	Title      string  `json:"title"`
+	Plan       *string `json:"plan"`
+	Branch     string  `json:"branch"`
+	Tasks      *Tasks  `json:"tasks"`
 	State      string  `json:"state"`
 	Outcome    *string `json:"outcome"`
 	StartedAt  string  `json:"started_at"`
@@ -72,15 +75,20 @@ func activeSet(ctx context.Context, d Deps) (map[string]bool, error) {
 
 // buildEntry assembles the status entry for a coder session.
 func buildEntry(ctx context.Context, d Deps, s client.Session, active map[string]bool) (Entry, error) {
-	repo, plan, _ := planFromWorktree(s.Directory)
+	repo, name, _ := planFromWorktree(s.Directory)
 	now := d.Now()
 	e := Entry{
 		Session:   s.ID,
 		Repo:      repo,
-		Plan:      plan,
-		Tasks:     countTasks(s.Directory, plan),
+		Worktree:  s.Directory,
+		Title:     s.Title,
+		Branch:    name,
 		State:     "idle",
 		StartedAt: s.Created.UTC().Format(time.RFC3339),
+	}
+	if !isAdhoc(name) {
+		tasks := countTasks(s.Directory, name)
+		e.Plan, e.Tasks = &name, &tasks
 	}
 	if s.Outcome != "" {
 		outcome := s.Outcome
@@ -104,14 +112,4 @@ func buildEntry(ctx context.Context, d Deps, s client.Session, active map[string
 	e.RunningFor = int64(now.Sub(s.Created).Seconds())
 	e.InStateFor = int64(now.Sub(since).Seconds())
 	return e, nil
-}
-
-// writeJSON prints v as indented JSON followed by a newline.
-func writeJSON(d Deps, v any) error {
-	out, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-	_, err = d.Stdout.Write(append(out, '\n'))
-	return err
 }

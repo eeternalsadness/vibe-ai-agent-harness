@@ -19,11 +19,11 @@ func Remove(ctx context.Context, d Deps, sessionID string, force bool) error {
 	if err != nil {
 		return err
 	}
-	repo, plan, _ := planFromWorktree(s.Directory)
+	repo, branch, _ := planFromWorktree(s.Directory)
 	running := active[s.ID]
 
 	if !force {
-		if err := checkSafeToRemove(repo, plan, s.Directory, sessionID, running); err != nil {
+		if err := checkSafeToRemove(repo, branch, s.Directory, sessionID, running); err != nil {
 			return err
 		}
 	}
@@ -48,16 +48,16 @@ func Remove(ctx context.Context, d Deps, sessionID string, force bool) error {
 	return err
 }
 
-func checkSafeToRemove(repo, plan, worktree, sessionID string, running bool) error {
+func checkSafeToRemove(repo, branch, worktree, sessionID string, running bool) error {
 	if running {
 		return fmt.Errorf("coder is still running: %s", sessionID)
 	}
 
-	_, err := git(repo, "merge-base", "--is-ancestor", plan, "HEAD")
+	_, err := git(repo, "merge-base", "--is-ancestor", branch, "HEAD")
 	var exit *exec.ExitError
 	switch {
 	case errors.As(err, &exit) && exit.ExitCode() == 1:
-		return fmt.Errorf("branch not merged: %s", plan)
+		return fmt.Errorf("branch not merged: %s", branch)
 	case err != nil:
 		return err
 	}

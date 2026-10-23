@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"boy/internal/client"
+	"boy/internal/picker"
 )
 
 // coderPermissions is the rule set every coder session gets: allow
@@ -18,24 +21,41 @@ var coderPermissions = []client.Rule{
 	{Action: "question", Resource: "*", Effect: "deny"},
 }
 
-// Start starts a coder on a plan, or resumes the plan's existing coder.
+// Start starts a coder on a plan or an ad-hoc prompt, or resumes the plan's
+// existing coder. With neither, it asks through the picker.
 func Start(ctx context.Context, d Deps, opts StartOptions) error {
-	dir, plan := d.WorkDir, opts.Plan
+	if err := checkOutput(d); err != nil {
+		return err
+	}
+	switch {
+	case opts.Plan != "" && opts.Prompt != nil:
+		return errors.New("pass a plan or a prompt, not both")
+	case opts.Plan != "":
+		return startPlan(ctx, d, opts.Plan)
+	case opts.Prompt != nil:
+		return startAdhoc(ctx, d, *opts.Prompt)
+	case !d.Interactive:
+		return errors.New("plan or prompt required")
+	default:
+		return startFromPicker(ctx, d)
+	}
+}
 
-	repo, err := mainCheckout(dir)
+// startPlan starts a coder on the plan directory at path, or resumes the
+// plan's existing coder.
+func startPlan(ctx context.Context, d Deps, path string) error {
+	repo, plan, err := resolvePlan(d, path)
 	if err != nil {
 		return err
 	}
-	if err := checkPlan(repo, plan); err != nil {
+	if err := checkPlanClean(repo, plan); err != nil {
 		return err
 	}
 
 	worktree := worktreePath(repo, plan)
 	haveWorktree := isDir(worktree)
-	if !haveWorktree {
-		if _, err := git(repo, "show-ref", "--verify", "--quiet", "refs/heads/"+plan); err == nil {
-			return fmt.Errorf("branch exists without worktree: %s", plan)
-		}
+	if !haveWorktree && branchExists(repo, plan) {
+		return fmt.Errorf("branch exists without worktree: %s", plan)
 	}
 
 	// The first server call: an unreachable server fails before any git change.
@@ -45,21 +65,49 @@ func Start(ctx context.Context, d Deps, opts StartOptions) error {
 	}
 
 	if existing == nil {
-		return launch(ctx, d, repo, plan, haveWorktree)
+		return launch(ctx, d, repo, plan, haveWorktree, startPrompt(plan))
 	}
 	return resume(ctx, d, *existing, plan)
 }
 
-// checkPlan verifies the plan is an active, committed plan directory.
-func checkPlan(repo, plan string) error {
-	if plan == "" || plan != filepath.Base(plan) || plan == "." || plan == ".." {
-		return fmt.Errorf("plan not found: %s", plan)
+// resolvePlan turns a --plan path into the main checkout and the name of the
+// plan, which must be an active plan: <repo>/.agents/plans/<name> in a main
+// checkout. Errors echo the path as the user typed it.
+func resolvePlan(d Deps, path string) (repo, plan string, err error) {
+	abs := path
+	if !filepath.IsAbs(abs) {
+		abs = filepath.Join(d.WorkDir, abs)
 	}
-	rel := filepath.Join(".agents", "plans", plan)
-	if !isDir(filepath.Join(repo, rel)) {
-		return fmt.Errorf("plan not found: %s", plan)
+	info, err := os.Stat(abs)
+	if err != nil {
+		return "", "", fmt.Errorf("plan not found: %s", path)
 	}
-	changes, err := git(repo, "status", "--porcelain", "--", rel)
+	if !info.IsDir() {
+		return "", "", fmt.Errorf("not an active plan: %s", path)
+	}
+	real, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", "", err
+	}
+
+	repo, err = mainCheckout(real)
+	if err != nil {
+		return "", "", fmt.Errorf("not a git repository: %s", path)
+	}
+	if repo, err = filepath.EvalSymlinks(repo); err != nil {
+		return "", "", err
+	}
+	plan = filepath.Base(real)
+	if real != filepath.Join(repo, ".agents", "plans", plan) {
+		return "", "", fmt.Errorf("not an active plan: %s", path)
+	}
+	return repo, plan, nil
+}
+
+// checkPlanClean verifies the plan's files are committed, so the worktree
+// branched from HEAD holds the same plan.
+func checkPlanClean(repo, plan string) error {
+	changes, err := git(repo, "status", "--porcelain", "--", filepath.Join(".agents", "plans", plan))
 	if err != nil {
 		return err
 	}
@@ -67,6 +115,96 @@ func checkPlan(repo, plan string) error {
 		return fmt.Errorf("plan has uncommitted changes: %s", plan)
 	}
 	return nil
+}
+
+// startAdhoc starts a new coder on prompt in a worktree named for it.
+func startAdhoc(ctx context.Context, d Deps, prompt string) error {
+	if strings.TrimSpace(prompt) == "" {
+		return errors.New("prompt required")
+	}
+	repo, err := mainCheckout(d.WorkDir)
+	if err != nil {
+		return err
+	}
+
+	name := AdhocName(prompt, d.Now())
+	haveWorktree := isDir(worktreePath(repo, name))
+	if !haveWorktree && branchExists(repo, name) {
+		return fmt.Errorf("branch exists without worktree: %s", name)
+	}
+
+	// The first server call: an unreachable server fails before any git change.
+	if _, err := activeSet(ctx, d); err != nil {
+		return err
+	}
+	return launch(ctx, d, repo, name, haveWorktree, prompt)
+}
+
+// startFromPicker asks whether to start a plan or an ad-hoc prompt, then
+// continues as if the answer had been given on the command line.
+func startFromPicker(ctx context.Context, d Deps) error {
+	repo, err := mainCheckout(d.WorkDir)
+	if err != nil {
+		return err
+	}
+
+	kind, err := d.Picker.Choose("start", []string{"plan", "ad-hoc"})
+	if err != nil {
+		return explainPickerError(err)
+	}
+	if kind == 1 {
+		line, err := d.Picker.ReadLine("prompt: ")
+		if err != nil {
+			return explainPickerError(err)
+		}
+		return startAdhoc(ctx, d, line)
+	}
+
+	plans, err := activePlans(repo)
+	if err != nil {
+		return err
+	}
+	if len(plans) == 0 {
+		return fmt.Errorf("no active plans in %s", repo)
+	}
+	chosen, err := d.Picker.Choose("plan", plans)
+	if err != nil {
+		return explainPickerError(err)
+	}
+	return startPlan(ctx, d, filepath.Join(repo, ".agents", "plans", plans[chosen]))
+}
+
+func explainPickerError(err error) error {
+	if errors.Is(err, picker.ErrCancelled) {
+		return errors.New("cancelled")
+	}
+	return err
+}
+
+// activePlans lists the plan directories under <repo>/.agents/plans/, apart
+// from the archive, sorted by name.
+func activePlans(repo string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(repo, ".agents", "plans"))
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var plans []string
+	for _, e := range entries {
+		if e.IsDir() && e.Name() != "archive" {
+			plans = append(plans, e.Name())
+		}
+	}
+	sort.Strings(plans)
+	return plans, nil
+}
+
+// branchExists reports whether the repo has a local branch called name.
+func branchExists(repo, name string) bool {
+	_, err := git(repo, "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+	return err == nil
 }
 
 // newestSession returns the newest top-level session rooted at dir, or nil.
@@ -82,14 +220,15 @@ func newestSession(ctx context.Context, d Deps, dir string) (*client.Session, er
 	return &sessions[0], nil
 }
 
-// launch creates the worktree (unless it exists), then a coder session in it.
-func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) error {
-	worktree := worktreePath(repo, plan)
+// launch creates the worktree (unless it exists), then a coder session in it
+// and sends it the first prompt.
+func launch(ctx context.Context, d Deps, repo, name string, haveWorktree bool, prompt string) error {
+	worktree := worktreePath(repo, name)
 	if !haveWorktree {
 		if err := os.MkdirAll(filepath.Dir(worktree), 0o755); err != nil {
 			return err
 		}
-		if _, err := git(repo, "worktree", "add", "-b", plan, worktree, "HEAD"); err != nil {
+		if _, err := git(repo, "worktree", "add", "-b", name, worktree, "HEAD"); err != nil {
 			return err
 		}
 	}
@@ -105,14 +244,18 @@ func launch(ctx context.Context, d Deps, repo, plan string, haveWorktree bool) e
 	if err := d.Client.RefreshWorktrees(ctx, session.ProjectID); err != nil {
 		return d.explainServerError(err)
 	}
-	if err := d.Client.SendPrompt(ctx, session.ID, startPrompt(plan), ""); err != nil {
+	if err := d.Client.SendPrompt(ctx, session.ID, prompt, ""); err != nil {
 		return d.explainServerError(err)
 	}
 
 	if err := printEntry(ctx, d, session); err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(d.Stderr, "plan %s started at %s\n", plan, worktree)
+	kind := "plan"
+	if isAdhoc(name) {
+		kind = "ad-hoc"
+	}
+	_, err = fmt.Fprintf(d.Stderr, "%s %s started at %s\n", kind, name, worktree)
 	return err
 }
 
@@ -158,7 +301,7 @@ func printEntry(ctx context.Context, d Deps, s client.Session) error {
 	if err != nil {
 		return err
 	}
-	return writeJSON(d, entry)
+	return writeEntry(d, entry)
 }
 
 func startPrompt(plan string) string {
