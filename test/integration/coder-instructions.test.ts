@@ -4,8 +4,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { renderTemplates } from "../../src/render"
 
-// Plan 19 scenario coder-instructions: the rendered coder agent carries the
-// unattended-run rules. Lenient, case-insensitive protocol-token checks, as
+// Plan 19 and plan 20 scenario coder-instructions: the rendered coder agent
+// carries the unattended-run rules and the decisions-file rules. Lenient, case-insensitive protocol-token checks, as
 // in acceptance-criteria.test.ts.
 
 const testProfile = {
@@ -46,11 +46,30 @@ test("coder-instructions: installs dependencies in its working directory when ne
   expect(has(coder, "install dependencies")).toBe(true)
 })
 
-test("coder-instructions: resolves ambiguity itself and records the decision in DECISIONS.md", () => {
-  expect(has(coder, "DECISIONS.md")).toBe(true)
-
+test("coder-instructions: resolves ambiguity itself and never asks the user", () => {
   // Every place that used to ask a human, or stop and wait, must be gone.
   const asking = /\bask (the user|rather than guess|targeted questions|for clarification)/i
   expect(coder).not.toMatch(asking)
   expect(coder).not.toMatch(/stop and explain/i)
+})
+
+test("coder-instructions: records decisions in .agents/DECISIONS.md and never commits it", () => {
+  expect(has(coder, ".agents/DECISIONS.md")).toBe(true)
+  expect(coder).toMatch(/never commit `?\.agents\/DECISIONS\.md/i)
+  expect(coder).toMatch(/no longer hold/i)
+})
+
+test("coder-instructions: no longer keeps decisions in the plan directory or the final message", () => {
+  expect(coder).not.toMatch(/DECISIONS\.md`? in the plan directory/i)
+  expect(coder).not.toMatch(/final message instead/i)
+})
+
+test("coder-instructions: the ad-hoc workflow commits once the pipeline is green", () => {
+  const start = coder.indexOf("## Workflow — Ad-hoc Mode")
+  expect(start).toBeGreaterThan(-1)
+  const rest = coder.slice(start + 1)
+  const next = rest.indexOf("\n## ")
+  const adhoc = next === -1 ? rest : rest.slice(0, next)
+
+  expect(has(adhoc, "commit")).toBe(true)
 })
