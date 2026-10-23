@@ -27,8 +27,8 @@ type Deps struct {
 // StartOptions says what to start. At most one field is set; with neither,
 // Start asks through the picker.
 type StartOptions struct {
-	Plan   string // path of an active plan directory
-	Prompt string // ad-hoc instructions
+	Plan   string  // path of an active plan directory
+	Prompt *string // ad-hoc instructions; non-nil even when blank, so a blank prompt is an error
 }
 
 // PromptOptions describes a follow-up to a running or idle coder.

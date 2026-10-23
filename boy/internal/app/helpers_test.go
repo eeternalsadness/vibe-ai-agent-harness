@@ -89,7 +89,7 @@ func (e *env) startPlan(plan string) error {
 // startAdhoc runs `boy start "<prompt>"`.
 func (e *env) startAdhoc(prompt string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Prompt: prompt})
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Prompt: &prompt})
 }
 
 // startPicker runs `boy start` with no arguments.

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -76,7 +77,10 @@ func newStartCmd() *cobra.Command {
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 {
-				opts.Prompt = args[0]
+				opts.Prompt = &args[0]
+			}
+			if cmd.Flags().Changed("plan") && opts.Plan == "" {
+				return errors.New("plan not found: ")
 			}
 			d, err := newDeps(cmd, output)
 			if err != nil {

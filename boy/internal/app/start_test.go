@@ -1,12 +1,12 @@
 package app_test
 
 import (
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	"boy/internal/app"
 	"boy/internal/client"
 	"boy/internal/testutil"
 )
@@ -146,80 +146,193 @@ func TestStartPlanFromAnywhere(t *testing.T) {
 	assertPlanStarted(t, e, before, "p")
 }
 
+const adhocPrompt = "Fix the auth typo in login.go, please!"
+
+func TestAdhocStartLaunchesCoder(t *testing.T) {
+	e := newEnv(t)
+	before := e.gitState()
+	name := wantAdhocName("fix-the-auth-typo-in", adhocPrompt, t0)
+
+	if err := e.startAdhoc(adhocPrompt); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	assertWorktree(t, e, before, name)
+	en := assertLaunched(t, e, name, adhocPrompt, "ad-hoc "+name+" started at "+e.worktree(name))
+	if en.Plan != nil || en.Tasks != nil {
+		t.Errorf("stdout entry plan/tasks = %v/%v, want null/null", en.Plan, en.Tasks)
+	}
+}
+
+func TestAdhocStartFromSubdirectory(t *testing.T) {
+	e := newEnv(t)
+	e.workDir = filepath.Join(e.repo, "src")
+	testutil.WriteFile(t, filepath.Join(e.workDir, "x.go"), "package x\n")
+	e.git("add", "-A")
+	e.git("commit", "-q", "-m", "src")
+	before := e.gitState()
+	name := wantAdhocName("fix-the-auth-typo-in", adhocPrompt, t0)
+
+	if err := e.startAdhoc(adhocPrompt); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	assertWorktree(t, e, before, name)
+}
+
 func TestStartRejectsInvalidRequest(t *testing.T) {
 	notRepo := t.TempDir()
+	blank := "  \t\n "
+	empty := ""
 
 	cases := []struct {
 		name  string
-		setup func(e *env) (dir, plan string)
-		want  func(e *env, dir string) string
+		setup func(e *env)
+		run   func(e *env) error
+		want  func(e *env) string
 	}{
 		{
-			name:  "dir is not inside a git repo",
-			setup: func(e *env) (string, string) { return notRepo, "p" },
-			want:  func(_ *env, dir string) string { return "not a git repository: " + dir },
+			name:  "prompt outside a git repo",
+			setup: func(e *env) { e.workDir = notRepo },
+			run:   func(e *env) error { return e.startAdhoc("do it") },
+			want:  func(*env) string { return "not a git repository: " + notRepo },
 		},
 		{
-			name:  "plan directory does not exist",
-			setup: func(e *env) (string, string) { return "", "nope" },
-			want:  func(*env, string) string { return "plan not found: nope" },
+			name:  "no arguments outside a git repo",
+			setup: func(e *env) { e.workDir = notRepo; e.interactive = true },
+			run:   func(e *env) error { return e.startPicker() },
+			want:  func(*env) string { return "not a git repository: " + notRepo },
+		},
+		{
+			name: "plan path outside a git repo",
+			setup: func(e *env) {
+				testutil.WriteFile(e.t, filepath.Join(notRepo, ".agents", "plans", "p", "TODO.md"), "x")
+			},
+			run:  func(e *env) error { return e.start(filepath.Join(notRepo, ".agents", "plans", "p")) },
+			want: func(*env) string { return "not a git repository: " + filepath.Join(notRepo, ".agents", "plans", "p") },
+		},
+		{
+			name: "plan path does not exist",
+			run:  func(e *env) error { return e.start(e.planPath("nope")) },
+			want: func(e *env) string { return "plan not found: " + e.planPath("nope") },
+		},
+		{
+			name: "relative plan path does not exist",
+			run:  func(e *env) error { return e.start(".agents/plans/nope") },
+			want: func(*env) string { return "plan not found: .agents/plans/nope" },
 		},
 		{
 			name: "archived plan",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
 				e.git("add", "-A")
 				e.git("commit", "-q", "-m", "archive")
-				return "", "old"
 			},
-			want: func(*env, string) string { return "plan not found: old" },
+			run:  func(e *env) error { return e.start(e.planPath("archive/old")) },
+			want: func(e *env) string { return "not an active plan: " + e.planPath("archive/old") },
+		},
+		{
+			name: "plan inside a worktree",
+			setup: func(e *env) {
+				// The worktree is an older checkout, so its plan copy is
+				// committed and clean: only its location is wrong.
+				e.git("worktree", "add", "-q", "-b", "other", e.worktree("other"), "HEAD")
+			},
+			run: func(e *env) error {
+				return e.start(filepath.Join(e.worktree("other"), ".agents", "plans", "p"))
+			},
+			want: func(e *env) string {
+				return "not an active plan: " + filepath.Join(e.worktree("other"), ".agents", "plans", "p")
+			},
+		},
+		{
+			name: "directory that is not a plan",
+			run:  func(e *env) error { return e.start(filepath.Join(e.repo, ".agents")) },
+			want: func(e *env) string { return "not an active plan: " + filepath.Join(e.repo, ".agents") },
 		},
 		{
 			name: "plan has a modified file",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "TODO.md"), "changed\n")
-				return "", "p"
 			},
-			want: func(*env, string) string { return "plan has uncommitted changes: p" },
+			run:  func(e *env) error { return e.startPlan("p") },
+			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
 			name: "plan has an untracked file",
-			setup: func(e *env) (string, string) {
+			setup: func(e *env) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "p", "NOTES.md"), "new\n")
-				return "", "p"
 			},
-			want: func(*env, string) string { return "plan has uncommitted changes: p" },
+			run:  func(e *env) error { return e.startPlan("p") },
+			want: func(*env) string { return "plan has uncommitted changes: p" },
 		},
 		{
-			name: "branch exists without a worktree",
-			setup: func(e *env) (string, string) {
-				e.git("branch", "p")
-				return "", "p"
-			},
-			want: func(*env, string) string { return "branch exists without worktree: p" },
+			name:  "plan branch exists without a worktree",
+			setup: func(e *env) { e.git("branch", "p") },
+			run:   func(e *env) error { return e.startPlan("p") },
+			want:  func(*env) string { return "branch exists without worktree: p" },
 		},
 		{
-			name: "server unreachable",
-			setup: func(e *env) (string, string) {
-				e.fake.Failures["*"] = client.ErrUnreachable
-				return "", "p"
+			name: "ad-hoc branch exists without a worktree",
+			setup: func(e *env) {
+				e.git("branch", wantAdhocName("do-it", "do it", t0))
 			},
-			want: func(*env, string) string { return "opencode server unreachable: " + serverURL },
+			run:  func(e *env) error { return e.startAdhoc("do it") },
+			want: func(*env) string { return "branch exists without worktree: " + wantAdhocName("do-it", "do it", t0) },
+		},
+		{
+			name: "both a plan and a prompt",
+			run: func(e *env) error {
+				prompt := "do it"
+				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: e.planPath("p"), Prompt: &prompt})
+			},
+			want: func(*env) string { return "pass a plan or a prompt, not both" },
+		},
+		{
+			name: "whitespace prompt",
+			run:  func(e *env) error { return e.startAdhoc(blank) },
+			want: func(*env) string { return "prompt required" },
+		},
+		{
+			name: "empty prompt",
+			run: func(e *env) error {
+				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Prompt: &empty})
+			},
+			want: func(*env) string { return "prompt required" },
+		},
+		{
+			name: "no arguments and no terminal",
+			run:  func(e *env) error { return e.startPicker() },
+			want: func(*env) string { return "plan or prompt required" },
+		},
+		{
+			name:  "server unreachable for a plan",
+			setup: func(e *env) { e.fake.Failures["*"] = client.ErrUnreachable },
+			run:   func(e *env) error { return e.startPlan("p") },
+			want:  func(*env) string { return "opencode server unreachable: " + serverURL },
+		},
+		{
+			name:  "server unreachable for a prompt",
+			setup: func(e *env) { e.fake.Failures["*"] = client.ErrUnreachable },
+			run:   func(e *env) error { return e.startAdhoc("do it") },
+			want:  func(*env) string { return "opencode server unreachable: " + serverURL },
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newEnv(t, "p")
-			dir, plan := tc.setup(e)
+			if tc.setup != nil {
+				tc.setup(e)
+			}
 			before := e.gitState()
+			worktrees := e.git("worktree", "list", "--porcelain")
 
-			err := e.start(filepath.Join(dir, ".agents", "plans", plan))
+			err := tc.run(e)
 
 			if err == nil {
 				t.Fatal("start succeeded, want an error")
 			}
-			if want := tc.want(e, dir); err.Error() != want {
+			if want := tc.want(e); err.Error() != want {
 				t.Errorf("error = %q, want %q", err.Error(), want)
 			}
 			if e.stdout.Len() != 0 {
@@ -228,11 +341,14 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			if got := e.gitState(); got != before {
 				t.Errorf("repo changed: before %+v, after %+v", before, got)
 			}
+			if got := e.git("worktree", "list", "--porcelain"); got != worktrees {
+				t.Errorf("worktrees changed: before %q, after %q", worktrees, got)
+			}
 			if got := mutations(e.fake); len(got) != 0 {
 				t.Errorf("state-changing calls = %v, want none", got)
 			}
-			if _, statErr := os.Stat(e.worktree(plan)); statErr == nil {
-				t.Errorf("worktree %s exists", e.worktree(plan))
+			if len(e.picker.Shown) != 0 && !e.interactive {
+				t.Errorf("picker was shown %v without a terminal", e.picker.Shown)
 			}
 		})
 	}
