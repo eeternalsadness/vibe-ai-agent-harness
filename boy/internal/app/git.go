@@ -36,13 +36,15 @@ func mainCheckout(dir string) (string, error) {
 	return filepath.Dir(common), nil
 }
 
-// worktreePath is where a plan's coder works.
-func worktreePath(repo, plan string) string {
-	return filepath.Join(repo, ".agents", "worktrees", plan)
+// worktreePath is where the coder called name works: a plan's name or an
+// ad-hoc name.
+func worktreePath(repo, name string) string {
+	return filepath.Join(repo, ".agents", "worktrees", name)
 }
 
 // planFromWorktree is the inverse of worktreePath: it returns the repo and
-// plan for a directory shaped like <repo>/.agents/worktrees/<plan>.
+// the coder's name (a plan's name or an ad-hoc name, not necessarily a plan)
+// for a directory shaped like <repo>/.agents/worktrees/<name>.
 func planFromWorktree(dir string) (repo, plan string, ok bool) {
 	dir = filepath.Clean(dir)
 	worktrees := filepath.Dir(dir)

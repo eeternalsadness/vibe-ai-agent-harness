@@ -1,9 +1,9 @@
 // Command boy starts, inspects, and removes background coders, each working
-// on a plan in its own git worktree through an opencode server.
+// on a plan or an ad-hoc prompt in its own git worktree through an opencode
+// server.
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -52,7 +52,7 @@ func newDeps(cmd *cobra.Command, output string) (app.Deps, error) {
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "boy",
-		Short:         "Run plan coders in background git worktrees",
+		Short:         "Run plan and ad-hoc coders in background git worktrees",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -68,7 +68,7 @@ func addOutputFlag(cmd *cobra.Command, output *string) {
 
 func newStartCmd() *cobra.Command {
 	var opts app.StartOptions
-	var output string
+	var plan, output string
 	cmd := &cobra.Command{
 		Use:   `start [-o json] [--plan <path> | "<prompt>"]`,
 		Short: "Start a coder on a plan or an ad-hoc prompt in its own worktree",
@@ -79,8 +79,8 @@ func newStartCmd() *cobra.Command {
 			if len(args) == 1 {
 				opts.Prompt = &args[0]
 			}
-			if cmd.Flags().Changed("plan") && opts.Plan == "" {
-				return errors.New("plan not found: ")
+			if cmd.Flags().Changed("plan") {
+				opts.Plan = &plan
 			}
 			d, err := newDeps(cmd, output)
 			if err != nil {
@@ -89,7 +89,7 @@ func newStartCmd() *cobra.Command {
 			return app.Start(cmd.Context(), d, opts)
 		},
 	}
-	cmd.Flags().StringVar(&opts.Plan, "plan", "", "path of an active plan directory, e.g. .agents/plans/my-plan")
+	cmd.Flags().StringVar(&plan, "plan", "", "path of an active plan directory, e.g. .agents/plans/my-plan")
 	addOutputFlag(cmd, &output)
 	return cmd
 }

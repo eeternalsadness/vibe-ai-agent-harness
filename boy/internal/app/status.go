@@ -12,7 +12,7 @@ import (
 )
 
 // isCoder reports whether s is a coder session: top-level and rooted at an
-// existing <repo>/.agents/worktrees/<plan> directory.
+// existing <repo>/.agents/worktrees/<name> directory.
 func isCoder(s client.Session) bool {
 	if s.ParentID != "" {
 		return false

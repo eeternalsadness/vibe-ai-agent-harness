@@ -221,6 +221,11 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			want: func(*env) string { return "plan not found: .agents/plans/nope" },
 		},
 		{
+			name: "empty plan flag",
+			run:  func(e *env) error { return e.start("") },
+			want: func(*env) string { return "plan not found: " },
+		},
+		{
 			name: "archived plan",
 			setup: func(e *env) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
@@ -229,6 +234,16 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			},
 			run:  func(e *env) error { return e.start(e.planPath("archive/old")) },
 			want: func(e *env) string { return "not an active plan: " + e.planPath("archive/old") },
+		},
+		{
+			name: "archive directory itself",
+			setup: func(e *env) {
+				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
+				e.git("add", "-A")
+				e.git("commit", "-q", "-m", "archive")
+			},
+			run:  func(e *env) error { return e.start(".agents/plans/archive") },
+			want: func(*env) string { return "not an active plan: .agents/plans/archive" },
 		},
 		{
 			name: "plan inside a worktree",
@@ -280,10 +295,18 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			want: func(*env) string { return "branch exists without worktree: " + wantAdhocName("do-it", "do it", t0) },
 		},
 		{
+			name: "ad-hoc worktree already exists",
+			setup: func(e *env) {
+				e.git("worktree", "add", "-q", "-b", wantAdhocName("do-it", "do it", t0), e.worktree(wantAdhocName("do-it", "do it", t0)), "HEAD")
+			},
+			run:  func(e *env) error { return e.startAdhoc("do it") },
+			want: func(*env) string { return "worktree exists: " + wantAdhocName("do-it", "do it", t0) },
+		},
+		{
 			name: "both a plan and a prompt",
 			run: func(e *env) error {
-				prompt := "do it"
-				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: e.planPath("p"), Prompt: &prompt})
+				prompt, plan := "do it", e.planPath("p")
+				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: &plan, Prompt: &prompt})
 			},
 			want: func(*env) string { return "pass a plan or a prompt, not both" },
 		},
@@ -462,4 +485,19 @@ func TestStartIsIdempotent(t *testing.T) {
 			t.Errorf("stdout entry = %+v, want session %s idle", got, id)
 		}
 	})
+}
+
+// An empty --plan must fail, not fall through to the picker, even with a terminal.
+func TestStartEmptyPlanNeverOpensPicker(t *testing.T) {
+	e := newEnv(t, "p")
+	e.interactive = true
+
+	err := e.start("")
+
+	if err == nil || err.Error() != "plan not found: " {
+		t.Fatalf("error = %v, want %q", err, "plan not found: ")
+	}
+	if len(e.picker.Shown) != 0 {
+		t.Errorf("picker was shown %v", e.picker.Shown)
+	}
 }

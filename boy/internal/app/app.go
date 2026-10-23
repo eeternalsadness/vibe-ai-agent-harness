@@ -25,9 +25,10 @@ type Deps struct {
 }
 
 // StartOptions says what to start. At most one field is set; with neither,
-// Start asks through the picker.
+// Start asks through the picker. Both are pointers so that a flag or argument
+// given but empty is an error, not the same as absent.
 type StartOptions struct {
-	Plan   string  // path of an active plan directory
+	Plan   *string // path of an active plan directory; non-nil even when empty, so an empty --plan is an error
 	Prompt *string // ad-hoc instructions; non-nil even when blank, so a blank prompt is an error
 }
 

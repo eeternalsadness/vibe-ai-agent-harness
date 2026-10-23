@@ -13,6 +13,18 @@ import (
 	"boy/internal/picker"
 )
 
+// archiveDir is the directory under .agents/plans/ that holds archived plans.
+// It is not itself a plan.
+const archiveDir = "archive"
+
+// The choices the picker first offers, in the order it shows them.
+const (
+	choosePlan = iota
+	chooseAdhoc
+)
+
+var startChoices = [...]string{choosePlan: "plan", chooseAdhoc: "ad-hoc"}
+
 // coderPermissions is the rule set every coder session gets: allow
 // everything first, so no action falls through to opencode's default of
 // asking, then deny questions. Later rules win. Tuning it is out of scope.
@@ -28,10 +40,10 @@ func Start(ctx context.Context, d Deps, opts StartOptions) error {
 		return err
 	}
 	switch {
-	case opts.Plan != "" && opts.Prompt != nil:
+	case opts.Plan != nil && opts.Prompt != nil:
 		return errors.New("pass a plan or a prompt, not both")
-	case opts.Plan != "":
-		return startPlan(ctx, d, opts.Plan)
+	case opts.Plan != nil:
+		return startPlan(ctx, d, *opts.Plan)
 	case opts.Prompt != nil:
 		return startAdhoc(ctx, d, *opts.Prompt)
 	case !d.Interactive:
@@ -72,8 +84,12 @@ func startPlan(ctx context.Context, d Deps, path string) error {
 
 // resolvePlan turns a --plan path into the main checkout and the name of the
 // plan, which must be an active plan: <repo>/.agents/plans/<name> in a main
-// checkout. Errors echo the path as the user typed it.
+// checkout, and not the archive directory. Errors echo the path as the user typed it.
 func resolvePlan(d Deps, path string) (repo, plan string, err error) {
+	if path == "" {
+		// An empty --plan would otherwise resolve to the current directory.
+		return "", "", errors.New("plan not found: ")
+	}
 	abs := path
 	if !filepath.IsAbs(abs) {
 		abs = filepath.Join(d.WorkDir, abs)
@@ -98,7 +114,7 @@ func resolvePlan(d Deps, path string) (repo, plan string, err error) {
 		return "", "", err
 	}
 	plan = filepath.Base(real)
-	if real != filepath.Join(repo, ".agents", "plans", plan) {
+	if plan == archiveDir || real != filepath.Join(repo, ".agents", "plans", plan) {
 		return "", "", fmt.Errorf("not an active plan: %s", path)
 	}
 	return repo, plan, nil
@@ -128,8 +144,12 @@ func startAdhoc(ctx context.Context, d Deps, prompt string) error {
 	}
 
 	name := AdhocName(prompt, d.Now())
-	haveWorktree := isDir(worktreePath(repo, name))
-	if !haveWorktree && branchExists(repo, name) {
+	// The name carries a hash of the start time, so a clash needs the same
+	// prompt at the same instant. Fail clearly rather than reuse a coder.
+	if isDir(worktreePath(repo, name)) {
+		return fmt.Errorf("worktree exists: %s", name)
+	}
+	if branchExists(repo, name) {
 		return fmt.Errorf("branch exists without worktree: %s", name)
 	}
 
@@ -137,7 +157,7 @@ func startAdhoc(ctx context.Context, d Deps, prompt string) error {
 	if _, err := activeSet(ctx, d); err != nil {
 		return err
 	}
-	return launch(ctx, d, repo, name, haveWorktree, prompt)
+	return launch(ctx, d, repo, name, false, prompt)
 }
 
 // startFromPicker asks whether to start a plan or an ad-hoc prompt, then
@@ -148,11 +168,11 @@ func startFromPicker(ctx context.Context, d Deps) error {
 		return err
 	}
 
-	kind, err := d.Picker.Choose("start", []string{"plan", "ad-hoc"})
+	kind, err := d.Picker.Choose("start", startChoices[:])
 	if err != nil {
 		return explainPickerError(err)
 	}
-	if kind == 1 {
+	if kind == chooseAdhoc {
 		line, err := d.Picker.ReadLine("prompt: ")
 		if err != nil {
 			return explainPickerError(err)
@@ -193,7 +213,7 @@ func activePlans(repo string) ([]string, error) {
 	}
 	var plans []string
 	for _, e := range entries {
-		if e.IsDir() && e.Name() != "archive" {
+		if e.IsDir() && e.Name() != archiveDir {
 			plans = append(plans, e.Name())
 		}
 	}

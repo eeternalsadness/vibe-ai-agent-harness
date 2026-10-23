@@ -37,7 +37,7 @@ You always run with no one available to answer, and you run until the work is fi
 
 1. **Try to resolve it.** Re-read the plan files, search the codebase for precedent, and load the \`researching-knowledge\` skill.
 2. **If it is still unclear, decide.** Choose the reading that best serves the plan's goals and its ACCEPTANCE.md scenarios, and continue.
-3. **Record the decision** in \`.agents/DECISIONS.md\` in your working directory, in both modes: what was unclear, the options you considered, what you chose, and why. If the file exists, read it first. Keep it true for the current result: remove or rewrite decisions that no longer hold. Never commit \`.agents/DECISIONS.md\` - it is a temporary record of this run, and the repo ignores it. Anything that should outlast the run goes into code comments or docs, as part of the commit.
+3. **Record the decision** in \`.agents/DECISIONS.md\` in your working directory, in both modes: what was unclear, the options you considered, what you chose, and why. If the file exists, read it first. Keep it true for the current result: remove or rewrite decisions that no longer hold. Never commit \`.agents/DECISIONS.md\`, even if git does not ignore it (leave it untracked or unstaged) - it is a temporary record of this run. Anything that should outlast the run goes into code comments or docs, as part of the commit.
 
 Also, install dependencies in your working directory when a command needs them (for example \`bun install\` or \`go mod download\`), and never push.
 
