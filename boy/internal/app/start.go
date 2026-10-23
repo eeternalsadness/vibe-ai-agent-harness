@@ -17,6 +17,14 @@ import (
 // It is not itself a plan.
 const archiveDir = "archive"
 
+// The choices the picker first offers, in the order it shows them.
+const (
+	choosePlan = iota
+	chooseAdhoc
+)
+
+var startChoices = [...]string{choosePlan: "plan", chooseAdhoc: "ad-hoc"}
+
 // coderPermissions is the rule set every coder session gets: allow
 // everything first, so no action falls through to opencode's default of
 // asking, then deny questions. Later rules win. Tuning it is out of scope.
@@ -160,11 +168,11 @@ func startFromPicker(ctx context.Context, d Deps) error {
 		return err
 	}
 
-	kind, err := d.Picker.Choose("start", []string{"plan", "ad-hoc"})
+	kind, err := d.Picker.Choose("start", startChoices[:])
 	if err != nil {
 		return explainPickerError(err)
 	}
-	if kind == 1 {
+	if kind == chooseAdhoc {
 		line, err := d.Picker.ReadLine("prompt: ")
 		if err != nil {
 			return explainPickerError(err)

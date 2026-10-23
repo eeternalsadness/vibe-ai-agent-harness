@@ -1,5 +1,6 @@
 // Command boy starts, inspects, and removes background coders, each working
-// on a plan in its own git worktree through an opencode server.
+// on a plan or an ad-hoc prompt in its own git worktree through an opencode
+// server.
 package main
 
 import (
@@ -51,7 +52,7 @@ func newDeps(cmd *cobra.Command, output string) (app.Deps, error) {
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "boy",
-		Short:         "Run plan coders in background git worktrees",
+		Short:         "Run plan and ad-hoc coders in background git worktrees",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
