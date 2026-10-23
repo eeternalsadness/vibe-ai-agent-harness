@@ -59,6 +59,12 @@ test("coder-instructions: records decisions in .agents/DECISIONS.md and never co
   expect(coder).toMatch(/no longer hold/i)
 })
 
+test("coder-instructions: never commits the decisions file even when git does not ignore it", () => {
+  expect(coder).toMatch(/even if git does not ignore it/i)
+  expect(coder).toMatch(/untracked or unstaged/i)
+  expect(coder).not.toMatch(/the repo ignores it/i)
+})
+
 test("coder-instructions: no longer keeps decisions in the plan directory or the final message", () => {
   expect(coder).not.toMatch(/DECISIONS\.md`? in the plan directory/i)
   expect(coder).not.toMatch(/final message instead/i)
