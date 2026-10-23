@@ -26,29 +26,34 @@ func mutations(f *client.Fake) []string {
 	return out
 }
 
-// assertStarted checks the worktree, branch and untouched main checkout
-// (start-creates-worktree) and the server calls (start-launches-coder) for a
-// freshly started plan.
-func assertStarted(t *testing.T, e *env, before gitState, plan string) {
+// assertWorktree checks the worktree, branch and untouched main checkout
+// (start-creates-worktree) for a freshly started coder called name.
+func assertWorktree(t *testing.T, e *env, before gitState, name string) {
 	t.Helper()
-	wt := e.worktree(plan)
+	wt := e.worktree(name)
 
-	// start-creates-worktree
 	if !strings.Contains(e.git("worktree", "list", "--porcelain"), "worktree "+wt+"\n") {
 		t.Errorf("git worktree list lacks %s", wt)
 	}
-	if got := testutil.Git(t, wt, "branch", "--show-current"); got != plan {
-		t.Errorf("worktree branch = %q, want %q", got, plan)
+	if got := testutil.Git(t, wt, "branch", "--show-current"); got != name {
+		t.Errorf("worktree branch = %q, want %q", got, name)
 	}
-	if got := e.git("rev-parse", plan); got != before.head {
-		t.Errorf("branch %s tip = %s, want main HEAD %s", plan, got, before.head)
+	if got := e.git("rev-parse", name); got != before.head {
+		t.Errorf("branch %s tip = %s, want main HEAD %s", name, got, before.head)
 	}
 	after := e.gitState()
 	if after.head != before.head || after.branch != before.branch || after.status != before.status {
 		t.Errorf("main checkout changed: before %+v, after %+v", before, after)
 	}
+}
 
-	// start-launches-coder
+// assertLaunched checks the server calls and printed entry of a freshly
+// started coder (start-launches-coder) and returns the printed entry. It
+// expects exactly one session and one prompt with the given text.
+func assertLaunched(t *testing.T, e *env, name, wantPrompt, wantMessage string) entry {
+	t.Helper()
+	wt := e.worktree(name)
+
 	if got, want := mutations(e.fake), []string{"CreateSession", "RefreshWorktrees", "SendPrompt"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("state-changing calls = %v, want %v", got, want)
 	}
@@ -73,38 +78,72 @@ func assertStarted(t *testing.T, e *env, before gitState, plan string) {
 	if prompt["session"] != sessionID {
 		t.Errorf("prompt sent to %v, want %s", prompt["session"], sessionID)
 	}
-	if text, _ := prompt["text"].(string); !strings.Contains(text, plan) {
-		t.Errorf("prompt %q does not name the plan %q", text, plan)
+	if prompt["delivery"] != "" {
+		t.Errorf("prompt delivery = %q, want none", prompt["delivery"])
+	}
+	text, _ := prompt["text"].(string)
+	if wantPrompt != "" && text != wantPrompt {
+		t.Errorf("prompt = %q, want %q", text, wantPrompt)
+	}
+	if wantPrompt == "" && !strings.Contains(text, name) {
+		t.Errorf("prompt %q does not name the plan %q", text, name)
 	}
 
 	en := e.startEntry()
-	if en.Session != sessionID || en.Plan != plan {
-		t.Errorf("stdout entry = session %s plan %s, want %s / %s", en.Session, en.Plan, sessionID, plan)
+	if en.Session != sessionID || en.Worktree != wt || en.Branch != name || en.Repo != e.repo || en.Title != "" {
+		t.Errorf("stdout entry = %+v, want session %s worktree %s branch %s", en, sessionID, wt, name)
 	}
-	if want := "plan " + plan + " started at " + wt + "\n"; e.stderr.String() != want {
-		t.Errorf("stderr = %q, want %q", e.stderr.String(), want)
+	if e.stderr.String() != wantMessage+"\n" {
+		t.Errorf("stderr = %q, want %q", e.stderr.String(), wantMessage+"\n")
+	}
+	return en
+}
+
+// assertPlanStarted runs start-creates-worktree and start-launches-coder
+// for a freshly started plan.
+func assertPlanStarted(t *testing.T, e *env, before gitState, plan string) {
+	t.Helper()
+	assertWorktree(t, e, before, plan)
+	en := assertLaunched(t, e, plan, "", "plan "+plan+" started at "+e.worktree(plan))
+	if en.Plan == nil || *en.Plan != plan {
+		t.Errorf("stdout entry plan = %v, want %s", en.Plan, plan)
+	}
+	if en.Tasks == nil || en.Tasks.Total != 5 {
+		t.Errorf("stdout entry tasks = %+v, want 5 tasks", en.Tasks)
 	}
 }
 
 func TestStartCreatesWorktreeAndLaunchesCoder(t *testing.T) {
-	e := newEnv(t, "p")
-	before := e.gitState()
+	for _, tc := range []struct{ name, path string }{
+		{"relative path", filepath.Join(".agents", "plans", "p")},
+		{"relative path with a trailing slash", filepath.Join(".agents", "plans", "p") + "/"},
+		{"absolute path", ""}, // filled in below: it needs the repo
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newEnv(t, "p")
+			path := tc.path
+			if path == "" {
+				path = e.planPath("p")
+			}
+			before := e.gitState()
 
-	if err := e.startPlan("p"); err != nil {
-		t.Fatalf("start: %v", err)
+			if err := e.start(path); err != nil {
+				t.Fatalf("start --plan %s: %v", path, err)
+			}
+			assertPlanStarted(t, e, before, "p")
+		})
 	}
-	assertStarted(t, e, before, "p")
 }
 
-func TestStartFromOtherDir(t *testing.T) {
+func TestStartPlanFromAnywhere(t *testing.T) {
 	e := newEnv(t, "p")
 	e.workDir = t.TempDir() // outside the repo
 	before := e.gitState()
 
-	if err := e.startPlan("p"); err != nil {
-		t.Fatalf("start --dir: %v", err)
+	if err := e.start(e.planPath("p")); err != nil {
+		t.Fatalf("start --plan: %v", err)
 	}
-	assertStarted(t, e, before, "p")
+	assertPlanStarted(t, e, before, "p")
 }
 
 func TestStartRejectsInvalidRequest(t *testing.T) {
