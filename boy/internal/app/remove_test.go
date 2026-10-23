@@ -65,27 +65,72 @@ func assertRemoved(t *testing.T, e *env, plan, id string, wantCalls []string, fo
 	}
 }
 
-func TestRemoveMergedCoder(t *testing.T) {
-	e := newEnv(t, "p")
-	id := startCoder(t, e, "p")
-	makeIdle(e, id)
-	commitInWorktree(t, e, "p")
-	e.git("merge", "-q", "--ff-only", "p")
-	e.workDir = t.TempDir() // from any directory
-	e.fake.Calls = nil
-
-	if err := e.remove(id, false); err != nil {
-		t.Fatalf("remove: %v", err)
-	}
-	assertRemoved(t, e, "p", id, []string{"RemoveWorktree", "DeleteSession"}, false)
+// coderKind starts a coder of one kind and returns its session id and name
+// (worktree directory and branch).
+type coderKind struct {
+	name  string
+	start func(t *testing.T, e *env) (id, name string)
 }
 
-// unsafeStates are the coder states remove refuses without --force.
+func coderKinds() []coderKind {
+	return []coderKind{
+		{"plan coder", func(t *testing.T, e *env) (string, string) { return startCoder(t, e, "p"), "p" }},
+		{"ad-hoc coder", func(t *testing.T, e *env) (string, string) {
+			if err := e.startAdhoc(adhocPrompt); err != nil {
+				t.Fatalf("start ad-hoc: %v", err)
+			}
+			return e.startEntry().Session, wantAdhocName("fix-the-auth-typo-in", adhocPrompt, t0)
+		}},
+	}
+}
+
+func TestRemoveMergedCoder(t *testing.T) {
+	for _, kind := range coderKinds() {
+		t.Run(kind.name, func(t *testing.T) {
+			e := newEnv(t, "p")
+			id, name := kind.start(t, e)
+			makeIdle(e, id)
+			commitInWorktree(t, e, name)
+			e.git("merge", "-q", "--ff-only", name)
+			e.workDir = t.TempDir() // from any directory
+			e.fake.Calls = nil
+
+			if err := e.remove(id, false); err != nil {
+				t.Fatalf("remove: %v", err)
+			}
+			assertRemoved(t, e, name, id, []string{"RemoveWorktree", "DeleteSession"}, false)
+		})
+	}
+}
+
+func TestRemoveIgnoresDecisionsFile(t *testing.T) {
+	for _, kind := range coderKinds() {
+		t.Run(kind.name, func(t *testing.T) {
+			e := newEnv(t, "p")
+			testutil.WriteFile(t, filepath.Join(e.repo, ".gitignore"), ".agents/worktrees/\n.agents/DECISIONS.md\n")
+			e.git("add", "-A")
+			e.git("commit", "-q", "-m", "ignore decisions")
+			id, name := kind.start(t, e)
+			makeIdle(e, id)
+			commitInWorktree(t, e, name)
+			e.git("merge", "-q", "--ff-only", name)
+			testutil.WriteFile(t, filepath.Join(e.worktree(name), ".agents", "DECISIONS.md"), "- chose X\n")
+			e.fake.Calls = nil
+
+			if err := e.remove(id, false); err != nil {
+				t.Fatalf("remove: %v", err)
+			}
+			assertRemoved(t, e, name, id, []string{"RemoveWorktree", "DeleteSession"}, false)
+		})
+	}
+}
+
+// unsafeState is a coder state remove refuses without --force.
 type unsafeState struct {
 	name string
 	// setup puts a freshly started coder into the state and returns the
 	// error remove should report without --force.
-	setup func(t *testing.T, e *env, id string) string
+	setup func(t *testing.T, e *env, id, name string) string
 	// interrupts is whether --force must interrupt the coder first.
 	interrupts bool
 }
@@ -94,52 +139,54 @@ func unsafeStates() []unsafeState {
 	return []unsafeState{
 		{
 			name:       "coder is running",
-			setup:      func(_ *testing.T, _ *env, id string) string { return "coder is still running: " + id },
+			setup:      func(_ *testing.T, _ *env, id, _ string) string { return "coder is still running: " + id },
 			interrupts: true,
 		},
 		{
 			name: "branch not merged",
-			setup: func(t *testing.T, e *env, id string) string {
+			setup: func(t *testing.T, e *env, id, name string) string {
 				makeIdle(e, id)
-				commitInWorktree(t, e, "p")
-				return "branch not merged: p"
+				commitInWorktree(t, e, name)
+				return "branch not merged: " + name
 			},
 		},
 		{
 			name: "worktree has uncommitted changes",
-			setup: func(t *testing.T, e *env, id string) string {
+			setup: func(t *testing.T, e *env, id, name string) string {
 				makeIdle(e, id)
-				testutil.WriteFile(t, filepath.Join(e.worktree("p"), "scratch.txt"), "wip\n")
-				return "worktree has uncommitted changes: " + e.worktree("p")
+				testutil.WriteFile(t, filepath.Join(e.worktree(name), "scratch.txt"), "wip\n")
+				return "worktree has uncommitted changes: " + e.worktree(name)
 			},
 		},
 	}
 }
 
 func TestRemoveRefusesUnsafe(t *testing.T) {
-	for _, st := range unsafeStates() {
-		t.Run(st.name, func(t *testing.T) {
-			e := newEnv(t, "p")
-			id := startCoder(t, e, "p")
-			want := st.setup(t, e, id)
-			e.fake.Calls = nil
+	for _, kind := range coderKinds() {
+		for _, st := range unsafeStates() {
+			t.Run(kind.name+": "+st.name, func(t *testing.T) {
+				e := newEnv(t, "p")
+				id, name := kind.start(t, e)
+				want := st.setup(t, e, id, name)
+				e.fake.Calls = nil
 
-			err := e.remove(id, false)
+				err := e.remove(id, false)
 
-			if err == nil || err.Error() != want {
-				t.Fatalf("error = %v, want %q", err, want)
-			}
-			if e.stdout.Len() != 0 {
-				t.Errorf("stdout = %q, want empty", e.stdout.String())
-			}
-			mustExist(t, filepath.Join(e.worktree("p"), ".agents", "plans", "p", "TODO.md"))
-			if _, ok := e.fake.Sessions[id]; !ok {
-				t.Error("session was deleted")
-			}
-			if got := removalCalls(e.fake); len(got) != 0 {
-				t.Errorf("calls = %v, want none", got)
-			}
-		})
+				if err == nil || err.Error() != want {
+					t.Fatalf("error = %v, want %q", err, want)
+				}
+				if e.stdout.Len() != 0 {
+					t.Errorf("stdout = %q, want empty", e.stdout.String())
+				}
+				mustExist(t, e.worktree(name))
+				if _, ok := e.fake.Sessions[id]; !ok {
+					t.Error("session was deleted")
+				}
+				if got := removalCalls(e.fake); len(got) != 0 {
+					t.Errorf("calls = %v, want none", got)
+				}
+			})
+		}
 	}
 
 	t.Run("session not on the server", func(t *testing.T) {
@@ -164,22 +211,24 @@ func TestRemoveRefusesUnsafe(t *testing.T) {
 }
 
 func TestRemoveForce(t *testing.T) {
-	for _, st := range unsafeStates() {
-		t.Run(st.name, func(t *testing.T) {
-			e := newEnv(t, "p")
-			id := startCoder(t, e, "p")
-			st.setup(t, e, id)
-			e.fake.Calls = nil
+	for _, kind := range coderKinds() {
+		for _, st := range unsafeStates() {
+			t.Run(kind.name+": "+st.name, func(t *testing.T) {
+				e := newEnv(t, "p")
+				id, name := kind.start(t, e)
+				st.setup(t, e, id, name)
+				e.fake.Calls = nil
 
-			if err := e.remove(id, true); err != nil {
-				t.Fatalf("remove --force: %v", err)
-			}
+				if err := e.remove(id, true); err != nil {
+					t.Fatalf("remove --force: %v", err)
+				}
 
-			wantCalls := []string{"RemoveWorktree", "DeleteSession"}
-			if st.interrupts {
-				wantCalls = []string{"Interrupt", "RemoveWorktree", "DeleteSession"}
-			}
-			assertRemoved(t, e, "p", id, wantCalls, true)
-		})
+				wantCalls := []string{"RemoveWorktree", "DeleteSession"}
+				if st.interrupts {
+					wantCalls = []string{"Interrupt", "RemoveWorktree", "DeleteSession"}
+				}
+				assertRemoved(t, e, name, id, wantCalls, true)
+			})
+		}
 	}
 }
