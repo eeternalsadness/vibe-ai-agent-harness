@@ -13,7 +13,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 ## Tests
 
 - [x] **Task 3** - write the test for client-sends-opencode-requests
-- [ ] **Task 4** - write the test for adhoc-name-format
+- [x] **Task 4** - write the test for adhoc-name-format
 - [ ] **Task 5** - write the tests for start-creates-worktree, start-launches-coder, start-plan-from-anywhere, start-is-idempotent
 - [ ] **Task 6** - write the tests for adhoc-start-launches-coder and start-rejects-invalid-request
 - [ ] **Task 7** - write the tests for picker-starts-plan, picker-starts-adhoc, picker-rejects
