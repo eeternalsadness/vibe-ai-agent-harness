@@ -13,3 +13,13 @@ test("worktrees-gitignored: git ignores paths under .agents/worktrees/", () => {
 
   expect(result.exitCode).toBe(0)
 })
+
+// Plan 20 scenario decisions-gitignored: a coder's decisions file is a
+// temporary record and must never be committed.
+test("decisions-gitignored: git ignores .agents/DECISIONS.md", () => {
+  const result = Bun.spawnSync(["git", "check-ignore", "-q", ".agents/DECISIONS.md"], {
+    cwd: repoRoot,
+  })
+
+  expect(result.exitCode).toBe(0)
+})
