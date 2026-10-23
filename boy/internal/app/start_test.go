@@ -231,6 +231,16 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			want: func(e *env) string { return "not an active plan: " + e.planPath("archive/old") },
 		},
 		{
+			name: "archive directory itself",
+			setup: func(e *env) {
+				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
+				e.git("add", "-A")
+				e.git("commit", "-q", "-m", "archive")
+			},
+			run:  func(e *env) error { return e.start(".agents/plans/archive") },
+			want: func(*env) string { return "not an active plan: .agents/plans/archive" },
+		},
+		{
 			name: "plan inside a worktree",
 			setup: func(e *env) {
 				// The worktree is an older checkout, so its plan copy is

@@ -13,6 +13,10 @@ import (
 	"boy/internal/picker"
 )
 
+// archiveDir is the directory under .agents/plans/ that holds archived plans.
+// It is not itself a plan.
+const archiveDir = "archive"
+
 // coderPermissions is the rule set every coder session gets: allow
 // everything first, so no action falls through to opencode's default of
 // asking, then deny questions. Later rules win. Tuning it is out of scope.
@@ -72,7 +76,7 @@ func startPlan(ctx context.Context, d Deps, path string) error {
 
 // resolvePlan turns a --plan path into the main checkout and the name of the
 // plan, which must be an active plan: <repo>/.agents/plans/<name> in a main
-// checkout. Errors echo the path as the user typed it.
+// checkout, and not the archive directory. Errors echo the path as the user typed it.
 func resolvePlan(d Deps, path string) (repo, plan string, err error) {
 	abs := path
 	if !filepath.IsAbs(abs) {
@@ -98,7 +102,7 @@ func resolvePlan(d Deps, path string) (repo, plan string, err error) {
 		return "", "", err
 	}
 	plan = filepath.Base(real)
-	if real != filepath.Join(repo, ".agents", "plans", plan) {
+	if plan == archiveDir || real != filepath.Join(repo, ".agents", "plans", plan) {
 		return "", "", fmt.Errorf("not an active plan: %s", path)
 	}
 	return repo, plan, nil
@@ -193,7 +197,7 @@ func activePlans(repo string) ([]string, error) {
 	}
 	var plans []string
 	for _, e := range entries {
-		if e.IsDir() && e.Name() != "archive" {
+		if e.IsDir() && e.Name() != archiveDir {
 			plans = append(plans, e.Name())
 		}
 	}
