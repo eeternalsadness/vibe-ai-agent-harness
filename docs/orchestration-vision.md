@@ -58,7 +58,7 @@ Pipeline in one line: automated correctness → automated analysis → human jud
 
 ### Phase 3 — Sandboxed Execution
 
-Plan: `19-orchestration-tooling` (the `boy` CLI: start, status and remove a coder per plan in its own worktree; the coder runs unattended). The merge gate and the reviewer artifact are a later plan.
+Plans: `19-orchestration-tooling` (the `boy` CLI: start, status and remove a coder per plan in its own worktree; the coder runs unattended) and `20-adhoc-coders` (ad-hoc coders from a prompt, `boy prompt` for follow-ups, human-readable output with `-o json` for machines). `boy prompt` is how the orchestrator will send review feedback back to a coder. The merge gate and the reviewer artifact are a later plan.
 
 Isolate the work environment for a delegated plan so an autonomous agent cannot damage the main working tree.
 

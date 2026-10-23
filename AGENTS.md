@@ -23,8 +23,8 @@ src/global/                  # Platform-agnostic: instructions, agents, skills (
 src/platforms/opencode/      # OpenCode-specific runtime code (non-portable)
   plugins/memory-manager.ts  # Plugin: injects memory into system prompt, exposes remember() tool
 
-boy/                         # Go CLI (own module, cobra/viper) that runs plan coders in background git worktrees
-                             # start / status / remove; attaches to the running opencode server, never starts one
+boy/                         # Go CLI (own module, cobra/viper) that runs plan and ad-hoc coders in background git worktrees
+                             # start / prompt / status / remove; attaches to the running opencode server, never starts one
 
 dist/                        # .gitignored — generated output written by render.ts, installed by install.sh
 .agents/plans/               # Planning docs for ongoing and completed work

@@ -43,6 +43,6 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
       Verify: remove-refuses-unsafe, remove-adhoc-coder, remove-ignores-decisions-file
 - [x] **Task 21** - update the coder agent's decision and commit rules
       Verify: coder-instructions
-- [ ] **Task 22** - update the docs
+- [x] **Task 22** - update the docs
 - [ ] **Task 23** - live checks (human)
       Verify: live-adhoc-end-to-end, picker-in-terminal
