@@ -77,7 +77,7 @@ func (e *env) planPath(plan string) string {
 // start runs `boy start --plan <path>`.
 func (e *env) start(path string) error {
 	e.t.Helper()
-	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: path})
+	return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: &path})
 }
 
 // startPlan runs `boy start --plan <repo>/.agents/plans/<plan>`.

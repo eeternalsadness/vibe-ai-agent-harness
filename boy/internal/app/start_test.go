@@ -221,6 +221,11 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 			want: func(*env) string { return "plan not found: .agents/plans/nope" },
 		},
 		{
+			name: "empty plan flag",
+			run:  func(e *env) error { return e.start("") },
+			want: func(*env) string { return "plan not found: " },
+		},
+		{
 			name: "archived plan",
 			setup: func(e *env) {
 				testutil.WriteFile(e.t, filepath.Join(e.repo, ".agents", "plans", "archive", "old", "TODO.md"), "x")
@@ -292,8 +297,8 @@ func TestStartRejectsInvalidRequest(t *testing.T) {
 		{
 			name: "both a plan and a prompt",
 			run: func(e *env) error {
-				prompt := "do it"
-				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: e.planPath("p"), Prompt: &prompt})
+				prompt, plan := "do it", e.planPath("p")
+				return app.Start(e.t.Context(), e.deps(), app.StartOptions{Plan: &plan, Prompt: &prompt})
 			},
 			want: func(*env) string { return "pass a plan or a prompt, not both" },
 		},
@@ -472,4 +477,19 @@ func TestStartIsIdempotent(t *testing.T) {
 			t.Errorf("stdout entry = %+v, want session %s idle", got, id)
 		}
 	})
+}
+
+// An empty --plan must fail, not fall through to the picker, even with a terminal.
+func TestStartEmptyPlanNeverOpensPicker(t *testing.T) {
+	e := newEnv(t, "p")
+	e.interactive = true
+
+	err := e.start("")
+
+	if err == nil || err.Error() != "plan not found: " {
+		t.Fatalf("error = %v, want %q", err, "plan not found: ")
+	}
+	if len(e.picker.Shown) != 0 {
+		t.Errorf("picker was shown %v", e.picker.Shown)
+	}
 }

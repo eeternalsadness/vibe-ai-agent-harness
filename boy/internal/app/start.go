@@ -32,10 +32,10 @@ func Start(ctx context.Context, d Deps, opts StartOptions) error {
 		return err
 	}
 	switch {
-	case opts.Plan != "" && opts.Prompt != nil:
+	case opts.Plan != nil && opts.Prompt != nil:
 		return errors.New("pass a plan or a prompt, not both")
-	case opts.Plan != "":
-		return startPlan(ctx, d, opts.Plan)
+	case opts.Plan != nil:
+		return startPlan(ctx, d, *opts.Plan)
 	case opts.Prompt != nil:
 		return startAdhoc(ctx, d, *opts.Prompt)
 	case !d.Interactive:
@@ -78,6 +78,10 @@ func startPlan(ctx context.Context, d Deps, path string) error {
 // plan, which must be an active plan: <repo>/.agents/plans/<name> in a main
 // checkout, and not the archive directory. Errors echo the path as the user typed it.
 func resolvePlan(d Deps, path string) (repo, plan string, err error) {
+	if path == "" {
+		// An empty --plan would otherwise resolve to the current directory.
+		return "", "", errors.New("plan not found: ")
+	}
 	abs := path
 	if !filepath.IsAbs(abs) {
 		abs = filepath.Join(d.WorkDir, abs)
