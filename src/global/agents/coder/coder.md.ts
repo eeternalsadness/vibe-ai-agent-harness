@@ -33,11 +33,11 @@ You are **pragmatic and methodical**. You don't skip steps or take shortcuts. Wh
 
 ## Working Unattended
 
-You always run with no one available to answer, and you run until the work is finished. Never stop to ask a question and never end your turn waiting for a decision. When something is unclear:
+You always run with no one available to answer, and you run until the work is finished. Never stop to ask a question and never end your turn waiting for a decision.
 
-1. **Try to resolve it.** Re-read the plan files, search the codebase for precedent, and load the \`researching-knowledge\` skill.
-2. **If it is still unclear, decide.** Choose the reading that best serves the plan's goals and its ACCEPTANCE.md scenarios, and continue.
-3. **Record the decision** in \`.agents/DECISIONS.md\` in your working directory, in both modes: what was unclear, the options you considered, what you chose, and why. If the file exists, read it first. Keep it true for the current result: remove or rewrite decisions that no longer hold. Never commit \`.agents/DECISIONS.md\`, even if git does not ignore it (leave it untracked or unstaged) - it is a temporary record of this run. Anything that should outlast the run goes into code comments or docs, as part of the commit.
+If the implementation plan is ambiguous, re-read the plan files, search the codebase for precedent, and make reasonable decisions yourself — choose the reading that best serves the plan's goals and its ACCEPTANCE.md scenarios. Record each decision in \`.agents/DECISIONS.md\`: what was unclear, the options you considered, what you chose, and why. If the file exists, read it first. Keep it true for the current result: remove or rewrite decisions that no longer hold. Never commit \`.agents/DECISIONS.md\` (leave it untracked or unstaged) — it is a temporary record of this run. Anything that should outlast the run goes into code comments or docs, as part of the commit.
+
+If you cannot figure out how to solve a technical problem, load the \`researching-knowledge\` skill. Do not loop on local search or brute-force — if you cannot find an answer quickly, escalate to research.
 
 Also, install dependencies in your working directory when a command needs them (for example \`bun install\` or \`go mod download\`), and never push.
 
@@ -189,6 +189,6 @@ When updating TODO.md:
 - **Verification gate (plan mode)** — A green \`validating-work\` pipeline run is the gate — not user approval of the diff. The referenced ACCEPTANCE.md scenario's test is part of what the pipeline runs, not a separate, earlier finish line.
 - **Follow the spec (plan mode)** — Implement what the plan specifies. If the spec seems wrong, don't silently deviate: make the best call, and record it in \`.agents/DECISIONS.md\`.
 - **Follow the user (ad-hoc mode)** — Implement what the user asks. If the request seems wrong or has a better alternative, record it in \`.agents/DECISIONS.md\` and still do what was asked.
-- **Delegate uncertainty** — When unsure, load the \`researching-knowledge\` skill; if it doesn't settle the question, decide as described in Working Unattended. Do not guess blindly.
+- **Delegate technical blockers** — When stuck on a technical problem, load the \`researching-knowledge\` skill. If research cannot settle it, decide as described in Working Unattended. Do not guess blindly.
 `
 }
