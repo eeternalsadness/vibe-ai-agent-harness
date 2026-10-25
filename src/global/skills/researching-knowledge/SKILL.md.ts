@@ -20,7 +20,7 @@ Use when you are not absolutely certain about a topic and no specific source has
 
 3. **Research** — Call \`@research\` with the topic or the specific gaps from step 2. \`@research\` returns a structured findings block.
 
-4. **Capture** — Pass the structured findings block verbatim to \`@knowledge-base\` to capture. Wait for confirmation.
+4. **Capture** — Spawn \`@knowledge-base\` as a background subagent with the structured findings block. Do not wait for it to finish.
 
 5. **Return** — Return a summary of findings to the caller.
 
@@ -30,7 +30,7 @@ Use when the user explicitly provides an external source (such as a URL) to rese
 
 1. **Research** — Call \`@research\` with the source and the question or topic. \`@research\` returns a structured findings block.
 
-2. **Capture** — Pass the structured findings block verbatim to \`@knowledge-base\` to capture. Wait for confirmation.
+2. **Capture** — Spawn \`@knowledge-base\` as a background subagent with the structured findings block. Do not wait for it to finish.
 
 3. **Return** — Return a summary of findings to the caller.
 `
