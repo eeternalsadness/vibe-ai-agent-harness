@@ -6,7 +6,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ## Tests
 
-- [ ] **Task 1** - write the install test harness
+- [x] **Task 1** - write the install test harness
 - [ ] **Task 2** - write the tests for skills-installed-whole, agents-installed-flat, clean-install,
       clean-missing-folders, clean-dry-run, install-without-clean
 - [ ] **Task 5** - write the tests for skill-set, agents-name-their-skills
