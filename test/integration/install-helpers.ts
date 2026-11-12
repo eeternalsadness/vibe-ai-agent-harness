@@ -9,7 +9,7 @@
 // serialized: no two install.sh processes may read or rebuild dist/ at the
 // same time.
 
-import { mkdtemp, rm, readdir, readFile, stat } from "node:fs/promises"
+import { cp, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -32,11 +32,25 @@ function trackHome(home: string): string {
   return home
 }
 
-// Removes every temp home created by these tests.
+// A fresh temp directory to use as HOME. Tracked for cleanup.
+export async function createTempHome(): Promise<string> {
+  return trackHome(await mkdtemp(join(tmpdir(), "vibe-install-test-home-")))
+}
+
+// Removes every temp directory created by these tests.
 export async function cleanupTempHomes(): Promise<void> {
   for (const home of tempHomes.splice(0)) {
     await rm(home, { recursive: true, force: true }).catch(() => undefined)
   }
+}
+
+// Copies a directory tree to a fresh tracked temp directory, byte for byte.
+// The destination never exists beforehand, so node's cp creates it as a copy.
+export async function copyTree(src: string): Promise<string> {
+  const parent = trackHome(await mkdtemp(join(tmpdir(), "vibe-install-test-snap-")))
+  const dest = join(parent, "copy")
+  await cp(src, dest, { recursive: true })
+  return dest
 }
 
 let goEnvPromise: Promise<Record<string, string>> | null = null
@@ -76,7 +90,7 @@ function withInstallLock<T>(fn: () => Promise<T>): Promise<T> {
 // directory when `home` is omitted. Runs from the repo root, because
 // install.sh resolves ./config.ts relative to the working directory.
 export async function runInstall(args: string[] = [], home?: string): Promise<InstallRun> {
-  const h = home ?? trackHome(await mkdtemp(join(tmpdir(), "vibe-install-test-home-")))
+  const h = home ?? (await createTempHome())
   return withInstallLock(async () => {
     const env: Record<string, string | undefined> = { ...process.env, HOME: h }
     const goEnv = await realGoEnv()
