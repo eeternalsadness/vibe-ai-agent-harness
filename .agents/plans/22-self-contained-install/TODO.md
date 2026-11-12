@@ -28,7 +28,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [x] **Task 7** - create `implementing-code`
 - [x] **Task 8** - create `writing-plans`
       Verify: skills-installed-whole
-- [ ] **Task 9** - create `reviewing-code`
+- [x] **Task 9** - create `reviewing-code`
       Verify: skill-set, agents-name-their-skills
 
 ### Phase 3 - Paths

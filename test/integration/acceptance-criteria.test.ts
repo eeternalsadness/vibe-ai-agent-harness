@@ -80,7 +80,7 @@ test("coder-reads-acceptance-and-self-verifies: rendered coder reads ACCEPTANCE.
 })
 
 test("reviewer-validates-tests-encode-criteria: rendered reviewer validates tests encode acceptance criteria", async () => {
-  const reviewer = await readRendered("agents/reviewer/reviewer.md")
+  const skill = await readRendered("skills/reviewing-code/SKILL.md")
 
-  expect(has(reviewer, "ACCEPTANCE.md")).toBe(true)
+  expect(has(skill, "ACCEPTANCE.md")).toBe(true)
 })

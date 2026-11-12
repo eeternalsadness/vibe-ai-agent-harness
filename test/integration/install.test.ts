@@ -247,7 +247,7 @@ test("skill-set: the installed skill folders are exactly the shipped set", async
     const skill = await readFile(join(S, id, "SKILL.md"), "utf-8")
     const fm = skill.match(/^---\n([\s\S]*?)\n---/)
     expect(fm, `skills/${id}/SKILL.md has no frontmatter`).toBeTruthy()
-    expect(fm![1], `skills/${id}/SKILL.md frontmatter name`).toMatch(/^name: ${id}$/m)
+    expect(fm![1], `skills/${id}/SKILL.md frontmatter name`).toMatch(new RegExp(`^name: ${id}$`, "m"))
     expect(fm![1], `skills/${id}/SKILL.md frontmatter description`).toMatch(/^description: \S/m)
   }
 
