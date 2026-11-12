@@ -43,6 +43,8 @@ Checklist only. One line per task. Matches the tasks in IMPLEMENTATION.md (or PL
 
 **For plans involving code, split each scenario into a test task and an implementation task** (see format below): the test task writes the failing test, has no \`Verify:\` line, and comes first; the implementation task makes it pass and carries the \`Verify:\` line.
 
+**Documentation updates are not acceptance scenarios.** They are tasks without a \`Verify:\` line, checked in review.
+
 Format:
 \`\`\`
 # TODO: <plan name>
