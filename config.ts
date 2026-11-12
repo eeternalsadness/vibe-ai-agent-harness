@@ -47,7 +47,6 @@ export const config = {
   opencodeConfigPath: `${home}/.config/opencode`,
   knowledgeBasePath: `${repoPath}/vibe-coding/vibe-context/knowledge`,
   memoryFilePath: `${repoPath}/vibe-coding/vibe-context/memory/Memory.md`,
-  harnessPath: `${repoPath}/vibe-coding/vibe-ai-agent-harness`,
 
   defaultProfile: "work" as const,
 

@@ -14,10 +14,13 @@ permissions:
     resource: "validating-work"
     effect: allow
   - action: shell
-    resource: "python3 ${config.harnessPath}/dist/opencode/skills/validating-work/scripts/pipeline_runner.py *"
+    resource: "python3 ${config.opencodeConfigPath}/skills/validating-work/scripts/pipeline_runner.py *"
     effect: allow
   - action: external_directory
-    resource: "${config.harnessPath}/dist/opencode/skills/validating-work/scripts/**"
+    resource: "${config.opencodeConfigPath}/skills/validating-work/scripts/**"
+    effect: allow
+  - action: external_directory
+    resource: "${config.opencodeConfigPath}/skills/writing-plans/**"
     effect: allow
 ---
 

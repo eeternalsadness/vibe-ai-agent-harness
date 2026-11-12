@@ -24,13 +24,13 @@ permissions:
     resource: "tail *"
     effect: allow
   - action: shell
-    resource: "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *"
+    resource: "bash ${config.opencodeConfigPath}/skills/evaluating-memory/scripts/append-memory.sh *"
     effect: allow
   - action: skill
     resource: "evaluating-memory"
     effect: allow
   - action: external_directory
-    resource: "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**"
+    resource: "${config.opencodeConfigPath}/skills/evaluating-memory/scripts/**"
     effect: allow
 ---
 

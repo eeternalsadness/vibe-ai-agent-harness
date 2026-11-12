@@ -325,11 +325,11 @@ test("skill-paths: skills name their own reference and script files correctly", 
 test("skill-commands-allowed: every command a loaded skill names is allowed by its agent", async () => {
   const run = await freshInstall()
   const S = run.skills
-  const agentNames = (await readdir(run.agents)).filter(f => f.endsWith(".md")).sort()
+  const agentNames = (await readdir(run.agents)).filter(f => f.endsWith(".md")).map(f => f.slice(0, -3)).sort()
 
   const pairs: Array<[string, string]> = []
   for (const name of agentNames) {
-    const def = parseAgent(await readFile(join(run.agents, name), "utf-8"), name)
+    const def = parseAgent(await readFile(join(run.agents, `${name}.md`), "utf-8"), `${name}.md`)
     const shellRules = def.rules.filter(r => r.action === "shell" && r.effect === "allow")
     for (const rule of def.rules.filter(r => r.action === "skill" && r.effect === "allow")) {
       const skill = rule.resource

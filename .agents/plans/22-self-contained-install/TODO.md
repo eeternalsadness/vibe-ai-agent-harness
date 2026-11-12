@@ -36,7 +36,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 - [ ] **Task 11** - add `opencodeConfigPath` to `config.ts`
 - [ ] **Task 12** - fix skill paths
       Verify: skill-paths, cross-skill-allowlist
-- [ ] **Task 13** - fix agent permission paths and remove `harnessPath`
+- [x] **Task 13** - fix agent permission paths and remove `harnessPath`
       Verify: no-checkout-references, skill-commands-allowed, skill-files-readable
 
 ### Phase 4 - Documentation

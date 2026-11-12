@@ -28,13 +28,13 @@ permissions:
     resource: "shuf *"
     effect: allow
   - action: shell
-    resource: "bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*"
+    resource: "bash ${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/*"
     effect: allow
   - action: shell
-    resource: "python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/*"
+    resource: "python3 ${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/*"
     effect: allow
   - action: shell
-    resource: "bash ${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/append-memory.sh *"
+    resource: "bash ${config.opencodeConfigPath}/skills/evaluating-memory/scripts/append-memory.sh *"
     effect: allow
   - action: shell
     resource: "git -C ${config.knowledgeBasePath} add -A"
@@ -67,10 +67,10 @@ permissions:
     resource: "${memoryDir}/**"
     effect: allow
   - action: external_directory
-    resource: "${config.harnessPath}/dist/opencode/skills/evaluating-memory/scripts/**"
+    resource: "${config.opencodeConfigPath}/skills/evaluating-memory/scripts/**"
     effect: allow
   - action: external_directory
-    resource: "${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/**"
+    resource: "${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/**"
     effect: allow
 ---
 

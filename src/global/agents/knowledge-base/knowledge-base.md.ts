@@ -38,7 +38,7 @@ permissions:
     resource: "${config.knowledgeBasePath}/**"
     effect: allow
   - action: external_directory
-    resource: "${config.harnessPath}/dist/opencode/agents/knowledge-base/**"
+    resource: "${config.opencodeConfigPath}/skills/writing-knowledge-base/**"
     effect: allow
 ---
 

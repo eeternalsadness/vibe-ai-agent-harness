@@ -1,4 +1,5 @@
 import type { Profile } from "../../../../config"
+import { config } from "../../../../config"
 
 export default function plannerAgent(profile: Profile): string {
   return `---
@@ -11,6 +12,9 @@ permissions:
     effect: allow
   - action: question
     resource: "*"
+    effect: allow
+  - action: external_directory
+    resource: "${config.opencodeConfigPath}/skills/writing-plans/**"
     effect: allow
 ---
 
