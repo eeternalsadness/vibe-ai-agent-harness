@@ -17,9 +17,10 @@ graph TD
     User
 
     subgraph Primary["Primary Agents"]
-        Default
+        Yapper
         Planner
         Coder
+        Curator
     end
 
     subgraph Subagents
@@ -27,6 +28,19 @@ graph TD
         KnowledgeBase[Knowledge Base]
         Memory
         Reviewer
+    end
+
+    subgraph Skills["Skills (loaded by agents)"]
+        WritingPlans[writing-plans]
+        ImplementingCode[implementing-code]
+        ValidatingWork[validating-work]
+        EnrichingKB[enriching-knowledge-base]
+        MaintainingKB[maintaining-knowledge-base]
+        ResearchingKN[researching-knowledge]
+        ReadingKB[reading-knowledge-base]
+        WritingKB[writing-knowledge-base]
+        EvaluatingMemory[evaluating-memory]
+        ReviewingCode[reviewing-code]
     end
 
     KB[(Knowledge Base)]
@@ -38,7 +52,19 @@ graph TD
     Primary -->|delegate| Research
     Primary -->|session end| Memory
 
+    Planner -->|loads| WritingPlans
+    Coder -->|loads| ImplementingCode
+    Coder -->|loads| ValidatingWork
+    Curator -->|loads| EnrichingKB
+    Curator -->|loads| MaintainingKB
+    Curator -->|loads| ResearchingKN
+    KnowledgeBase -->|loads| ReadingKB
+    KnowledgeBase -->|loads| WritingKB
+    Memory -->|loads| EvaluatingMemory
+    Reviewer -->|loads| ReviewingCode
+
     Reviewer --> Research
+    Curator -->|delegate| Research
     Research --> KnowledgeBase
     KnowledgeBase <-->|reads & writes| KB
 
@@ -48,21 +74,42 @@ graph TD
 
 ## Agents
 
-| Agent | Type | Role |
+| Agent | Mode | Role |
 |---|---|---|
-| Default | Primary | Main interaction — research, memory, general coding tasks |
-| Planner | Primary | Creates structured plans before implementation begins; every plan carries an ACCEPTANCE.md defining done |
-| Coder | Primary | Executes plans or ad-hoc coding requests; writes tests first, self-verifies with the standard validation pipeline |
-| Research | Subagent | Investigates topics; checks knowledge base before going external |
-| Knowledge Base | Subagent | Reads and writes the zettelkasten knowledge base |
-| Memory | Subagent | Evaluates conversation transcripts and extracts memory items |
-| Reviewer | Subagent | Blunt code reviews; independently validates tests encode acceptance criteria |
+| Yapper | primary | General-purpose primary agent for interactive sessions — coding, research, planning, debugging, Q&A |
+| Planner | primary | Creates structured plans before implementation begins; every plan carries an ACCEPTANCE.md defining done |
+| Coder | primary | Executes plans or ad-hoc coding requests; writes tests first, self-verifies with the standard validation pipeline |
+| Curator | primary | Autonomous knowledge base worker — enrichment and maintenance, no confirmation needed |
+| Research | subagent | Fetches information from external sources; called by the researching-knowledge skill |
+| Knowledge Base | subagent | Gatekeeper for the zettelkasten knowledge base — all reads and writes go through it |
+| Memory | subagent (hidden) | Evaluates conversation transcripts and extracts memory items |
+| Reviewer | all (hidden) | Blunt code reviews; independently validates tests encode acceptance criteria |
+
+## Skills
+
+Agents say how to behave; skills say how to work. Each skill folder in `src/global/skills/` installs whole into `~/.config/opencode/skills/<id>/`.
+
+| Skill | For | Loaded by |
+|---|---|---|
+| creating-agent-skills | How to create new agent skills (structure, metadata, conventions) | — (load it when authoring a skill) |
+| enriching-knowledge-base | Enrich the knowledge base with grounded research | curator |
+| evaluating-memory | Extract memory items from conversation transcripts | memory |
+| implementing-code | Plan and ad-hoc coding workflows, research and code quality standards | coder |
+| maintaining-knowledge-base | Audit the knowledge base (dangling links, orphans, oversized notes) | curator |
+| reading-knowledge-base | Reading from the knowledge base | knowledge base |
+| researching-knowledge | The research protocol — load before acting on anything uncertain | curator (referenced by coder, reviewer, yapper) |
+| reviewing-code | Code review workflow, criteria, and finding categories | reviewer |
+| validating-work | The standard validation pipeline (lint, gitleaks, trivy, build, test) | coder |
+| writing-knowledge-base | Writing to the knowledge base, per zettelkasten conventions | knowledge base |
+| writing-plans | Planning workflow, scope and complexity, plan file formats | planner |
 
 ## Memory & Knowledge Base
 
 The harness uses two persistence layers with different purposes.
 
 **Working memory** is a short-term context store — a flat markdown file capped at 100 items. It holds recent decisions, completed work, and research runs, each tagged with `[decision]`, `[work]`, `[research]`, or `[kb-enrichment]`. At the start of every session it is injected into the system prompt, giving the primary agent immediate context. At the end of each session, the plugin automatically evaluates the conversation and passes it to the memory agent, which extracts significant items and appends them to the file. Autonomous agent sessions (enrichment, maintenance) are skipped. The oldest items are pruned when the cap is reached.
+
+The plugin still ships, but it currently adds little value, so disabling it is recommended: add `"-memory-manager"` to `plugins` in `~/.config/opencode/opencode.json`.
 
 **The knowledge base** is a zettelkasten — a graph of atomic markdown notes linked to each other. It is the long-term source of truth. When an agent needs to learn something new, it researches it and writes it into the knowledge base. The knowledge base agent acts as the gatekeeper — all reads and writes go through it.
 
@@ -103,7 +150,10 @@ ses_def        idle     -      adhoc-fix-the-typo-in-1a2b3c  4m50s  3m20s     Fi
 2. Run `./install.sh` to render and install
 
 ```bash
-./install.sh                                         # install with default profile
-./install.sh --platform opencode --profile broke     # install with a different profile
-./install.sh --dry-run                               # preview without writing
+./install.sh                                          # install with default profile
+./install.sh --platform opencode --profile framework  # install with a different profile
+./install.sh --clean                                  # remove stale agents/ and skills/ files before installing
+./install.sh --dry-run                                # preview without writing
 ```
+
+Profiles are defined in `config.ts` (`work`, `framework`, `based`).

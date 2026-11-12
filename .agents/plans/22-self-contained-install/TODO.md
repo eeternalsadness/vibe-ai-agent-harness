@@ -43,4 +43,4 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 - [x] **Task 14** - add the planner documentation rule
 - [x] **Task 15** - update the repo `AGENTS.md`
-- [ ] **Task 16** - update `README.md`
+- [x] **Task 16** - update `README.md`
