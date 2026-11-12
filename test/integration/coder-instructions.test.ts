@@ -22,11 +22,13 @@ const globalDir = join(import.meta.dir, "../../src/global")
 
 let outputDir: string
 let coder: string
+let implementingCode: string
 
 beforeAll(async () => {
   outputDir = await mkdtemp(join(tmpdir(), "vibe-coder-instructions-test-"))
   await renderTemplates(globalDir, outputDir, testProfile as never)
   coder = await readFile(join(outputDir, "agents/coder/coder.md"), "utf-8")
+  implementingCode = await readFile(join(outputDir, "skills/implementing-code/SKILL.md"), "utf-8")
 })
 
 afterAll(async () => {
@@ -71,9 +73,9 @@ test("coder-instructions: no longer keeps decisions in the plan directory or the
 })
 
 test("coder-instructions: the ad-hoc workflow commits once the pipeline is green", () => {
-  const start = coder.indexOf("## Workflow — Ad-hoc Mode")
+  const start = implementingCode.indexOf("## Workflow - Ad-hoc Mode")
   expect(start).toBeGreaterThan(-1)
-  const rest = coder.slice(start + 1)
+  const rest = implementingCode.slice(start + 1)
   const next = rest.indexOf("\n## ")
   const adhoc = next === -1 ? rest : rest.slice(0, next)
 

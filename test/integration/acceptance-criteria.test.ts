@@ -73,9 +73,10 @@ test("planner-todo-verify-references: rendered planner describes the TODO Verify
 
 test("coder-reads-acceptance-and-self-verifies: rendered coder reads ACCEPTANCE.md and self-verifies", async () => {
   const coder = await readRendered("agents/coder/coder.md")
+  const implementingCode = await readRendered("skills/implementing-code/SKILL.md")
 
   expect(has(coder, "ACCEPTANCE.md")).toBe(true)
-  expect(has(coder, "Verify:")).toBe(true)
+  expect(has(implementingCode, "Verify:")).toBe(true)
 })
 
 test("reviewer-validates-tests-encode-criteria: rendered reviewer validates tests encode acceptance criteria", async () => {

@@ -25,7 +25,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 ### Phase 2 - Refactor
 
 - [x] **Task 6** - create the knowledge base skills and merge `modifying-knowledge-base`
-- [ ] **Task 7** - create `implementing-code`
+- [x] **Task 7** - create `implementing-code`
 - [ ] **Task 8** - create `writing-plans`
       Verify: skills-installed-whole
 - [ ] **Task 9** - create `reviewing-code`
