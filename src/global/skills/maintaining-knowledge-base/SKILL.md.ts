@@ -11,7 +11,7 @@ Use this skill to audit the knowledge base for structural problems and delegate 
 
 ## Scripts
 
-All scripts live in \`${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/\`.
+All scripts live in \`${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/\`.
 
 | Script | Purpose | Run with |
 |---|---|---|
@@ -25,9 +25,9 @@ Exit codes: \`0\` = clean, \`1\` = problems found, \`2\` = script error (skip th
 
 1. **Run all three scripts** and collect their output:
     \`\`\`bash
-    bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-dangling.sh "${config.knowledgeBasePath}"
-    python3 ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-orphans.py "${config.knowledgeBasePath}"
-    bash ${config.harnessPath}/dist/opencode/skills/maintaining-knowledge-base/scripts/audit-oversized.sh "${config.knowledgeBasePath}"
+    bash ${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/audit-dangling.sh "${config.knowledgeBasePath}"
+    python3 ${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/audit-orphans.py "${config.knowledgeBasePath}"
+    bash ${config.opencodeConfigPath}/skills/maintaining-knowledge-base/scripts/audit-oversized.sh "${config.knowledgeBasePath}"
     \`\`\`
 
 2. **Delegate fixes to \`@knowledge-base\`** — one call per category, in batches of 5 items. Evaluate each item individually before acting. Wait for each batch to complete before sending the next.

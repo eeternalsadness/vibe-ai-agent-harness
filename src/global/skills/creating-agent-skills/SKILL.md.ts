@@ -1,5 +1,3 @@
-import { config } from "../../../../config"
-
 // TODO: the opencode-conventions reference link below is OpenCode-specific (local file path).
 // Future: make this a platform-specific parameter so other platforms can inject their own equivalent.
 
@@ -25,7 +23,7 @@ When creating a skill, ask two questions:
 >    - **Project-level** (specific to current project/repository)
 >    - **Global** (reusable across all projects)
 
-If OpenCode: Follow \`${config.harnessPath}/dist/opencode/skills/creating-agent-skills/reference/opencode-conventions.md\`
+If OpenCode: Follow \`reference/opencode-conventions.md\`
 If Custom: Ask user for metadata format, file structure, and save location
 
 ## Core Design Principles

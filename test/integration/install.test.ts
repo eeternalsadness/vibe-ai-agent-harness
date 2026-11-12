@@ -11,6 +11,7 @@ import {
   fileExists,
   cleanupTempHomes,
   parseAgent,
+  pathExists,
   escapeRegex,
   wildcardMatch,
   namedSkillPaths,
@@ -315,7 +316,8 @@ test("skill-paths: skills name their own reference and script files correctly", 
       expect(await fileExists(join(S, id, token)), `${id} names missing ${token}`).toBe(true)
     }
     for (const p of namedSkillPaths(skill, S)) {
-      expect(await fileExists(p), `${id} names missing ${p}`).toBe(true)
+      // a trailing-slash mention names a directory; both must exist
+      expect(await pathExists(p.replace(/\/+$/, "")), `${id} names missing ${p}`).toBe(true)
     }
   }
 })
@@ -388,7 +390,10 @@ test("skill-files-readable: every file a loaded skill names is readable by its a
       const required: string[] = []
       for (const rel of await listFiles(join(S, skill, "reference"))) required.push(join(S, skill, "reference", rel))
       for (const rel of await listFiles(join(S, skill, "scripts"))) required.push(join(S, skill, "scripts", rel))
-      for (const p of namedSkillPaths(await readFile(join(S, skill, "SKILL.md"), "utf-8"), S)) required.push(p)
+      for (const p of namedSkillPaths(await readFile(join(S, skill, "SKILL.md"), "utf-8"), S)) {
+        if (p.endsWith("/")) continue // directory mention, not a file to read
+        required.push(p)
+      }
       for (const p of required) {
         expect(
           extRules.some(r => wildcardMatch(r.resource, p)),

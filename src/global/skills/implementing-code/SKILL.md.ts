@@ -105,7 +105,7 @@ Do not aim for 100% coverage. Aim for confidence that the code works as intended
 
 ## Task Status Format
 
-The TODO.md format (legend and task lines) is defined in \`writing-plans/reference/plan-format.md\`.
+The TODO.md format (legend and task lines) is defined in \`${config.opencodeConfigPath}/skills/writing-plans/reference/plan-format.md\`.
 
 When updating TODO.md:
 - Change \`[ ]\` to \`[x]\` for completed tasks

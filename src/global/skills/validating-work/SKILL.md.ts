@@ -11,7 +11,7 @@ Self-verify your work by running the standard validation pipeline: lint → gitl
 
 ## Script
 
-The runner lives at \`${config.harnessPath}/dist/opencode/skills/validating-work/scripts/pipeline_runner.py\`.
+The runner lives at \`${config.opencodeConfigPath}/skills/validating-work/scripts/pipeline_runner.py\`.
 
 | Script | Purpose | Run with |
 |---|---|---|
@@ -23,7 +23,7 @@ Reads \`.agents/pipeline.yaml\` at \`<repo-root>\`. \`lint\`/\`build\`/\`test\` 
 
 1. **Run** — invoke the runner against the repo root you're working in:
     \`\`\`bash
-    python3 ${config.harnessPath}/dist/opencode/skills/validating-work/scripts/pipeline_runner.py "<repo-root>"
+    python3 ${config.opencodeConfigPath}/skills/validating-work/scripts/pipeline_runner.py "<repo-root>"
     \`\`\`
 2. **Read** — the runner streams each stage's own tool output straight through unchanged. On failure it stops at the first non-zero stage and prints \`pipeline failed at: <stage>\`. Read that stage's output to find what broke.
 3. **Fix** — address the failure, then run the pipeline again from step 1.

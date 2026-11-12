@@ -192,6 +192,16 @@ export async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+// True when `path` exists as a file OR a directory.
+export async function pathExists(path: string): Promise<boolean> {
+  try {
+    await stat(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export interface AgentRule {
   action: string
   resource: string
