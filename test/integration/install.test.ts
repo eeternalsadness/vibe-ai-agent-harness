@@ -11,6 +11,11 @@ import {
   fileExists,
   cleanupTempHomes,
   parseAgent,
+  escapeRegex,
+  wildcardMatch,
+  namedSkillPaths,
+  relativeReferencePaths,
+  fencedCommandLines,
   type DirComparison,
   type InstallRun,
 } from "./install-helpers"
@@ -258,6 +263,96 @@ test("skill-set: the installed skill folders are exactly the shipped set", async
   }
 })
 
+test("no-checkout-references: no installed file references the repo checkout", async () => {
+  const run = await freshInstall()
+  // config.ts derives the harness checkout path from $HOME, so under the
+  // test's temp HOME this is the exact absolute path an install would embed.
+  const harnessPath = join(run.home, "Repo", "vibe-coding", "vibe-ai-agent-harness")
+  for (const rel of await listFiles(run.config)) {
+    const content = await readFile(join(run.config, rel), "utf-8")
+    expect(content.includes("dist/opencode"), rel).toBe(false)
+    expect(content.includes(harnessPath), rel).toBe(false)
+  }
+})
+
+test("skill-paths: skills name their own reference and script files correctly", async () => {
+  const run = await freshInstall()
+  const S = run.skills
+  const ids = (await readdir(S, { withFileTypes: true }))
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
+    .sort()
+
+  for (const id of ids) {
+    const skill = await readFile(join(S, id, "SKILL.md"), "utf-8")
+
+    // every reference file is named as reference/<file>, never absolutely
+    for (const rel of await listFiles(join(S, id, "reference"))) {
+      expect(skill.includes(`reference/${rel}`), `${id} does not name reference/${rel}`).toBe(true)
+    }
+    expect(skill.includes(`${S}/${id}/reference/`), `${id} names an absolute reference/ path`).toBe(false)
+
+    // every script is named by full S/<id>/scripts/<file> path, and never
+    // without that prefix
+    for (const rel of await listFiles(join(S, id, "scripts"))) {
+      const prefix = `${S}/${id}/`
+      expect(skill.includes(`${prefix}scripts/${rel}`), `${id} does not name ${prefix}scripts/${rel}`).toBe(true)
+      for (const m of skill.matchAll(new RegExp(escapeRegex(`scripts/${rel}`), "g"))) {
+        const index = m.index!
+        expect(
+          index >= prefix.length && skill.slice(index - prefix.length, index) === prefix,
+          `${id} names scripts/${rel} without the ${prefix} prefix`,
+        ).toBe(true)
+      }
+    }
+  }
+
+  // every path a SKILL.md names exists; creating-agent-skills is exempt from
+  // the checks on the paths it names (it teaches the layout with examples)
+  for (const id of ids.filter(i => i !== "creating-agent-skills")) {
+    const skill = await readFile(join(S, id, "SKILL.md"), "utf-8")
+    for (const token of relativeReferencePaths(skill, S)) {
+      expect(await fileExists(join(S, id, token)), `${id} names missing ${token}`).toBe(true)
+    }
+    for (const p of namedSkillPaths(skill, S)) {
+      expect(await fileExists(p), `${id} names missing ${p}`).toBe(true)
+    }
+  }
+})
+
+test("skill-commands-allowed: every command a loaded skill names is allowed by its agent", async () => {
+  const run = await freshInstall()
+  const S = run.skills
+  const agentNames = (await readdir(run.agents)).filter(f => f.endsWith(".md")).sort()
+
+  const pairs: Array<[string, string]> = []
+  for (const name of agentNames) {
+    const def = parseAgent(await readFile(join(run.agents, name), "utf-8"), name)
+    const shellRules = def.rules.filter(r => r.action === "shell" && r.effect === "allow")
+    for (const rule of def.rules.filter(r => r.action === "skill" && r.effect === "allow")) {
+      const skill = rule.resource
+      pairs.push([name, skill])
+      const skillFile = join(S, skill, "SKILL.md")
+      expect(await fileExists(skillFile), `${name} allows skill ${skill} but ${skillFile} is missing`).toBe(true)
+      for (const line of fencedCommandLines(await readFile(skillFile, "utf-8"))) {
+        expect(
+          shellRules.some(r => wildcardMatch(r.resource, line)),
+          `${name} has no shell allow rule matching: ${line}`,
+        ).toBe(true)
+      }
+    }
+  }
+
+  for (const [agent, skill] of [
+    ["coder", "validating-work"],
+    ["curator", "maintaining-knowledge-base"],
+    ["curator", "enriching-knowledge-base"],
+    ["memory", "evaluating-memory"],
+  ]) {
+    expect(pairs.some(([a, s]) => a === agent && s === skill), `missing pair ${agent} -> ${skill}`).toBe(true)
+  }
+})
+
 test("agents-name-their-skills: each agent names its skills and allows them by permission", async () => {
   const run = await freshInstall()
 
@@ -277,5 +372,78 @@ test("agents-name-their-skills: each agent names its skills and allows them by p
       const allowed = def.rules.some(r => r.action === "skill" && r.resource === skill && r.effect === "allow")
       expect(allowed, `${agent} has no skill allow rule for ${skill}`).toBe(true)
     }
+  }
+})
+
+test("skill-files-readable: every file a loaded skill names is readable by its agent", async () => {
+  const run = await freshInstall()
+  const S = run.skills
+  const agentNames = (await readdir(run.agents)).filter(f => f.endsWith(".md")).sort()
+
+  for (const name of agentNames) {
+    const def = parseAgent(await readFile(join(run.agents, name), "utf-8"), name)
+    const extRules = def.rules.filter(r => r.action === "external_directory" && r.effect === "allow")
+    for (const rule of def.rules.filter(r => r.action === "skill" && r.effect === "allow")) {
+      const skill = rule.resource
+      const required: string[] = []
+      for (const rel of await listFiles(join(S, skill, "reference"))) required.push(join(S, skill, "reference", rel))
+      for (const rel of await listFiles(join(S, skill, "scripts"))) required.push(join(S, skill, "scripts", rel))
+      for (const p of namedSkillPaths(await readFile(join(S, skill, "SKILL.md"), "utf-8"), S)) required.push(p)
+      for (const p of required) {
+        expect(
+          extRules.some(r => wildcardMatch(r.resource, p)),
+          `${name} has no external_directory allow rule matching ${p} (skill ${skill})`,
+        ).toBe(true)
+      }
+    }
+  }
+
+  // the scenario's "includes" table: (agent, skill, path under S)
+  for (const [agent, skill, relToS] of [
+    ["knowledge-base", "writing-knowledge-base", "writing-knowledge-base/reference/zettelkasten-conventions.md"],
+    ["coder", "implementing-code", "writing-plans/reference/plan-format.md"],
+    ["coder", "validating-work", "validating-work/scripts/pipeline_runner.py"],
+    ["curator", "enriching-knowledge-base", "evaluating-memory/scripts/append-memory.sh"],
+    ["memory", "evaluating-memory", "evaluating-memory/scripts/append-memory.sh"],
+  ] as const) {
+    const def = parseAgent(await readFile(join(run.agents, `${agent}.md`), "utf-8"), `${agent}.md`)
+    const extRules = def.rules.filter(r => r.action === "external_directory" && r.effect === "allow")
+    expect(
+      extRules.some(r => wildcardMatch(r.resource, join(S, relToS))),
+      `${agent} cannot read ${join(S, relToS)} for skill ${skill}`,
+    ).toBe(true)
+  }
+})
+
+test("cross-skill-allowlist: cross-skill references are exactly the allowlisted ones", async () => {
+  const run = await freshInstall()
+  const S = run.skills
+  const ids = (await readdir(S, { withFileTypes: true }))
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
+    .sort()
+  const idSet = new Set(ids)
+
+  // a cross-skill reference is a path starting with S/<other id>/ inside any
+  // file of S/<id>/
+  const found = new Set<string>()
+  for (const id of ids) {
+    for (const rel of await listFiles(join(S, id))) {
+      const content = await readFile(join(S, id, rel), "utf-8")
+      for (const p of namedSkillPaths(content, S)) {
+        const [target = ""] = p.slice(S.length + 1).split("/")
+        if (target !== id && idSet.has(target)) found.add(`${id} -> ${p}`)
+      }
+    }
+  }
+
+  const expected = new Set([
+    `implementing-code -> ${S}/writing-plans/reference/plan-format.md`,
+    `enriching-knowledge-base -> ${S}/evaluating-memory/scripts/append-memory.sh`,
+  ])
+
+  expect([...found].sort()).toEqual([...expected].sort())
+  for (const entry of expected) {
+    expect(await fileExists(entry.split(" -> ")[1]!), entry).toBe(true)
   }
 })

@@ -230,3 +230,54 @@ export function parseAgent(file: string, path: string): AgentDef {
   }
   return { rules, body: lines.slice(end + 1).join("\n") }
 }
+
+// Escapes regex special characters in `s`.
+export function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+// OpenCode wildcard match: each `*` matches any run of characters (including
+// `/` and spaces); the pattern must match the whole string.
+export function wildcardMatch(pattern: string, value: string): boolean {
+  const re = new RegExp("^" + pattern.split("*").map(escapeRegex).join(".*") + "$")
+  return re.test(value)
+}
+
+// Every absolute path under the installed skills root `S` named in `text`.
+// Tokens are path-like runs of word characters, dots, dashes and slashes;
+// trailing sentence punctuation is stripped.
+export function namedSkillPaths(text: string, S: string): string[] {
+  const out: string[] = []
+  for (const m of text.matchAll(new RegExp(`${escapeRegex(S)}/[A-Za-z0-9._/-]+`, "g"))) {
+    out.push(m[0].replace(/[.,;:)\]]+$/, ""))
+  }
+  return out
+}
+
+// Every `reference/<file>` path named in `text` that is NOT part of an
+// absolute path under the installed skills root `S` (those are full paths,
+// not relative names).
+export function relativeReferencePaths(text: string, S: string): string[] {
+  const noAbsolute = text.replace(new RegExp(`${escapeRegex(S)}/[A-Za-z0-9._/-]+`, "g"), " ")
+  const out: string[] = []
+  for (const m of noAbsolute.matchAll(/reference\/[A-Za-z0-9._/-]+/g)) {
+    out.push(m[0].replace(/[.,;:)\]]+$/, ""))
+  }
+  return out
+}
+
+// The lines of fenced code blocks (``` ... ```) in `text` that start with
+// `bash ` or `python3 ` after stripping leading whitespace.
+export function fencedCommandLines(text: string): string[] {
+  const out: string[] = []
+  let inFence = false
+  for (const line of text.split("\n")) {
+    const t = line.trim()
+    if (t.startsWith("```")) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence && (t.startsWith("bash ") || t.startsWith("python3 "))) out.push(t)
+  }
+  return out
+}
