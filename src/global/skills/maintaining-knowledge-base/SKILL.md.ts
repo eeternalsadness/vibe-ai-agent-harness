@@ -40,7 +40,7 @@ Pass the full script output and instruct \`@knowledge-base\`:
 ### Orphaned notes
 
 Pass the full script output and instruct \`@knowledge-base\`:
-> The following notes are not reachable from \`Index.md\`. For each, find the correct parent note and add a \`[[wiki-link]]\` to it. If no suitable parent exists, create an intermediate topic note. If a note is spurious or a duplicate, delete it using the \`modifying-knowledge-base\` skill.
+> The following notes are not reachable from \`Index.md\`. For each, find the correct parent note and add a \`[[wiki-link]]\` to it. If no suitable parent exists, create an intermediate topic note. If a note is spurious or a duplicate, delete it using the \`writing-knowledge-base\` skill.
 
 ### Oversized notes
 
