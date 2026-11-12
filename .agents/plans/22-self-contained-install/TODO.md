@@ -19,7 +19,7 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 - [x] **Task 3** - install skill folders whole
       Verify: agents-installed-flat
-- [ ] **Task 4** - add `--clean`
+- [x] **Task 4** - add `--clean`
       Verify: clean-install, clean-missing-folders, clean-dry-run, install-without-clean
 
 ### Phase 2 - Refactor

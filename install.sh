@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENCODE_CONFIG="${HOME}/.config/opencode"
 
 DRY_RUN=false
+CLEAN=false
 PROFILE=""
 PLATFORM="opencode"
 
@@ -16,6 +17,7 @@ Renders templates and installs files to ~/.config/opencode/.
 
 Options:
   --dry-run           Print planned actions without writing anything
+  --clean             Remove agents/ and skills/ before installing
   --profile <name>    Select a profile (default: from config.ts)
   --platform <name>   Target platform (default: "opencode")
   --help              Show this help message
@@ -42,6 +44,7 @@ maybe_copy() {
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run)   DRY_RUN=true; shift ;;
+    --clean)     CLEAN=true; shift ;;
     --profile)   PROFILE="$2"; shift 2 ;;
     --platform)  PLATFORM="$2"; shift 2 ;;
     --help)      usage ;;
@@ -105,6 +108,23 @@ else
   mkdir -p "$(dirname "$BOY_BIN")"
   go -C "$SCRIPT_DIR/boy" build -o "$BOY_BIN" .
   log "installed $BOY_BIN"
+fi
+
+# With --clean, empty agents/ and skills/ after the boy build and before the
+# first copy, so any earlier failure leaves the install untouched. Missing
+# folders are tolerated. With --dry-run, print a delete line per file.
+if [ "$CLEAN" = true ]; then
+  for dir in "$OPENCODE_CONFIG/agents" "$OPENCODE_CONFIG/skills"; do
+    if [ -d "$dir" ]; then
+      if [ "$DRY_RUN" = true ]; then
+        while IFS= read -r -d '' file; do
+          log "[dry-run] delete $file"
+        done < <(find "$dir" -type f -print0)
+      else
+        rm -rf "$dir"
+      fi
+    fi
+  done
 fi
 
 # Install AGENTS.md
