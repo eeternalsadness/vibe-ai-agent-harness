@@ -191,3 +191,42 @@ export async function fileExists(path: string): Promise<boolean> {
     return false
   }
 }
+
+export interface AgentRule {
+  action: string
+  resource: string
+  effect: string
+}
+
+export interface AgentDef {
+  rules: AgentRule[]
+  body: string
+}
+
+// Parses an installed agent file: the permission rules in its YAML
+// frontmatter (action / resource / effect) and the markdown body.
+export function parseAgent(file: string, path: string): AgentDef {
+  const lines = file.split("\n")
+  if (lines[0] !== "---") throw new Error(`no frontmatter in ${path}`)
+  const end = lines.indexOf("---", 1)
+  if (end === -1) throw new Error(`unterminated frontmatter in ${path}`)
+  const rules: AgentRule[] = []
+  let rule: AgentRule | null = null
+  for (const line of lines.slice(1, end)) {
+    const action = line.match(/^  - action: (.+)$/)?.[1]
+    if (action) {
+      rule = { action: action.trim(), resource: "", effect: "" }
+      rules.push(rule)
+      continue
+    }
+    const kv = line.match(/^    (resource|effect): (.+)$/)
+    const key = kv?.[1]
+    const raw = kv?.[2]
+    if (rule && key && raw) {
+      const value = raw.trim().replace(/^"(.*)"$/, "$1")
+      if (key === "resource") rule.resource = value
+      else rule.effect = value
+    }
+  }
+  return { rules, body: lines.slice(end + 1).join("\n") }
+}

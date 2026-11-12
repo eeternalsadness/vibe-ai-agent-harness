@@ -3,7 +3,6 @@ import { mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises"
 import { join } from "node:path"
 import {
   repoRoot,
-  createTempHome,
   copyTree,
   runInstall,
   listFiles,
@@ -11,6 +10,7 @@ import {
   compareTrees,
   fileExists,
   cleanupTempHomes,
+  parseAgent,
   type DirComparison,
   type InstallRun,
 } from "./install-helpers"
@@ -218,4 +218,64 @@ test("install-without-clean: without --clean stale files survive; --dry-run prin
   const dry = await runInstall(["--dry-run"], run.home)
   expectSuccess(dry)
   expect(dry.stdout).not.toContain("[dry-run] delete")
+})
+
+test("skill-set: the installed skill folders are exactly the shipped set", async () => {
+  const run = await freshInstall()
+  const S = run.skills
+
+  const expected = [
+    "creating-agent-skills",
+    "enriching-knowledge-base",
+    "evaluating-memory",
+    "implementing-code",
+    "maintaining-knowledge-base",
+    "reading-knowledge-base",
+    "researching-knowledge",
+    "reviewing-code",
+    "validating-work",
+    "writing-knowledge-base",
+    "writing-plans",
+  ].sort()
+  const actual = (await readdir(S, { withFileTypes: true }))
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
+    .sort()
+  expect(actual).toEqual(expected)
+
+  for (const id of expected) {
+    const skill = await readFile(join(S, id, "SKILL.md"), "utf-8")
+    const fm = skill.match(/^---\n([\s\S]*?)\n---/)
+    expect(fm, `skills/${id}/SKILL.md has no frontmatter`).toBeTruthy()
+    expect(fm![1], `skills/${id}/SKILL.md frontmatter name`).toMatch(/^name: ${id}$/m)
+    expect(fm![1], `skills/${id}/SKILL.md frontmatter description`).toMatch(/^description: \S/m)
+  }
+
+  // no file under the installed config mentions the removed skill
+  for (const rel of await listFiles(run.config)) {
+    const content = await readFile(join(run.config, rel), "utf-8")
+    expect(content.includes("modifying-knowledge-base"), rel).toBe(false)
+  }
+})
+
+test("agents-name-their-skills: each agent names its skills and allows them by permission", async () => {
+  const run = await freshInstall()
+
+  const agentSkills: Array<[string, string[]]> = [
+    ["coder", ["implementing-code", "validating-work"]],
+    ["curator", ["enriching-knowledge-base", "maintaining-knowledge-base"]],
+    ["knowledge-base", ["reading-knowledge-base", "writing-knowledge-base"]],
+    ["memory", ["evaluating-memory"]],
+    ["planner", ["writing-plans"]],
+    ["reviewer", ["reviewing-code"]],
+  ]
+
+  for (const [agent, skills] of agentSkills) {
+    const def = parseAgent(await readFile(join(run.agents, `${agent}.md`), "utf-8"), `${agent}.md`)
+    for (const skill of skills) {
+      expect(def.body.includes(skill), `${agent} body does not name ${skill}`).toBe(true)
+      const allowed = def.rules.some(r => r.action === "skill" && r.resource === skill && r.effect === "allow")
+      expect(allowed, `${agent} has no skill allow rule for ${skill}`).toBe(true)
+    }
+  }
 })
