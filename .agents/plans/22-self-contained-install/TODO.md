@@ -33,8 +33,8 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 
 ### Phase 3 - Paths
 
-- [ ] **Task 11** - add `opencodeConfigPath` to `config.ts`
-- [ ] **Task 12** - fix skill paths
+- [x] **Task 11** - add `opencodeConfigPath` to `config.ts`
+- [x] **Task 12** - fix skill paths
       Verify: skill-paths, cross-skill-allowlist
 - [x] **Task 13** - fix agent permission paths and remove `harnessPath`
       Verify: no-checkout-references, skill-commands-allowed, skill-files-readable
