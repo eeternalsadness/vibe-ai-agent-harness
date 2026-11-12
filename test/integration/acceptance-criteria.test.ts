@@ -43,32 +43,32 @@ function has(content: string, needle: string): boolean {
 }
 
 test("planner-requires-acceptance-md: rendered planner requires ACCEPTANCE.md alongside PLAN.md", async () => {
-  const planner = await readRendered("agents/planner/planner.md")
+  const skill = await readRendered("skills/writing-plans/SKILL.md")
 
-  expect(has(planner, "ACCEPTANCE.md")).toBe(true)
+  expect(has(skill, "ACCEPTANCE.md")).toBe(true)
 })
 
 test("planner-defines-acceptance-format: rendered planner documents the ACCEPTANCE.md format", async () => {
-  const planner = await readRendered("agents/planner/planner.md")
+  const format = await readRendered("skills/writing-plans/reference/plan-format.md")
 
   // Protocol tokens only — prose may change freely
-  expect(has(planner, "Given/When/Then")).toBe(true)
-  expect(has(planner, "Verification")).toBe(true)
-  expect(has(planner, "Out of Scope")).toBe(true)
-  expect(has(planner, "[MANUAL]")).toBe(true)
+  expect(has(format, "Given/When/Then")).toBe(true)
+  expect(has(format, "Verification")).toBe(true)
+  expect(has(format, "Out of Scope")).toBe(true)
+  expect(has(format, "[MANUAL]")).toBe(true)
 })
 
 test("planner-specifies-edge-cases: rendered planner requires one line per case and boundary inputs", async () => {
-  const planner = await readRendered("agents/planner/planner.md")
+  const format = await readRendered("skills/writing-plans/reference/plan-format.md")
 
-  expect(has(planner, "own line")).toBe(true)
-  expect(has(planner, "boundary inputs")).toBe(true)
+  expect(has(format, "own line")).toBe(true)
+  expect(has(format, "boundary inputs")).toBe(true)
 })
 
 test("planner-todo-verify-references: rendered planner describes the TODO Verify: convention", async () => {
-  const planner = await readRendered("agents/planner/planner.md")
+  const format = await readRendered("skills/writing-plans/reference/plan-format.md")
 
-  expect(has(planner, "Verify:")).toBe(true)
+  expect(has(format, "Verify:")).toBe(true)
 })
 
 test("coder-reads-acceptance-and-self-verifies: rendered coder reads ACCEPTANCE.md and self-verifies", async () => {
