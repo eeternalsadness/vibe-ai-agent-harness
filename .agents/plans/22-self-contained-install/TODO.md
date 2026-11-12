@@ -42,5 +42,5 @@ Legend: `[ ]` pending · `[x]` done · `[-]` skipped
 ### Phase 4 - Documentation
 
 - [x] **Task 14** - add the planner documentation rule
-- [ ] **Task 15** - update the repo `AGENTS.md`
+- [x] **Task 15** - update the repo `AGENTS.md`
 - [ ] **Task 16** - update `README.md`
