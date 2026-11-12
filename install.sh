@@ -118,12 +118,12 @@ while IFS= read -r -d '' src; do
   maybe_copy "$src" "$OPENCODE_CONFIG/agents/$name"
 done < <(find "$SCRIPT_DIR/dist/$PLATFORM/agents" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
 
-# Install skills .md files flat per skill dir (skip reference/ subdirs)
+# Install skill folders whole: every file, path kept relative to the skill dir
 while IFS= read -r -d '' src; do
-  skill_dir="$(basename "$(dirname "$src")")"
-  name="$(basename "$src")"
-  maybe_copy "$src" "$OPENCODE_CONFIG/skills/$skill_dir/$name"
-done < <(find "$SCRIPT_DIR/dist/$PLATFORM/skills" -maxdepth 2 -name "*.md" -not -path "*/reference/*" -print0)
+  rel="${src#"$SCRIPT_DIR/dist/$PLATFORM/skills/"}"
+  skill_dir="${rel%%/*}"
+  maybe_copy "$src" "$OPENCODE_CONFIG/skills/$skill_dir/${rel#*/}"
+done < <(find "$SCRIPT_DIR/dist/$PLATFORM/skills" -type f -print0)
 
 # Install plugin
 maybe_copy \

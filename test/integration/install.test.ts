@@ -90,8 +90,10 @@ test("agents-installed-flat: agents install flat, no reference folder outside sk
     expect(entry.name.endsWith(".md"), `agents/${entry.name} is not .md`).toBe(true)
   }
 
+  // no folder named reference anywhere outside skills/ (any depth inside
+  // skills/ is fine)
   for (const rel of await listDirs(run.config)) {
-    if (rel === "skills") continue
+    if (rel === "skills" || rel.startsWith("skills/")) continue
     expect(rel.split("/").includes("reference"), rel).toBe(false)
   }
 })
