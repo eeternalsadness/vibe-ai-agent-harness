@@ -37,10 +37,14 @@ const models = {
 }
 
 import { homedir } from "node:os"
-const repoPath = `${homedir()}/Repo`
+const home = homedir()
+const repoPath = `${home}/Repo`
 
 export const config = {
   repoPath,
+  // The directory install.sh renders into. Every installed path in the
+  // templates is built from this.
+  opencodeConfigPath: `${home}/.config/opencode`,
   knowledgeBasePath: `${repoPath}/vibe-coding/vibe-context/knowledge`,
   memoryFilePath: `${repoPath}/vibe-coding/vibe-context/memory/Memory.md`,
   harnessPath: `${repoPath}/vibe-coding/vibe-ai-agent-harness`,
